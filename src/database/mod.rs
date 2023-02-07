@@ -1,5 +1,5 @@
 use crate::{db_url_shortener, Args};
-use postgres::{Error, TransactionBuilder};
+use postgres::Error;
 mod repo;
 pub use repo::ping_db;
 use std::time::Instant;
