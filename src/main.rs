@@ -7,7 +7,7 @@ use clap::Parser;
 
 type DBsResult = (String, Vec<String>, Vec<String>);
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(long)]

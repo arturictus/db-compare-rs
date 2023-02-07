@@ -1,7 +1,7 @@
 use crate::{db_url_shortener, Args};
-use postgres::Error;
-mod queries;
-pub use queries::ping_db;
+use postgres::{Error, TransactionBuilder};
+mod repo;
+pub use repo::ping_db;
 use std::time::Instant;
 
 struct Query<'a> {
@@ -33,7 +33,7 @@ pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
             table: Some(table),
             column: None,
         },
-        |params| queries::count_for(params.args, params.db_url, params.table.unwrap()),
+        |params| repo::count_for(params.args, params.db_url, params.table.unwrap()),
     )
 }
 
@@ -49,7 +49,7 @@ pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
             table: None,
             column: None,
         },
-        |params| queries::all_tables(params.args, params.db_url),
+        |params| repo::all_tables(params.args, params.db_url),
     )
 }
 
@@ -66,7 +66,7 @@ pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<V
             table: None,
             column: Some(column),
         },
-        |params| queries::tables_with_column(params.args, params.db_url, params.column.unwrap()),
+        |params| repo::tables_with_column(params.args, params.db_url, params.column.unwrap()),
     )
 }
 
@@ -90,7 +90,7 @@ pub fn id_and_column_value(
             column: Some(column),
         },
         |params| {
-            queries::id_and_column_value(
+            repo::id_and_column_value(
                 params.args,
                 params.db_url,
                 params.table.unwrap(),
@@ -119,7 +119,7 @@ pub fn full_row_ordered_by(
             column: Some(column),
         },
         |params| {
-            queries::full_row_ordered_by(
+            repo::full_row_ordered_by(
                 params.args,
                 params.db_url,
                 params.table.unwrap(),
