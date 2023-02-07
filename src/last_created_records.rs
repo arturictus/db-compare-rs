@@ -1,4 +1,4 @@
-use crate::queries;
+use crate::database;
 use crate::{Args, DBsResult};
 
 pub fn tables(args: &Args, presenter: fn(DBsResult)) -> Result<(), postgres::Error> {
@@ -37,9 +37,9 @@ fn column() -> String {
 }
 
 fn non_updated_at_tables(args: &Args, db_url: &str) -> Result<Vec<String>, postgres::Error> {
-    let created_at_tables = queries::tables_with_column(args, db_url, column()).unwrap();
+    let created_at_tables = database::tables_with_column(args, db_url, column()).unwrap();
     let updated_at_tables =
-        queries::tables_with_column(args, db_url, "updated_at".to_string()).unwrap();
+        database::tables_with_column(args, db_url, "updated_at".to_string()).unwrap();
     let difference: Vec<String> = created_at_tables
         .into_iter()
         .filter(|item| !updated_at_tables.contains(item))
@@ -53,8 +53,8 @@ fn compare_table_created_ats(
     table: &str,
     presenter: fn(DBsResult),
 ) -> Result<(), postgres::Error> {
-    let records1 = queries::id_and_column_value(args, &args.db1, table, column()).unwrap();
-    let records2 = queries::id_and_column_value(args, &args.db2, table, column()).unwrap();
+    let records1 = database::id_and_column_value(args, &args.db1, table, column()).unwrap();
+    let records2 = database::id_and_column_value(args, &args.db2, table, column()).unwrap();
 
     presenter((
         format!("====== `{}` created_at values", table),
@@ -65,8 +65,8 @@ fn compare_table_created_ats(
 }
 
 fn compare_rows(args: &Args, table: &str, presenter: fn(DBsResult)) -> Result<(), postgres::Error> {
-    let records1 = queries::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
-    let records2 = queries::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
+    let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
+    let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
     presenter((
         format!("====== `{}` all columns", table),
         records1,

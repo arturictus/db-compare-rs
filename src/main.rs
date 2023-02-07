@@ -1,8 +1,8 @@
 mod counter;
+mod database;
 mod last_created_records;
 mod last_updated_records;
 mod presenter;
-mod queries;
 use clap::Parser;
 
 type DBsResult = (String, Vec<String>, Vec<String>);
@@ -21,7 +21,8 @@ pub struct Args {
 }
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    queries::ping_db(&args)?;
+    database::ping_db(&args, &args.db1)?;
+    database::ping_db(&args, &args.db2)?;
     counter::run(&args, presenter::call)?;
     last_updated_records::tables(&args, presenter::call)?;
     last_updated_records::only_updated_ats(&args, presenter::call)?;
@@ -30,4 +31,12 @@ fn main() -> Result<(), postgres::Error> {
     last_created_records::only_created_ats(&args, presenter::call)?;
     last_created_records::all_columns(&args, presenter::call)?;
     Ok(())
+}
+
+fn db_url_shortener(args: &Args, db_url: &str) -> String {
+    if db_url == args.db1 {
+        "DB1".to_string()
+    } else {
+        "DB2".to_string()
+    }
 }
