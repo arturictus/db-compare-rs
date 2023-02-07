@@ -1,0 +1,62 @@
+use crate::DBsResult;
+use similar::{ChangeTag, TextDiff};
+
+pub fn call(result: DBsResult) {
+    let (header, a, b) = result;
+    println!("{}", header);
+    print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
+}
+
+fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {
+    serde_json::to_string_pretty(list)
+}
+
+fn produce_diff(json1: &str, json2: &str) -> String {
+    let diff = TextDiff::from_lines(json1, json2);
+    let mut output = Vec::new();
+
+    for change in diff.iter_all_changes() {
+        match change.tag() {
+            ChangeTag::Equal => continue,
+            _ => (),
+        }
+        let sign = match change.tag() {
+            ChangeTag::Delete => "-",
+            ChangeTag::Insert => "+",
+            ChangeTag::Equal => " ",
+        };
+        output.push(format!("{}{}", sign, change));
+    }
+    output.join("")
+}
+
+fn print_diff(result: &str) {
+    match result {
+        "" => println!("✓"),
+        diff => {
+            println!("{}", diff);
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_diff_dates() {
+        assert_eq!(
+            produce_diff(
+                "2 : 2023-02-01 11:28:44.453989",
+                "2 : 2023-02-01 11:28:45.453989",
+            ),
+            "-2 : 2023-02-01 11:28:44.453989\n+2 : 2023-02-01 11:28:45.453989\n"
+        );
+        assert_eq!(
+            produce_diff(
+                "2 : 2023-02-01 11:28:45.453989",
+                "2 : 2023-02-01 11:28:45.453989",
+            ),
+            ""
+        )
+    }
+}
