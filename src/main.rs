@@ -5,11 +5,8 @@ mod last_created_records;
 mod last_updated_records;
 mod presenter;
 use presenter::Presenter;
-use std::fs::File;
 
 use clap::Parser;
-use std::io::LineWriter;
-mod file_presenter;
 
 type DBsResult = (String, Vec<String>, Vec<String>);
 type Diff = (String, String);
@@ -50,14 +47,4 @@ fn db_url_shortener(args: &Args, db_url: &str) -> String {
     } else {
         "DB2".to_string()
     }
-}
-
-fn do_presenter(result: DBsResult) {
-    let diff = diff_formatter::call(result);
-    console_output(diff);
-}
-fn console_output(diff: Diff) {
-    let (header, result) = diff;
-    println!("{}", header);
-    format!("{}", result);
 }
