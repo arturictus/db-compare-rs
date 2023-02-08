@@ -1,62 +1,40 @@
-use crate::DBsResult;
-use similar::{ChangeTag, TextDiff};
+use crate::{diff_formatter, file_presenter};
+use crate::{Args, DBsResult, Diff};
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::LineWriter;
 
-pub fn call(result: DBsResult) {
-    let (header, a, b) = result;
-    println!("{}", header);
-    print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
+pub struct Presenter {
+    pub file: Option<LineWriter<File>>,
+    use_file: bool,
 }
 
-fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {
-    serde_json::to_string_pretty(list)
-}
-
-fn produce_diff(json1: &str, json2: &str) -> String {
-    let diff = TextDiff::from_lines(json1, json2);
-    let mut output = Vec::new();
-
-    for change in diff.iter_all_changes() {
-        match change.tag() {
-            ChangeTag::Equal => continue,
-            _ => (),
-        }
-        let sign = match change.tag() {
-            ChangeTag::Delete => "-",
-            ChangeTag::Insert => "+",
-            ChangeTag::Equal => " ",
-        };
-        output.push(format!("{}{}", sign, change));
-    }
-    output.join("")
-}
-
-fn print_diff(result: &str) {
-    match result {
-        "" => println!("✓"),
-        diff => {
-            println!("{}", diff);
+impl Presenter {
+    pub fn new(args: &Args) -> Self {
+        if args.file.is_some() {
+            let writer = Some(file_presenter::new(&"tmp/test.diff".to_string()));
+            Self {
+                file: writer,
+                use_file: true,
+            }
+        } else {
+            Self {
+                file: None,
+                use_file: false,
+            }
         }
     }
-}
+    pub fn call(&mut self, result: DBsResult) {
+        let (header, diff) = diff_formatter::call(result);
+        if self.use_file {
+            let mut file = self.file.as_mut().unwrap();
+            file_presenter::call(&mut file, &header);
+            file_presenter::call(&mut file, &diff);
+        }
+    }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    #[test]
-    fn test_diff_dates() {
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:44.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            "-2 : 2023-02-01 11:28:44.453989\n+2 : 2023-02-01 11:28:45.453989\n"
-        );
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:45.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            ""
-        )
+    pub fn end(&mut self) {
+        let file = self.file.as_mut().unwrap();
+        file_presenter::flush(file);
     }
 }
