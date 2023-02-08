@@ -30,6 +30,9 @@ impl Presenter {
             let mut file = self.file.as_mut().unwrap();
             file_presenter::call(&mut file, &header);
             file_presenter::call(&mut file, &diff);
+        } else {
+            println!("{}", header);
+            println!("{}", diff);
         }
     }
 
