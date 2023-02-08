@@ -16,7 +16,7 @@ fn count(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
     let mut counts = Vec::new();
     for table_name in tables {
         let result = database::count_for(args, db_url, &table_name).unwrap();
-        counts.push(format!("{} : {}", table_name, result));
+        counts.push(format!("{table_name} : {result}"));
     }
     counts.sort();
     Ok(counts)

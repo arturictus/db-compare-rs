@@ -6,14 +6,10 @@ use postgres_openssl::MakeTlsConnector;
 pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
     let mut client = connect(args, db_url)?;
     let mut output: u32 = 0;
-    for row in client.simple_query(&format!("SELECT COUNT(*) FROM {};", table)) {
+    for row in client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
-                }
-
-                _ => (),
+            if let SimpleQueryMessage::Row(result) = data {
+                output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
             }
         }
     }
@@ -77,16 +73,12 @@ pub fn id_and_column_value(
         column, table, column, args.limit
     )) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    records.push(format!(
-                        "{} : {}",
-                        result.get(0).unwrap_or("0").parse::<u32>().unwrap(),
-                        result.get(1).unwrap_or("0")
-                    ));
-                }
-
-                _ => (),
+            if let SimpleQueryMessage::Row(result) = data {
+                records.push(format!(
+                    "{} : {}",
+                    result.get(0).unwrap_or("0").parse::<u32>().unwrap(),
+                    result.get(1).unwrap_or("0")
+                ));
             }
         }
     }
@@ -119,17 +111,13 @@ pub fn full_row_ordered_by(
         column, table, column, args.limit
     )) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    let data = result.get(0).unwrap_or("[]");
-                    let list: Vec<Value> = serde_json::from_str(data).unwrap();
+            if let SimpleQueryMessage::Row(result) = data {
+                let value = result.get(0).unwrap_or("[]");
+                let list: Vec<Value> = serde_json::from_str(value).unwrap();
 
-                    for e in list {
-                        records.push(serde_json::to_string(&e).unwrap())
-                    }
+                for e in list {
+                    records.push(serde_json::to_string(&e).unwrap())
                 }
-
-                _ => (),
             }
         }
     }

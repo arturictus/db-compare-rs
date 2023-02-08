@@ -6,7 +6,7 @@ pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Er
     let db1_tables = non_updated_at_tables(args, &args.db1).unwrap();
     let db2_tables = non_updated_at_tables(args, &args.db2).unwrap();
     println!("# -----  List of tables without `updated_at`");
-    println!("{:?}", db1_tables);
+    println!("{db1_tables:?}");
     println!("# ---------------");
     presenter.call((
         "========  Tables with `created_at` column but not `updated_at` difference between DBs"
@@ -58,7 +58,7 @@ fn compare_table_created_ats(
     let records2 = database::id_and_column_value(args, &args.db2, table, column()).unwrap();
 
     presenter.call((
-        format!("====== `{}` created_at values", table),
+        format!("====== `{table}` created_at values"),
         records1,
         records2,
     ));
@@ -72,10 +72,6 @@ fn compare_rows(
 ) -> Result<(), postgres::Error> {
     let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
     let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
-    presenter.call((
-        format!("====== `{}` all columns", table),
-        records1,
-        records2,
-    ));
+    presenter.call((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

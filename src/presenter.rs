@@ -27,18 +27,15 @@ impl Presenter {
                 write_to_file(file, &diff);
             }
             _ => {
-                println!("{}", header);
-                println!("{}", diff);
+                println!("{header}");
+                println!("{diff}");
             }
         }
     }
 
     pub fn end(&mut self) {
-        match &mut self.file {
-            Some(file) => {
-                flush_file(file);
-            }
-            _ => (),
+        if let Some(file) = &mut self.file {
+            flush_file(file);
         }
     }
 }

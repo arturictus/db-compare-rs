@@ -42,7 +42,7 @@ fn compare_table_updated_ats(
     let records2 = database::id_and_column_value(args, &args.db2, table, column()).unwrap();
 
     presenter.call((
-        format!("====== `{}` updated_at values", table),
+        format!("====== `{table}` updated_at values"),
         records1,
         records2,
     ));
@@ -56,10 +56,6 @@ fn compare_rows(
 ) -> Result<(), postgres::Error> {
     let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
     let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
-    presenter.call((
-        format!("====== `{}` all columns", table),
-        records1,
-        records2,
-    ));
+    presenter.call((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

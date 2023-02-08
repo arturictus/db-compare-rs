@@ -16,7 +16,7 @@ fn duration<T>(message: String, p: Query, fun: fn(Query) -> Result<T, Error>) ->
     let output = fun(p);
     let duration = start.elapsed();
 
-    println!("{} (took: {:?})", message, duration);
+    println!("{message} (took: {duration:?})");
     output
 }
 

@@ -5,7 +5,7 @@ pub fn call(result: DBsResult) -> Diff {
     let (header, a, b) = result;
     header.to_string();
     let diff = print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
-    (header.to_string(), diff)
+    (header, diff)
 }
 
 fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {
@@ -17,16 +17,15 @@ fn produce_diff(json1: &str, json2: &str) -> String {
     let mut output = Vec::new();
 
     for change in diff.iter_all_changes() {
-        match change.tag() {
-            ChangeTag::Equal => continue,
-            _ => (),
+        if change.tag() == ChangeTag::Equal {
+            continue;
         }
         let sign = match change.tag() {
             ChangeTag::Delete => "-",
             ChangeTag::Insert => "+",
             ChangeTag::Equal => " ",
         };
-        output.push(format!("{}{}", sign, change));
+        output.push(format!("{sign}{change}"));
     }
     output.join("")
 }
