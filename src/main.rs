@@ -1,11 +1,15 @@
 mod counter;
 mod database;
+mod diff_formatter;
 mod last_created_records;
 mod last_updated_records;
 mod presenter;
+use presenter::Presenter;
+
 use clap::Parser;
 
 type DBsResult = (String, Vec<String>, Vec<String>);
+type Diff = (String, String);
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -18,18 +22,22 @@ pub struct Args {
     limit: u32,
     #[arg(long = "tls")]
     tls: Option<bool>,
+    #[arg(long = "diff-file")]
+    diff_file: Option<String>,
 }
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
+    let mut out = Presenter::new(&args);
     database::ping_db(&args, &args.db1)?;
     database::ping_db(&args, &args.db2)?;
-    counter::run(&args, presenter::call)?;
-    last_updated_records::tables(&args, presenter::call)?;
-    last_updated_records::only_updated_ats(&args, presenter::call)?;
-    last_updated_records::all_columns(&args, presenter::call)?;
-    last_created_records::tables(&args, presenter::call)?;
-    last_created_records::only_created_ats(&args, presenter::call)?;
-    last_created_records::all_columns(&args, presenter::call)?;
+    counter::run(&args, &mut out)?;
+    last_updated_records::tables(&args, &mut out)?;
+    last_updated_records::only_updated_ats(&args, &mut out)?;
+    last_updated_records::all_columns(&args, &mut out)?;
+    last_created_records::tables(&args, &mut out)?;
+    last_created_records::only_created_ats(&args, &mut out)?;
+    last_created_records::all_columns(&args, &mut out)?;
+    out.end();
     Ok(())
 }
 

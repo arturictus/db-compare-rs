@@ -6,14 +6,10 @@ use postgres_openssl::MakeTlsConnector;
 pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
     let mut client = connect(args, db_url)?;
     let mut output: u32 = 0;
-    for row in client.simple_query(&format!("SELECT COUNT(*) FROM {};", table)) {
+    if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
-                }
-
-                _ => (),
+            if let SimpleQueryMessage::Row(result) = data {
+                output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
             }
         }
     }
@@ -72,21 +68,17 @@ pub fn id_and_column_value(
     let mut client = connect(args, db_url)?;
 
     let mut records = Vec::new();
-    for row in client.simple_query(&format!(
-        "SELECT id, {} FROM {} ORDER BY {} LIMIT {};",
-        column, table, column, args.limit
+    if let Ok(row) = client.simple_query(&format!(
+        "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
+        args.limit
     )) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    records.push(format!(
-                        "{} : {}",
-                        result.get(0).unwrap_or("0").parse::<u32>().unwrap(),
-                        result.get(1).unwrap_or("0")
-                    ));
-                }
-
-                _ => (),
+            if let SimpleQueryMessage::Row(result) = data {
+                records.push(format!(
+                    "{} : {}",
+                    result.get(0).unwrap_or("0").parse::<u32>().unwrap(),
+                    result.get(1).unwrap_or("0")
+                ));
             }
         }
     }
@@ -102,34 +94,30 @@ pub fn full_row_ordered_by(
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(args, db_url)?;
-    for row in client.simple_query(&format!(
+    if let Ok(row) = client.simple_query(&format!(
         "WITH
         cte AS
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {} DESC) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
             FROM
-                {}
+                {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {} DESC) FILTER (WHERE rn <= {}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
     FROM
         cte;",
-        column, table, column, args.limit
+        args.limit
     )) {
         for data in row {
-            match data {
-                SimpleQueryMessage::Row(result) => {
-                    let data = result.get(0).unwrap_or("[]");
-                    let list: Vec<Value> = serde_json::from_str(data).unwrap();
+            if let SimpleQueryMessage::Row(result) = data {
+                let value = result.get(0).unwrap_or("[]");
+                let list: Vec<Value> = serde_json::from_str(value).unwrap();
 
-                    for e in list {
-                        records.push(serde_json::to_string(&e).unwrap())
-                    }
+                for e in list {
+                    records.push(serde_json::to_string(&e).unwrap())
                 }
-
-                _ => (),
             }
         }
     }

@@ -1,12 +1,13 @@
 use crate::database;
-use crate::{Args, DBsResult};
+use crate::Args;
+use crate::Presenter;
 use postgres::Error;
 
-pub fn run(args: &Args, presenter: fn(DBsResult)) -> Result<(), postgres::Error> {
+pub fn run(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
     let count1 = count(args, &args.db1).unwrap();
     let count2 = count(args, &args.db2).unwrap();
 
-    presenter(("======== Counts for all tables".to_string(), count1, count2));
+    presenter.call(("======== Counts for all tables".to_string(), count1, count2));
     Ok(())
 }
 
@@ -15,7 +16,7 @@ fn count(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
     let mut counts = Vec::new();
     for table_name in tables {
         let result = database::count_for(args, db_url, &table_name).unwrap();
-        counts.push(format!("{} : {}", table_name, result));
+        counts.push(format!("{table_name} : {result}"));
     }
     counts.sort();
     Ok(counts)
