@@ -6,7 +6,7 @@ use postgres_openssl::MakeTlsConnector;
 pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
     let mut client = connect(args, db_url)?;
     let mut output: u32 = 0;
-    for row in client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+    if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
@@ -68,7 +68,7 @@ pub fn id_and_column_value(
     let mut client = connect(args, db_url)?;
 
     let mut records = Vec::new();
-    for row in client.simple_query(&format!(
+    if let Ok(row) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
         args.limit
     )) {
@@ -94,7 +94,7 @@ pub fn full_row_ordered_by(
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(args, db_url)?;
-    for row in client.simple_query(&format!(
+    if let Ok(row) = client.simple_query(&format!(
         "WITH
         cte AS
         (
