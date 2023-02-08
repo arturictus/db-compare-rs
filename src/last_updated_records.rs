@@ -1,6 +1,6 @@
 use crate::database;
 use crate::Presenter;
-use crate::{Args, DBsResult};
+use crate::{Args};
 
 pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(args, &args.db1, column()).unwrap();
@@ -54,8 +54,8 @@ fn compare_rows(
     table: &str,
     presenter: &mut Presenter,
 ) -> Result<(), postgres::Error> {
-    let records1 = database::full_row_ordered_by(&args, &args.db1, table, column()).unwrap();
-    let records2 = database::full_row_ordered_by(&args, &args.db2, table, column()).unwrap();
+    let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
+    let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
     presenter.call((
         format!("====== `{}` all columns", table),
         records1,

@@ -1,6 +1,6 @@
 use crate::database;
 use crate::Presenter;
-use crate::{Args, DBsResult};
+use crate::{Args};
 use postgres::Error;
 
 pub fn run(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {

@@ -13,7 +13,7 @@ impl Presenter {
         match &args.diff_file {
             Some(f) => {
                 let file_path = f;
-                let writer = Some(new_file(&file_path));
+                let writer = Some(new_file(file_path));
                 Self { file: writer }
             }
             _ => Self { file: None },

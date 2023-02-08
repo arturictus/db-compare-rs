@@ -3,9 +3,9 @@ use similar::{ChangeTag, TextDiff};
 
 pub fn call(result: DBsResult) -> Diff {
     let (header, a, b) = result;
-    format!("{}", header);
+    header.to_string();
     let diff = print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
-    (format!("{}", header), diff)
+    (header.to_string(), diff)
 }
 
 fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {
@@ -35,7 +35,7 @@ fn print_diff(result: &str) -> String {
     match result {
         "" => "✓".to_string(),
         diff => {
-            format!("{}", diff)
+            diff.to_string()
         }
     }
 }
