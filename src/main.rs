@@ -22,8 +22,8 @@ pub struct Args {
     limit: u32,
     #[arg(long = "tls")]
     tls: Option<bool>,
-    #[arg(long)]
-    file: Option<String>,
+    #[arg(long = "diff-file")]
+    diff_file: Option<String>,
 }
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();

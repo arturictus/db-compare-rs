@@ -1,4 +1,4 @@
-use crate::{db_url_shortener, Args};
+use crate::Args;
 use postgres::Error;
 mod repo;
 pub use repo::ping_db;
@@ -127,4 +127,12 @@ pub fn full_row_ordered_by(
             )
         },
     )
+}
+
+fn db_url_shortener(args: &Args, db_url: &str) -> String {
+    if db_url == args.db1 {
+        "DB1".to_string()
+    } else {
+        "DB2".to_string()
+    }
 }

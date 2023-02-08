@@ -10,7 +10,7 @@ pub struct Presenter {
 
 impl Presenter {
     pub fn new(args: &Args) -> Self {
-        match &args.file {
+        match &args.diff_file {
             Some(f) => {
                 let file_path = f;
                 let writer = Some(new_file(&file_path));
