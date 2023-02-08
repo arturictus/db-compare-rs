@@ -69,8 +69,8 @@ pub fn id_and_column_value(
 
     let mut records = Vec::new();
     for row in client.simple_query(&format!(
-        "SELECT id, {} FROM {} ORDER BY {} LIMIT {};",
-        column, table, column, args.limit
+        "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
+        args.limit
     )) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
@@ -100,15 +100,15 @@ pub fn full_row_ordered_by(
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {} DESC) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
             FROM
-                {}
+                {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {} DESC) FILTER (WHERE rn <= {}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
     FROM
         cte;",
-        column, table, column, args.limit
+        args.limit
     )) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {

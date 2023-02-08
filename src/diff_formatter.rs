@@ -3,7 +3,6 @@ use similar::{ChangeTag, TextDiff};
 
 pub fn call(result: DBsResult) -> Diff {
     let (header, a, b) = result;
-    header.to_string();
     let diff = print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
     (header, diff)
 }
