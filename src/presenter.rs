@@ -12,7 +12,9 @@ pub struct Presenter {
 impl Presenter {
     pub fn new(args: &Args) -> Self {
         if args.file.is_some() {
-            let writer = Some(file_presenter::new(&"tmp/test.diff".to_string()));
+            let default_file_path = &"tmp/default.diff".to_string();
+            let file_path = args.file.as_ref().unwrap_or(default_file_path);
+            let writer = Some(file_presenter::new(&file_path));
             Self {
                 file: writer,
                 use_file: true,
