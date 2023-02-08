@@ -1,6 +1,6 @@
 use crate::database;
+use crate::Args;
 use crate::Presenter;
-use crate::{Args};
 
 pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(args, &args.db1, column()).unwrap();

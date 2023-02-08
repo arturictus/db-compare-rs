@@ -34,9 +34,7 @@ fn produce_diff(json1: &str, json2: &str) -> String {
 fn print_diff(result: &str) -> String {
     match result {
         "" => "✓".to_string(),
-        diff => {
-            diff.to_string()
-        }
+        diff => diff.to_string(),
     }
 }
 
