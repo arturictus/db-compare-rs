@@ -4,18 +4,18 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
 
-pub enum ThePresenter {
+pub enum IOType {
     Console,
     File(LineWriter<File>),
 }
 
-pub trait PresenterAbstract {
+pub trait DiffIO {
     fn write(&mut self, result: DBsResult);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
 }
 
-impl PresenterAbstract for ThePresenter {
+impl DiffIO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
             Some(f) => {

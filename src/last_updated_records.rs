@@ -1,11 +1,8 @@
 use crate::database;
+use crate::diff::DiffIO;
 use crate::Config;
-use crate::PresenterAbstract;
 
-pub fn tables<T: PresenterAbstract>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn tables<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
     let db2_tables = database::tables_with_column(config, &config.args.db2, column()).unwrap();
     presenter.write((
@@ -16,7 +13,7 @@ pub fn tables<T: PresenterAbstract>(
     Ok(())
 }
 
-pub fn only_updated_ats<T: PresenterAbstract>(
+pub fn only_updated_ats<T: DiffIO>(
     config: &Config,
     presenter: &mut T,
 ) -> Result<(), postgres::Error> {
@@ -27,10 +24,7 @@ pub fn only_updated_ats<T: PresenterAbstract>(
     Ok(())
 }
 
-pub fn all_columns<T: PresenterAbstract>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn all_columns<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
     for table in db1_tables {
         compare_rows(config, &table, presenter)?;
@@ -42,7 +36,7 @@ fn column() -> String {
     "updated_at".to_string()
 }
 
-fn compare_table_updated_ats<T: PresenterAbstract>(
+fn compare_table_updated_ats<T: DiffIO>(
     config: &Config,
     table: &str,
     presenter: &mut T,
@@ -60,7 +54,7 @@ fn compare_table_updated_ats<T: PresenterAbstract>(
     Ok(())
 }
 
-fn compare_rows<T: PresenterAbstract>(
+fn compare_rows<T: DiffIO>(
     config: &Config,
     table: &str,
     presenter: &mut T,

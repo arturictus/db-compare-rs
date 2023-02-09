@@ -1,12 +1,9 @@
 use crate::database;
-use crate::presenter::PresenterAbstract;
+use crate::diff::DiffIO;
 use crate::Config;
 use postgres::Error;
 
-pub fn run<T: PresenterAbstract>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn run<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let count1 = count(config, &config.args.db1).unwrap();
     let count2 = count(config, &config.args.db2).unwrap();
 
