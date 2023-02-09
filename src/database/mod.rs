@@ -1,6 +1,7 @@
 use crate::{db_url_shortener, Config};
 use postgres::Error as PgError;
 mod repo;
+use chrono::prelude::*;
 pub use repo::ping_db;
 use std::time::Instant;
 
@@ -16,18 +17,19 @@ fn duration<T>(
     p: Query,
     fun: fn(Query) -> Result<T, PgError>,
 ) -> Result<T, PgError> {
+    println!("# {} START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
     let output = fun(p);
     let duration = start.elapsed();
 
-    println!("{message} (took: {duration:?})");
+    println!("=> took: {duration:?}");
     output
 }
 
 pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
         format!(
-            "== RESULT: count from {} in {}",
+            "count from {} in {}",
             table,
             db_url_shortener(config, db_url)
         ),
@@ -44,7 +46,7 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
 pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting all tables for {}",
+            "Getting all tables for {}",
             db_url_shortener(config, db_url)
         ),
         Query {
@@ -64,7 +66,7 @@ pub fn tables_with_column(
 ) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting all tables with column {} in {}",
+            "Getting all tables with column {} in {}",
             column,
             db_url_shortener(config, db_url)
         ),
@@ -86,7 +88,7 @@ pub fn id_and_column_value(
 ) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting `id` and values from column `{}` from table {} in {}",
+            "Getting `id` and values from column `{}` from table {} in {}",
             column,
             table,
             db_url_shortener(config, db_url)
@@ -116,7 +118,7 @@ pub fn full_row_ordered_by(
 ) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting rows from table {} in {}",
+            "Getting rows from table {} in {}",
             table,
             db_url_shortener(config, db_url)
         ),

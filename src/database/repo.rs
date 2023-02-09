@@ -140,11 +140,11 @@ pub fn full_row_ordered_by(
 
 pub fn ping_db(config: &Config, db_url: &str) -> Result<(), PgError> {
     let mut client = connect(config, db_url)?;
-    println!("Ping {} -> 10", db_url_shortener(config, db_url));
+    println!("Ping 10 -> {}", db_url_shortener(config, db_url));
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {} <- {}", db_url_shortener(config, db_url), value);
+    println!("Pong {value} <- {}", db_url_shortener(config, db_url));
     Ok(())
 }
