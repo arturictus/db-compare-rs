@@ -4,7 +4,7 @@ mod diff_formatter;
 mod last_created_records;
 mod last_updated_records;
 mod presenter;
-use presenter::Presenter;
+use presenter::{Presenter, PresenterAbstract};
 
 use clap::Parser;
 
@@ -46,7 +46,7 @@ fn main() -> Result<(), postgres::Error> {
     last_created_records::tables(&internal_args, &mut out)?;
     last_created_records::only_created_ats(&internal_args, &mut out)?;
     last_created_records::all_columns(&internal_args, &mut out)?;
-    out.end();
+    out.close();
     Ok(())
 }
 

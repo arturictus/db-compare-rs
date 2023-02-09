@@ -1,8 +1,11 @@
 use crate::database;
 use crate::InternalArgs;
-use crate::Presenter;
+use crate::PresenterAbstract;
 
-pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+pub fn tables<T: PresenterAbstract>(
+    args: &InternalArgs,
+    presenter: &mut T,
+) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
     let db2_tables = database::tables_with_column(args, &args.cli_args.db2, column()).unwrap();
     presenter.call((
@@ -13,9 +16,9 @@ pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), post
     Ok(())
 }
 
-pub fn only_updated_ats(
+pub fn only_updated_ats<T: PresenterAbstract>(
     args: &InternalArgs,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
     for table in db1_tables {
@@ -24,7 +27,10 @@ pub fn only_updated_ats(
     Ok(())
 }
 
-pub fn all_columns(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+pub fn all_columns<T: PresenterAbstract>(
+    args: &InternalArgs,
+    presenter: &mut T,
+) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
     for table in db1_tables {
         compare_rows(args, &table, presenter)?;
@@ -36,10 +42,10 @@ fn column() -> String {
     "updated_at".to_string()
 }
 
-fn compare_table_updated_ats(
+fn compare_table_updated_ats<T: PresenterAbstract>(
     args: &InternalArgs,
     table: &str,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let records1 =
         database::id_and_column_value(args, &args.cli_args.db1, table, column()).unwrap();
@@ -54,10 +60,10 @@ fn compare_table_updated_ats(
     Ok(())
 }
 
-fn compare_rows(
+fn compare_rows<T: PresenterAbstract>(
     args: &InternalArgs,
     table: &str,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let records1 =
         database::full_row_ordered_by(args, &args.cli_args.db1, table, column()).unwrap();

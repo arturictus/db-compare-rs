@@ -1,8 +1,11 @@
 use crate::database;
 use crate::InternalArgs;
-use crate::Presenter;
+use crate::PresenterAbstract;
 
-pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+pub fn tables<T: PresenterAbstract>(
+    args: &InternalArgs,
+    presenter: &mut T,
+) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
     let db2_tables = non_updated_at_tables(args, &args.cli_args.db2).unwrap();
     println!("# -----  List of tables without `updated_at`");
@@ -17,9 +20,9 @@ pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), post
     Ok(())
 }
 
-pub fn only_created_ats(
+pub fn only_created_ats<T: PresenterAbstract>(
     args: &InternalArgs,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
     for table in db1_tables {
@@ -28,7 +31,10 @@ pub fn only_created_ats(
     Ok(())
 }
 
-pub fn all_columns(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+pub fn all_columns<T: PresenterAbstract>(
+    args: &InternalArgs,
+    presenter: &mut T,
+) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
     for table in db1_tables {
         compare_rows(args, &table, presenter)?;
@@ -55,10 +61,10 @@ fn non_updated_at_tables(
     Ok(difference)
 }
 
-fn compare_table_created_ats(
+fn compare_table_created_ats<T: PresenterAbstract>(
     args: &InternalArgs,
     table: &str,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let records1 =
         database::id_and_column_value(args, &args.cli_args.db1, table, column()).unwrap();
@@ -73,10 +79,10 @@ fn compare_table_created_ats(
     Ok(())
 }
 
-fn compare_rows(
+fn compare_rows<T: PresenterAbstract>(
     args: &InternalArgs,
     table: &str,
-    presenter: &mut Presenter,
+    presenter: &mut T,
 ) -> Result<(), postgres::Error> {
     let records1 =
         database::full_row_ordered_by(args, &args.cli_args.db1, table, column()).unwrap();

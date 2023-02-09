@@ -1,9 +1,13 @@
 use crate::database;
+use crate::presenter::PresenterAbstract;
 use crate::InternalArgs;
 use crate::Presenter;
 use postgres::Error;
 
-pub fn run(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+pub fn run<T: PresenterAbstract>(
+    args: &InternalArgs,
+    presenter: &mut T,
+) -> Result<(), postgres::Error> {
     let count1 = count(args, &args.cli_args.db1).unwrap();
     let count2 = count(args, &args.cli_args.db2).unwrap();
 
