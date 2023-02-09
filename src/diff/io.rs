@@ -1,5 +1,5 @@
 use crate::diff::formatter;
-use crate::{Args, DBsResult};
+use crate::{Args, DBsResults};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
@@ -10,7 +10,7 @@ pub enum IOType {
 }
 
 pub trait IO {
-    fn write(&mut self, result: DBsResult);
+    fn write(&mut self, result: DBsResults);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
 }
@@ -22,7 +22,7 @@ impl IO for IOType {
             _ => Self::Console,
         }
     }
-    fn write(&mut self, result: DBsResult) {
+    fn write(&mut self, result: DBsResults) {
         let (header, diff) = formatter::call(result);
         match self {
             Self::File(file) => {

@@ -7,7 +7,7 @@ mod last_updated_records;
 
 use clap::Parser;
 
-type DBsResult = (String, Vec<String>, Vec<String>);
+type DBsResults = (String, Vec<String>, Vec<String>);
 
 #[derive(Parser, Debug, PartialEq)]
 #[command(author, version, about, long_about = None)]
@@ -34,16 +34,16 @@ pub struct Config<'a> {
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let mut out: diff::IOType = diff::IO::new(&args);
-    let internal_config = Config::new(&args);
-    database::ping_db(&internal_config, &args.db1)?;
-    database::ping_db(&internal_config, &args.db2)?;
-    counter::run(&internal_config, &mut out)?;
-    last_updated_records::tables(&internal_config, &mut out)?;
-    last_updated_records::only_updated_ats(&internal_config, &mut out)?;
-    last_updated_records::all_columns(&internal_config, &mut out)?;
-    last_created_records::tables(&internal_config, &mut out)?;
-    last_created_records::only_created_ats(&internal_config, &mut out)?;
-    last_created_records::all_columns(&internal_config, &mut out)?;
+    let config = Config::new(&args);
+    database::ping_db(&config, &args.db1)?;
+    database::ping_db(&config, &args.db2)?;
+    counter::run(&config, &mut out)?;
+    last_updated_records::tables(&config, &mut out)?;
+    last_updated_records::only_updated_ats(&config, &mut out)?;
+    last_updated_records::all_columns(&config, &mut out)?;
+    last_created_records::tables(&config, &mut out)?;
+    last_created_records::only_created_ats(&config, &mut out)?;
+    last_created_records::all_columns(&config, &mut out)?;
     out.close();
     Ok(())
 }
@@ -52,13 +52,11 @@ impl<'a> Config<'a> {
     pub fn new(args: &'a Args) -> Config<'a> {
         if let Some(file_path) = &args.tables_file {
             let value = {
-                // Load the first file into a string.
                 let text = std::fs::read_to_string(file_path)
                     .unwrap_or_else(|_| panic!("unable to read file at: {file_path}"));
 
-                // Parse the string
                 serde_json::from_str::<Vec<String>>(&text).unwrap_or_else(|_| {
-                    panic!("malformed json file at: {file_path}, expected list with strings")
+                    panic!("malformed json file at: {file_path}, expected list with strings ex: [\"users\"]")
                 })
             };
             Self {
@@ -87,8 +85,8 @@ mod test {
 
     fn default_args() -> Args {
         Args {
-            db1: "postgresql://postgres:postgres@127.0.0.1/warren_development".to_string(),
-            db2: "postgresql://postgres:postgres@127.0.0.1/warren_test".to_string(),
+            db1: "postgresql://postgres:postgres@127.0.0.1/db1".to_string(),
+            db2: "postgresql://postgres:postgres@127.0.0.1/db2".to_string(),
             limit: 1,
             tls: false,
             diff_file: None,
