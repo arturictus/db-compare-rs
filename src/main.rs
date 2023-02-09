@@ -11,7 +11,7 @@ use clap::Parser;
 type DBsResult = (String, Vec<String>, Vec<String>);
 type Diff = (String, String);
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, PartialEq)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(long)]
@@ -27,7 +27,7 @@ pub struct Args {
     #[arg(long = "tables-file")]
     tables_file: Option<String>,
 }
-
+#[derive(PartialEq, Debug)]
 pub struct Config<'a> {
     args: &'a Args,
     white_listed_tables: Option<Vec<String>>,
@@ -52,10 +52,20 @@ fn main() -> Result<(), postgres::Error> {
 
 impl<'a> Config<'a> {
     pub fn new(args: &'a Args) -> Config<'a> {
-        if let Some(_file_path) = &args.tables_file {
+        if let Some(file_path) = &args.tables_file {
+            let value = {
+                // Load the first file into a string.
+                let text = std::fs::read_to_string(&file_path)
+                    .expect(&format!("unable to read file at: {file_path}"));
+
+                // Parse the string
+                serde_json::from_str::<Vec<String>>(&text).expect(&format!(
+                    "malformed json file at: {file_path}, expected list with strings"
+                ))
+            };
             Self {
                 args,
-                white_listed_tables: None,
+                white_listed_tables: Some(value),
             }
         } else {
             Self {
@@ -78,6 +88,35 @@ fn db_url_shortener(config: &Config, db_url: &str) -> String {
 mod test {
     use super::*;
 
+    fn default_args() -> Args {
+        Args {
+            db1: "postgresql://postgres:postgres@127.0.0.1/warren_development".to_string(),
+            db2: "postgresql://postgres:postgres@127.0.0.1/warren_test".to_string(),
+            limit: 1,
+            tls: false,
+            diff_file: None,
+            tables_file: None,
+        }
+    }
+
     #[test]
-    fn test_generate_config() {}
+    fn test_config_new() {
+        let args = default_args();
+        assert_eq!(
+            Config::new(&args),
+            Config {
+                args: &args,
+                white_listed_tables: None
+            }
+        );
+        let args_with_listed_file = Args {
+            tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
+            ..default_args()
+        };
+
+        assert_eq!(
+            Config::new(&args_with_listed_file).white_listed_tables,
+            Some(vec!["users".to_string()])
+        );
+    }
 }

@@ -16,7 +16,7 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
     Ok(output)
 }
 
-pub fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
+fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
     if config.args.tls {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
@@ -35,7 +35,7 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    Ok(tables)
+    Ok(white_listed_tables(&config, tables))
 }
 
 pub fn tables_with_column(
@@ -59,7 +59,7 @@ pub fn tables_with_column(
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(tables)
+    Ok(white_listed_tables(&config, tables))
 }
 
 pub fn id_and_column_value(
@@ -86,6 +86,17 @@ pub fn id_and_column_value(
         }
     }
     Ok(records)
+}
+
+fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
+    if let Some(whitelisted) = &config.white_listed_tables {
+        tables
+            .into_iter()
+            .filter(|t| whitelisted.contains(t))
+            .collect()
+    } else {
+        tables
+    }
 }
 
 pub fn full_row_ordered_by(
@@ -134,6 +145,6 @@ pub fn ping_db(config: &Config, db_url: &str) -> Result<(), PgError> {
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {} -> {}", db_url_shortener(config, db_url), value);
+    println!("Pong {} <- {}", db_url_shortener(config, db_url), value);
     Ok(())
 }

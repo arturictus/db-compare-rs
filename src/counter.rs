@@ -1,7 +1,6 @@
 use crate::database;
 use crate::presenter::PresenterAbstract;
 use crate::Config;
-use crate::Presenter;
 use postgres::Error;
 
 pub fn run<T: PresenterAbstract>(
