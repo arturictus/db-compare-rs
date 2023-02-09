@@ -17,14 +17,14 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
 }
 
 fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
-    if config.args.tls {
+    if config.args.no_tls {
+        Client::connect(db_url, NoTls)
+    } else {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
         builder.set_verify(SslVerifyMode::NONE);
         let connector = MakeTlsConnector::new(builder.build());
         Client::connect(db_url, connector)
-    } else {
-        Client::connect(db_url, NoTls)
     }
 }
 

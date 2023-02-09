@@ -18,8 +18,8 @@ pub struct Args {
     db2: String,
     #[arg(long, default_value_t = 100)]
     limit: u32,
-    #[arg(long = "tls", default_value_t = true)]
-    tls: bool,
+    #[arg(long = "no-tls")]
+    no_tls: bool,
     #[arg(long = "diff-file")]
     diff_file: Option<String>,
     #[arg(long = "tables-file")]
@@ -33,6 +33,7 @@ pub struct Config<'a> {
 
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
+    println!("{:?}", args);
     let mut out: diff::IOType = diff::IO::new(&args);
     let config = Config::new(&args);
     database::ping_db(&config, &args.db1)?;
