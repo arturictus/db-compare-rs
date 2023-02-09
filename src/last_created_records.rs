@@ -11,7 +11,7 @@ pub fn tables<T: PresenterAbstract>(
     println!("# -----  List of tables without `updated_at`");
     println!("{db1_tables:?}");
     println!("# ---------------");
-    presenter.call((
+    presenter.write((
         "========  Tables with `created_at` column but not `updated_at` difference between DBs"
             .to_string(),
         db1_tables,
@@ -68,7 +68,7 @@ fn compare_table_created_ats<T: PresenterAbstract>(
     let records2 =
         database::id_and_column_value(config, &config.args.db2, table, column()).unwrap();
 
-    presenter.call((
+    presenter.write((
         format!("====== `{table}` created_at values"),
         records1,
         records2,
@@ -85,6 +85,6 @@ fn compare_rows<T: PresenterAbstract>(
         database::full_row_ordered_by(config, &config.args.db1, table, column()).unwrap();
     let records2 =
         database::full_row_ordered_by(config, &config.args.db2, table, column()).unwrap();
-    presenter.call((format!("====== `{table}` all columns"), records1, records2));
+    presenter.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

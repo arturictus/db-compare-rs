@@ -10,7 +10,7 @@ pub fn run<T: PresenterAbstract>(
     let count1 = count(config, &config.args.db1).unwrap();
     let count2 = count(config, &config.args.db2).unwrap();
 
-    presenter.call(("======== Counts for all tables".to_string(), count1, count2));
+    presenter.write(("======== Counts for all tables".to_string(), count1, count2));
     Ok(())
 }
 

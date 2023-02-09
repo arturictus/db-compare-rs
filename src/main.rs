@@ -4,7 +4,7 @@ mod diff_formatter;
 mod last_created_records;
 mod last_updated_records;
 mod presenter;
-use presenter::{Presenter, PresenterAbstract};
+use presenter::{PresenterAbstract, ThePresenter};
 
 use clap::Parser;
 
@@ -35,7 +35,7 @@ pub struct Config<'a> {
 
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    let mut out = Presenter::new(&args);
+    let mut out = ThePresenter::new(&args);
     let internal_config = Config::new(&args);
     database::ping_db(&internal_config, &args.db1)?;
     database::ping_db(&internal_config, &args.db2)?;

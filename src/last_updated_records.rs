@@ -8,7 +8,7 @@ pub fn tables<T: PresenterAbstract>(
 ) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
     let db2_tables = database::tables_with_column(config, &config.args.db2, column()).unwrap();
-    presenter.call((
+    presenter.write((
         "========  Tables with `updated_at` column".to_string(),
         db1_tables,
         db2_tables,
@@ -52,7 +52,7 @@ fn compare_table_updated_ats<T: PresenterAbstract>(
     let records2 =
         database::id_and_column_value(config, &config.args.db2, table, column()).unwrap();
 
-    presenter.call((
+    presenter.write((
         format!("====== `{table}` updated_at values"),
         records1,
         records2,
@@ -69,6 +69,6 @@ fn compare_rows<T: PresenterAbstract>(
         database::full_row_ordered_by(config, &config.args.db1, table, column()).unwrap();
     let records2 =
         database::full_row_ordered_by(config, &config.args.db2, table, column()).unwrap();
-    presenter.call((format!("====== `{table}` all columns"), records1, records2));
+    presenter.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

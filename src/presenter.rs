@@ -4,31 +4,32 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
 
-pub struct Presenter {
-    file: Option<LineWriter<File>>,
+pub enum ThePresenter {
+    Console,
+    File(LineWriter<File>),
 }
 
 pub trait PresenterAbstract {
-    fn call(&mut self, result: DBsResult);
+    fn write(&mut self, result: DBsResult);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
 }
 
-impl PresenterAbstract for Presenter {
+impl PresenterAbstract for ThePresenter {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
             Some(f) => {
                 let file_path = f;
-                let writer = Some(new_file(file_path));
-                Self { file: writer }
+                // let writer = Some(new_file(file_path));
+                Self::File(new_file(file_path))
             }
-            _ => Self { file: None },
+            _ => Self::Console,
         }
     }
-    fn call(&mut self, result: DBsResult) {
+    fn write(&mut self, result: DBsResult) {
         let (header, diff) = diff_formatter::call(result);
-        match &mut self.file {
-            Some(file) => {
+        match self {
+            Self::File(file) => {
                 write_to_file(file, &header);
                 write_to_file(file, &diff);
             }
@@ -40,7 +41,7 @@ impl PresenterAbstract for Presenter {
     }
 
     fn close(&mut self) {
-        if let Some(file) = &mut self.file {
+        if let Self::File(file) = self {
             flush_file(file);
         }
     }
