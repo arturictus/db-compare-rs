@@ -1,2 +1,3 @@
+mod formatter;
 mod io;
-pub use io::{DiffIO, IOType};
+pub use io::{IOType, IO};

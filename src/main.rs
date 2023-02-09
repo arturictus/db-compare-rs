@@ -1,8 +1,7 @@
 mod counter;
 mod database;
 mod diff;
-use diff::DiffIO;
-mod diff_formatter;
+use diff::IO;
 mod last_created_records;
 mod last_updated_records;
 
@@ -35,7 +34,7 @@ pub struct Config<'a> {
 
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    let mut out: diff::IOType = diff::DiffIO::new(&args);
+    let mut out: diff::IOType = diff::IO::new(&args);
     let internal_config = Config::new(&args);
     database::ping_db(&internal_config, &args.db1)?;
     database::ping_db(&internal_config, &args.db2)?;

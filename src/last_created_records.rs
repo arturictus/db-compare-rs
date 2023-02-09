@@ -1,8 +1,8 @@
 use crate::database;
-use crate::diff::DiffIO;
+use crate::diff::IO;
 use crate::Config;
 
-pub fn tables<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
+pub fn tables<T: IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     let db2_tables = non_updated_at_tables(config, &config.args.db2).unwrap();
     println!("# -----  List of tables without `updated_at`");
@@ -17,10 +17,7 @@ pub fn tables<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postg
     Ok(())
 }
 
-pub fn only_created_ats<T: DiffIO>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn only_created_ats<T: IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     for table in db1_tables {
         compare_table_created_ats(config, &table, presenter)?;
@@ -28,7 +25,7 @@ pub fn only_created_ats<T: DiffIO>(
     Ok(())
 }
 
-pub fn all_columns<T: DiffIO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
+pub fn all_columns<T: IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     for table in db1_tables {
         compare_rows(config, &table, presenter)?;
@@ -52,7 +49,7 @@ fn non_updated_at_tables(config: &Config, db_url: &str) -> Result<Vec<String>, p
     Ok(difference)
 }
 
-fn compare_table_created_ats<T: DiffIO>(
+fn compare_table_created_ats<T: IO>(
     config: &Config,
     table: &str,
     presenter: &mut T,
@@ -70,7 +67,7 @@ fn compare_table_created_ats<T: DiffIO>(
     Ok(())
 }
 
-fn compare_rows<T: DiffIO>(
+fn compare_rows<T: IO>(
     config: &Config,
     table: &str,
     presenter: &mut T,

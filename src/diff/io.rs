@@ -1,4 +1,4 @@
-use crate::diff_formatter;
+use crate::diff::formatter;
 use crate::{Args, DBsResult};
 use std::fs::File;
 use std::io::prelude::*;
@@ -9,13 +9,13 @@ pub enum IOType {
     File(LineWriter<File>),
 }
 
-pub trait DiffIO {
+pub trait IO {
     fn write(&mut self, result: DBsResult);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
 }
 
-impl DiffIO for IOType {
+impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
             Some(f) => {
@@ -27,7 +27,7 @@ impl DiffIO for IOType {
         }
     }
     fn write(&mut self, result: DBsResult) {
-        let (header, diff) = diff_formatter::call(result);
+        let (header, diff) = formatter::call(result);
         match self {
             Self::File(file) => {
                 write_to_file(file, &header);
