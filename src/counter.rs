@@ -1,9 +1,9 @@
 use crate::database;
-use crate::diff::IO;
+use crate::diff;
 use crate::Config;
 use postgres::Error;
 
-pub fn run<T: IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
+pub fn run<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let count1 = count(config, &config.args.db1).unwrap();
     let count2 = count(config, &config.args.db2).unwrap();
 
