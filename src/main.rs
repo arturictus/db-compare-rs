@@ -59,7 +59,9 @@ impl<'a> Config<'a> {
                     .unwrap_or_else(|_| panic!("unable to read file at: {file_path}"));
 
                 // Parse the string
-                serde_json::from_str::<Vec<String>>(&text).unwrap_or_else(|_| panic!("malformed json file at: {file_path}, expected list with strings"))
+                serde_json::from_str::<Vec<String>>(&text).unwrap_or_else(|_| {
+                    panic!("malformed json file at: {file_path}, expected list with strings")
+                })
             };
             Self {
                 args,
