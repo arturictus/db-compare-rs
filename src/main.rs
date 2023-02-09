@@ -89,7 +89,7 @@ mod test {
             db1: "postgresql://postgres:postgres@127.0.0.1/db1".to_string(),
             db2: "postgresql://postgres:postgres@127.0.0.1/db2".to_string(),
             limit: 1,
-            tls: false,
+            no_tls: false,
             diff_file: None,
             tables_file: None,
         }
