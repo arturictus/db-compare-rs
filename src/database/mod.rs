@@ -17,7 +17,7 @@ fn duration<T>(
     p: Query,
     fun: fn(Query) -> Result<T, PgError>,
 ) -> Result<T, PgError> {
-    println!("# {} START: {message}", Utc::now().format("%F %X"));
+    println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
     let output = fun(p);
     let duration = start.elapsed();
