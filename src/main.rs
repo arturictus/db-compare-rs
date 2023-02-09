@@ -13,7 +13,7 @@ type Diff = (String, String);
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
-pub struct CliArgs {
+pub struct Args {
     #[arg(long)]
     db1: String,
     #[arg(long)]
@@ -28,48 +28,56 @@ pub struct CliArgs {
     tables_file: Option<String>,
 }
 
-pub struct InternalArgs<'a> {
-    cli_args: &'a CliArgs,
+pub struct Config<'a> {
+    args: &'a Args,
     white_listed_tables: Option<Vec<String>>,
 }
 
 fn main() -> Result<(), postgres::Error> {
-    let args = CliArgs::parse();
+    let args = Args::parse();
     let mut out = Presenter::new(&args);
-    let internal_args = InternalArgs::new(&args);
-    database::ping_db(&internal_args, &args.db1)?;
-    database::ping_db(&internal_args, &args.db2)?;
-    counter::run(&internal_args, &mut out)?;
-    last_updated_records::tables(&internal_args, &mut out)?;
-    last_updated_records::only_updated_ats(&internal_args, &mut out)?;
-    last_updated_records::all_columns(&internal_args, &mut out)?;
-    last_created_records::tables(&internal_args, &mut out)?;
-    last_created_records::only_created_ats(&internal_args, &mut out)?;
-    last_created_records::all_columns(&internal_args, &mut out)?;
+    let internal_config = Config::new(&args);
+    database::ping_db(&internal_config, &args.db1)?;
+    database::ping_db(&internal_config, &args.db2)?;
+    counter::run(&internal_config, &mut out)?;
+    last_updated_records::tables(&internal_config, &mut out)?;
+    last_updated_records::only_updated_ats(&internal_config, &mut out)?;
+    last_updated_records::all_columns(&internal_config, &mut out)?;
+    last_created_records::tables(&internal_config, &mut out)?;
+    last_created_records::only_created_ats(&internal_config, &mut out)?;
+    last_created_records::all_columns(&internal_config, &mut out)?;
     out.close();
     Ok(())
 }
 
-impl<'a> InternalArgs<'a> {
-    pub fn new(cli_args: &'a CliArgs) -> InternalArgs<'a> {
-        if let Some(_file_path) = &cli_args.tables_file {
+impl<'a> Config<'a> {
+    pub fn new(args: &'a Args) -> Config<'a> {
+        if let Some(_file_path) = &args.tables_file {
             Self {
-                cli_args,
+                args,
                 white_listed_tables: None,
             }
         } else {
             Self {
-                cli_args,
+                args,
                 white_listed_tables: None,
             }
         }
     }
 }
 
-fn db_url_shortener(args: &InternalArgs, db_url: &str) -> String {
-    if db_url == args.cli_args.db1 {
+fn db_url_shortener(config: &Config, db_url: &str) -> String {
+    if db_url == config.args.db1 {
         "DB1".to_string()
     } else {
         "DB2".to_string()
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_generate_config() {}
 }

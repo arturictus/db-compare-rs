@@ -1,5 +1,5 @@
 use crate::diff_formatter;
-use crate::{CliArgs, DBsResult};
+use crate::{Args, DBsResult};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
@@ -11,12 +11,12 @@ pub struct Presenter {
 pub trait PresenterAbstract {
     fn call(&mut self, result: DBsResult);
     fn close(&mut self);
-    fn new(args: &CliArgs) -> Self;
+    fn new(config: &Args) -> Self;
 }
 
 impl PresenterAbstract for Presenter {
-    fn new(args: &CliArgs) -> Self {
-        match &args.diff_file {
+    fn new(config: &Args) -> Self {
+        match &config.diff_file {
             Some(f) => {
                 let file_path = f;
                 let writer = Some(new_file(file_path));

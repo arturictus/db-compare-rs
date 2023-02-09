@@ -1,25 +1,25 @@
 use crate::database;
 use crate::presenter::PresenterAbstract;
-use crate::InternalArgs;
+use crate::Config;
 use crate::Presenter;
 use postgres::Error;
 
 pub fn run<T: PresenterAbstract>(
-    args: &InternalArgs,
+    config: &Config,
     presenter: &mut T,
 ) -> Result<(), postgres::Error> {
-    let count1 = count(args, &args.cli_args.db1).unwrap();
-    let count2 = count(args, &args.cli_args.db2).unwrap();
+    let count1 = count(config, &config.args.db1).unwrap();
+    let count2 = count(config, &config.args.db2).unwrap();
 
     presenter.call(("======== Counts for all tables".to_string(), count1, count2));
     Ok(())
 }
 
-fn count(args: &InternalArgs, db_url: &str) -> Result<Vec<String>, Error> {
-    let tables = database::all_tables(args, db_url)?;
+fn count(config: &Config, db_url: &str) -> Result<Vec<String>, Error> {
+    let tables = database::all_tables(config, db_url)?;
     let mut counts = Vec::new();
     for table_name in tables {
-        let result = database::count_for(args, db_url, &table_name).unwrap();
+        let result = database::count_for(config, db_url, &table_name).unwrap();
         counts.push(format!("{table_name} : {result}"));
     }
     counts.sort();
