@@ -86,8 +86,8 @@ mod test {
 
     fn default_args() -> Args {
         Args {
-            db1: "postgresql://postgres:postgres@127.0.0.1/db1".to_string(),
-            db2: "postgresql://postgres:postgres@127.0.0.1/db2".to_string(),
+            db1: "postgresql://postgres:postgres@127.0.0.1/warren_development".to_string(),
+            db2: "postgresql://postgres:postgres@127.0.0.1/warren_test".to_string(),
             limit: 1,
             no_tls: false,
             diff_file: None,
