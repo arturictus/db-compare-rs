@@ -8,9 +8,15 @@ pub struct Presenter {
     file: Option<LineWriter<File>>,
 }
 
-impl Presenter {
-    pub fn new(args: &Args) -> Self {
-        match &args.diff_file {
+pub trait PresenterAbstract {
+    fn call(&mut self, result: DBsResult);
+    fn close(&mut self);
+    fn new(config: &Args) -> Self;
+}
+
+impl PresenterAbstract for Presenter {
+    fn new(config: &Args) -> Self {
+        match &config.diff_file {
             Some(f) => {
                 let file_path = f;
                 let writer = Some(new_file(file_path));
@@ -19,7 +25,7 @@ impl Presenter {
             _ => Self { file: None },
         }
     }
-    pub fn call(&mut self, result: DBsResult) {
+    fn call(&mut self, result: DBsResult) {
         let (header, diff) = diff_formatter::call(result);
         match &mut self.file {
             Some(file) => {
@@ -33,7 +39,7 @@ impl Presenter {
         }
     }
 
-    pub fn end(&mut self) {
+    fn close(&mut self) {
         if let Some(file) = &mut self.file {
             flush_file(file);
         }

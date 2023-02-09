@@ -1,97 +1,107 @@
-use crate::{db_url_shortener, Args};
-use postgres::Error;
+use crate::{db_url_shortener, Config};
+use postgres::Error as PgError;
 mod repo;
+use chrono::prelude::*;
 pub use repo::ping_db;
 use std::time::Instant;
 
 struct Query<'a> {
-    args: &'a Args,
+    config: &'a Config<'a>,
     db_url: &'a str,
     table: Option<&'a str>,
     column: Option<String>,
 }
 
-fn duration<T>(message: String, p: Query, fun: fn(Query) -> Result<T, Error>) -> Result<T, Error> {
+fn duration<T>(
+    message: String,
+    p: Query,
+    fun: fn(Query) -> Result<T, PgError>,
+) -> Result<T, PgError> {
+    println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
     let output = fun(p);
     let duration = start.elapsed();
 
-    println!("{message} (took: {duration:?})");
+    println!("=> took: {duration:?}");
     output
 }
 
-pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
+pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
         format!(
-            "== RESULT: count from {} in {}",
+            "count from {} in {}",
             table,
-            db_url_shortener(args, db_url)
+            db_url_shortener(config, db_url)
         ),
         Query {
-            args,
+            config,
             db_url,
             table: Some(table),
             column: None,
         },
-        |params| repo::count_for(params.args, params.db_url, params.table.unwrap()),
+        |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
     )
 }
 
-pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
+pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting all tables for {}",
-            db_url_shortener(args, db_url)
+            "Getting all tables for {}",
+            db_url_shortener(config, db_url)
         ),
         Query {
-            args,
+            config,
             db_url,
             table: None,
             column: None,
         },
-        |params| repo::all_tables(params.args, params.db_url),
+        |params| repo::all_tables(params.config, params.db_url),
     )
 }
 
-pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<Vec<String>, Error> {
+pub fn tables_with_column(
+    config: &Config,
+    db_url: &str,
+    column: String,
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting all tables with column {} in {}",
+            "Getting all tables with column {} in {}",
             column,
-            db_url_shortener(args, db_url)
+            db_url_shortener(config, db_url)
         ),
         Query {
-            args,
+            config,
             db_url,
             table: None,
             column: Some(column),
         },
-        |params| repo::tables_with_column(params.args, params.db_url, params.column.unwrap()),
+        |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
     )
 }
 
 pub fn id_and_column_value(
-    args: &Args,
+    config: &Config,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting `id` and values from column `{}` from table {} in {}",
+            "Getting `id` and values from column `{}` from table {} in {}",
             column,
             table,
-            db_url_shortener(args, db_url)
+            db_url_shortener(config, db_url)
         ),
         Query {
-            args,
+            config,
             db_url,
             table: Some(table),
             column: Some(column),
         },
         |params| {
             repo::id_and_column_value(
-                params.args,
+                params.config,
                 params.db_url,
                 params.table.unwrap(),
                 params.column.unwrap(),
@@ -101,26 +111,26 @@ pub fn id_and_column_value(
 }
 
 pub fn full_row_ordered_by(
-    args: &Args,
+    config: &Config,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
-            "== QUERY: Getting rows from table {} in {}",
+            "Getting rows from table {} in {}",
             table,
-            db_url_shortener(args, db_url)
+            db_url_shortener(config, db_url)
         ),
         Query {
-            args,
+            config,
             db_url,
             table: Some(table),
             column: Some(column),
         },
         |params| {
             repo::full_row_ordered_by(
-                params.args,
+                params.config,
                 params.db_url,
                 params.table.unwrap(),
                 params.column.unwrap(),
