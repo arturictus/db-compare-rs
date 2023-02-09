@@ -55,13 +55,11 @@ impl<'a> Config<'a> {
         if let Some(file_path) = &args.tables_file {
             let value = {
                 // Load the first file into a string.
-                let text = std::fs::read_to_string(&file_path)
-                    .expect(&format!("unable to read file at: {file_path}"));
+                let text = std::fs::read_to_string(file_path)
+                    .unwrap_or_else(|_| panic!("unable to read file at: {file_path}"));
 
                 // Parse the string
-                serde_json::from_str::<Vec<String>>(&text).expect(&format!(
-                    "malformed json file at: {file_path}, expected list with strings"
-                ))
+                serde_json::from_str::<Vec<String>>(&text).unwrap_or_else(|_| panic!("malformed json file at: {file_path}, expected list with strings"))
             };
             Self {
                 args,

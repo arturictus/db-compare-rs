@@ -35,7 +35,7 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    Ok(white_listed_tables(&config, tables))
+    Ok(white_listed_tables(config, tables))
 }
 
 pub fn tables_with_column(
@@ -59,7 +59,7 @@ pub fn tables_with_column(
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(white_listed_tables(&config, tables))
+    Ok(white_listed_tables(config, tables))
 }
 
 pub fn id_and_column_value(
