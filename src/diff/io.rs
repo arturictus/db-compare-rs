@@ -1,34 +1,31 @@
-use crate::diff_formatter;
-use crate::{Args, DBsResult};
+use crate::diff::formatter;
+use crate::{Args, DBsResults};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
 
-pub struct Presenter {
-    file: Option<LineWriter<File>>,
+pub enum IOType {
+    Console,
+    File(LineWriter<File>),
 }
 
-pub trait PresenterAbstract {
-    fn call(&mut self, result: DBsResult);
+pub trait IO {
+    fn write(&mut self, result: DBsResults);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
 }
 
-impl PresenterAbstract for Presenter {
+impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(f) => {
-                let file_path = f;
-                let writer = Some(new_file(file_path));
-                Self { file: writer }
-            }
-            _ => Self { file: None },
+            Some(file_path) => Self::File(new_file(file_path)),
+            _ => Self::Console,
         }
     }
-    fn call(&mut self, result: DBsResult) {
-        let (header, diff) = diff_formatter::call(result);
-        match &mut self.file {
-            Some(file) => {
+    fn write(&mut self, result: DBsResults) {
+        let (header, diff) = formatter::call(result);
+        match self {
+            Self::File(file) => {
                 write_to_file(file, &header);
                 write_to_file(file, &diff);
             }
@@ -40,7 +37,7 @@ impl PresenterAbstract for Presenter {
     }
 
     fn close(&mut self) {
-        if let Some(file) = &mut self.file {
+        if let Self::File(file) = self {
             flush_file(file);
         }
     }
@@ -56,6 +53,7 @@ fn flush_file(file: &mut LineWriter<File>) {
 }
 
 fn new_file(file_path: &String) -> LineWriter<File> {
-    let file = File::create(file_path).unwrap();
+    let file = File::create(file_path)
+        .unwrap_or_else(|_| panic!("unable to create diff file at {file_path}"));
     LineWriter::new(file)
 }

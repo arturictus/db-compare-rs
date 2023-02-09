@@ -1,4 +1,4 @@
-use crate::{db_url_shortener, Config};
+use crate::Config;
 use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
@@ -31,7 +31,7 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
         format!(
             "count from {} in {}",
             table,
-            db_url_shortener(config, db_url)
+            config.db_url_shortener(db_url)
         ),
         Query {
             config,
@@ -45,10 +45,7 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
 
 pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
-        format!(
-            "Getting all tables for {}",
-            db_url_shortener(config, db_url)
-        ),
+        format!("Getting all tables for {}", config.db_url_shortener(db_url)),
         Query {
             config,
             db_url,
@@ -68,7 +65,7 @@ pub fn tables_with_column(
         format!(
             "Getting all tables with column {} in {}",
             column,
-            db_url_shortener(config, db_url)
+            config.db_url_shortener(db_url)
         ),
         Query {
             config,
@@ -91,7 +88,7 @@ pub fn id_and_column_value(
             "Getting `id` and values from column `{}` from table {} in {}",
             column,
             table,
-            db_url_shortener(config, db_url)
+            config.db_url_shortener(db_url)
         ),
         Query {
             config,
@@ -120,7 +117,7 @@ pub fn full_row_ordered_by(
         format!(
             "Getting rows from table {} in {}",
             table,
-            db_url_shortener(config, db_url)
+            config.db_url_shortener(db_url)
         ),
         Query {
             config,

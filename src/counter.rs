@@ -1,16 +1,13 @@
 use crate::database;
-use crate::presenter::PresenterAbstract;
+use crate::diff;
 use crate::Config;
 use postgres::Error;
 
-pub fn run<T: PresenterAbstract>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn run<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
     let count1 = count(config, &config.args.db1).unwrap();
     let count2 = count(config, &config.args.db2).unwrap();
 
-    presenter.call(("======== Counts for all tables".to_string(), count1, count2));
+    presenter.write(("======== Counts for all tables".to_string(), count1, count2));
     Ok(())
 }
 
