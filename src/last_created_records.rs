@@ -1,10 +1,10 @@
 use crate::database;
-use crate::Args;
+use crate::InternalArgs;
 use crate::Presenter;
 
-pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(args, &args.db1).unwrap();
-    let db2_tables = non_updated_at_tables(args, &args.db2).unwrap();
+pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+    let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
+    let db2_tables = non_updated_at_tables(args, &args.cli_args.db2).unwrap();
     println!("# -----  List of tables without `updated_at`");
     println!("{db1_tables:?}");
     println!("# ---------------");
@@ -17,16 +17,19 @@ pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Er
     Ok(())
 }
 
-pub fn only_created_ats(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(args, &args.db1).unwrap();
+pub fn only_created_ats(
+    args: &InternalArgs,
+    presenter: &mut Presenter,
+) -> Result<(), postgres::Error> {
+    let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
     for table in db1_tables {
         compare_table_created_ats(args, &table, presenter)?;
     }
     Ok(())
 }
 
-pub fn all_columns(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(args, &args.db1).unwrap();
+pub fn all_columns(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+    let db1_tables = non_updated_at_tables(args, &args.cli_args.db1).unwrap();
     for table in db1_tables {
         compare_rows(args, &table, presenter)?;
     }
@@ -37,7 +40,10 @@ fn column() -> String {
     "created_at".to_string()
 }
 
-fn non_updated_at_tables(args: &Args, db_url: &str) -> Result<Vec<String>, postgres::Error> {
+fn non_updated_at_tables(
+    args: &InternalArgs,
+    db_url: &str,
+) -> Result<Vec<String>, postgres::Error> {
     let created_at_tables = database::tables_with_column(args, db_url, column()).unwrap();
     let updated_at_tables =
         database::tables_with_column(args, db_url, "updated_at".to_string()).unwrap();
@@ -50,12 +56,14 @@ fn non_updated_at_tables(args: &Args, db_url: &str) -> Result<Vec<String>, postg
 }
 
 fn compare_table_created_ats(
-    args: &Args,
+    args: &InternalArgs,
     table: &str,
     presenter: &mut Presenter,
 ) -> Result<(), postgres::Error> {
-    let records1 = database::id_and_column_value(args, &args.db1, table, column()).unwrap();
-    let records2 = database::id_and_column_value(args, &args.db2, table, column()).unwrap();
+    let records1 =
+        database::id_and_column_value(args, &args.cli_args.db1, table, column()).unwrap();
+    let records2 =
+        database::id_and_column_value(args, &args.cli_args.db2, table, column()).unwrap();
 
     presenter.call((
         format!("====== `{table}` created_at values"),
@@ -66,12 +74,14 @@ fn compare_table_created_ats(
 }
 
 fn compare_rows(
-    args: &Args,
+    args: &InternalArgs,
     table: &str,
     presenter: &mut Presenter,
 ) -> Result<(), postgres::Error> {
-    let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
-    let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
+    let records1 =
+        database::full_row_ordered_by(args, &args.cli_args.db1, table, column()).unwrap();
+    let records2 =
+        database::full_row_ordered_by(args, &args.cli_args.db2, table, column()).unwrap();
     presenter.call((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

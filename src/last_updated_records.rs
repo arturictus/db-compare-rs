@@ -1,10 +1,10 @@
 use crate::database;
-use crate::Args;
+use crate::InternalArgs;
 use crate::Presenter;
 
-pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(args, &args.db1, column()).unwrap();
-    let db2_tables = database::tables_with_column(args, &args.db2, column()).unwrap();
+pub fn tables(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+    let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
+    let db2_tables = database::tables_with_column(args, &args.cli_args.db2, column()).unwrap();
     presenter.call((
         "========  Tables with `updated_at` column".to_string(),
         db1_tables,
@@ -13,16 +13,19 @@ pub fn tables(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Er
     Ok(())
 }
 
-pub fn only_updated_ats(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(args, &args.db1, column()).unwrap();
+pub fn only_updated_ats(
+    args: &InternalArgs,
+    presenter: &mut Presenter,
+) -> Result<(), postgres::Error> {
+    let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
     for table in db1_tables {
         compare_table_updated_ats(args, &table, presenter)?;
     }
     Ok(())
 }
 
-pub fn all_columns(args: &Args, presenter: &mut Presenter) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(args, &args.db1, column()).unwrap();
+pub fn all_columns(args: &InternalArgs, presenter: &mut Presenter) -> Result<(), postgres::Error> {
+    let db1_tables = database::tables_with_column(args, &args.cli_args.db1, column()).unwrap();
     for table in db1_tables {
         compare_rows(args, &table, presenter)?;
     }
@@ -34,12 +37,14 @@ fn column() -> String {
 }
 
 fn compare_table_updated_ats(
-    args: &Args,
+    args: &InternalArgs,
     table: &str,
     presenter: &mut Presenter,
 ) -> Result<(), postgres::Error> {
-    let records1 = database::id_and_column_value(args, &args.db1, table, column()).unwrap();
-    let records2 = database::id_and_column_value(args, &args.db2, table, column()).unwrap();
+    let records1 =
+        database::id_and_column_value(args, &args.cli_args.db1, table, column()).unwrap();
+    let records2 =
+        database::id_and_column_value(args, &args.cli_args.db2, table, column()).unwrap();
 
     presenter.call((
         format!("====== `{table}` updated_at values"),
@@ -50,12 +55,14 @@ fn compare_table_updated_ats(
 }
 
 fn compare_rows(
-    args: &Args,
+    args: &InternalArgs,
     table: &str,
     presenter: &mut Presenter,
 ) -> Result<(), postgres::Error> {
-    let records1 = database::full_row_ordered_by(args, &args.db1, table, column()).unwrap();
-    let records2 = database::full_row_ordered_by(args, &args.db2, table, column()).unwrap();
+    let records1 =
+        database::full_row_ordered_by(args, &args.cli_args.db1, table, column()).unwrap();
+    let records2 =
+        database::full_row_ordered_by(args, &args.cli_args.db2, table, column()).unwrap();
     presenter.call((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

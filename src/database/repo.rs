@@ -1,9 +1,9 @@
-use crate::{db_url_shortener, Args};
+use crate::{db_url_shortener, InternalArgs};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use postgres::{Client, Error, NoTls, SimpleQueryMessage};
+use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
-pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
+pub fn count_for(args: &InternalArgs, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(args, db_url)?;
     let mut output: u32 = 0;
     if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
@@ -16,20 +16,19 @@ pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
     Ok(output)
 }
 
-pub fn connect(args: &Args, db_url: &str) -> Result<Client, postgres::Error> {
-    match args.tls {
-        Some(false) => Client::connect(db_url, NoTls),
-        _ => {
-            let mut builder = SslConnector::builder(SslMethod::tls())
-                .expect("unable to create sslconnector builder");
-            builder.set_verify(SslVerifyMode::NONE);
-            let connector = MakeTlsConnector::new(builder.build());
-            Client::connect(db_url, connector)
-        }
+pub fn connect(args: &InternalArgs, db_url: &str) -> Result<Client, PgError> {
+    if args.cli_args.tls {
+        let mut builder =
+            SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
+        builder.set_verify(SslVerifyMode::NONE);
+        let connector = MakeTlsConnector::new(builder.build());
+        Client::connect(db_url, connector)
+    } else {
+        Client::connect(db_url, NoTls)
     }
 }
 
-pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
+pub fn all_tables(args: &InternalArgs, db_url: &str) -> Result<Vec<String>, PgError> {
     let mut client = connect(args, db_url)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
@@ -39,7 +38,11 @@ pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
     Ok(tables)
 }
 
-pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<Vec<String>, Error> {
+pub fn tables_with_column(
+    args: &InternalArgs,
+    db_url: &str,
+    column: String,
+) -> Result<Vec<String>, PgError> {
     let mut client = connect(args, db_url)?;
     let mut tables: Vec<String> = Vec::new();
     for row in client.query(
@@ -60,17 +63,17 @@ pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<V
 }
 
 pub fn id_and_column_value(
-    args: &Args,
+    args: &InternalArgs,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     let mut client = connect(args, db_url)?;
 
     let mut records = Vec::new();
     if let Ok(row) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
-        args.limit
+        args.cli_args.limit
     )) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
@@ -86,11 +89,11 @@ pub fn id_and_column_value(
 }
 
 pub fn full_row_ordered_by(
-    args: &Args,
+    args: &InternalArgs,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(args, db_url)?;
@@ -108,7 +111,7 @@ pub fn full_row_ordered_by(
         JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
     FROM
         cte;",
-        args.limit
+        args.cli_args.limit
     )) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
@@ -124,7 +127,7 @@ pub fn full_row_ordered_by(
     Ok(records)
 }
 
-pub fn ping_db(args: &Args, db_url: &str) -> Result<(), postgres::Error> {
+pub fn ping_db(args: &InternalArgs, db_url: &str) -> Result<(), PgError> {
     let mut client = connect(args, db_url)?;
     println!("Ping {} -> 10", db_url_shortener(args, db_url));
     let result = client

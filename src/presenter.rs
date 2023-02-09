@@ -1,5 +1,5 @@
 use crate::diff_formatter;
-use crate::{Args, DBsResult};
+use crate::{CliArgs, DBsResult};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
@@ -9,7 +9,7 @@ pub struct Presenter {
 }
 
 impl Presenter {
-    pub fn new(args: &Args) -> Self {
+    pub fn new(args: &CliArgs) -> Self {
         match &args.diff_file {
             Some(f) => {
                 let file_path = f;

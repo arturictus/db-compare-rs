@@ -1,17 +1,21 @@
-use crate::{db_url_shortener, Args};
-use postgres::Error;
+use crate::{db_url_shortener, InternalArgs};
+use postgres::Error as PgError;
 mod repo;
 pub use repo::ping_db;
 use std::time::Instant;
 
 struct Query<'a> {
-    args: &'a Args,
+    args: &'a InternalArgs<'a>,
     db_url: &'a str,
     table: Option<&'a str>,
     column: Option<String>,
 }
 
-fn duration<T>(message: String, p: Query, fun: fn(Query) -> Result<T, Error>) -> Result<T, Error> {
+fn duration<T>(
+    message: String,
+    p: Query,
+    fun: fn(Query) -> Result<T, PgError>,
+) -> Result<T, PgError> {
     let start = Instant::now();
     let output = fun(p);
     let duration = start.elapsed();
@@ -20,7 +24,7 @@ fn duration<T>(message: String, p: Query, fun: fn(Query) -> Result<T, Error>) ->
     output
 }
 
-pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
+pub fn count_for(args: &InternalArgs, db_url: &str, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
         format!(
             "== RESULT: count from {} in {}",
@@ -37,7 +41,7 @@ pub fn count_for(args: &Args, db_url: &str, table: &str) -> Result<u32, Error> {
     )
 }
 
-pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
+pub fn all_tables(args: &InternalArgs, db_url: &str) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "== QUERY: Getting all tables for {}",
@@ -53,7 +57,11 @@ pub fn all_tables(args: &Args, db_url: &str) -> Result<Vec<String>, Error> {
     )
 }
 
-pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<Vec<String>, Error> {
+pub fn tables_with_column(
+    args: &InternalArgs,
+    db_url: &str,
+    column: String,
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "== QUERY: Getting all tables with column {} in {}",
@@ -71,11 +79,11 @@ pub fn tables_with_column(args: &Args, db_url: &str, column: String) -> Result<V
 }
 
 pub fn id_and_column_value(
-    args: &Args,
+    args: &InternalArgs,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "== QUERY: Getting `id` and values from column `{}` from table {} in {}",
@@ -101,11 +109,11 @@ pub fn id_and_column_value(
 }
 
 pub fn full_row_ordered_by(
-    args: &Args,
+    args: &InternalArgs,
     db_url: &str,
     table: &str,
     column: String,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "== QUERY: Getting rows from table {} in {}",
