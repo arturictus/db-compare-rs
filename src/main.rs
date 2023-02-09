@@ -8,7 +8,6 @@ mod last_updated_records;
 use clap::Parser;
 
 type DBsResult = (String, Vec<String>, Vec<String>);
-type Diff = (String, String);
 
 #[derive(Parser, Debug, PartialEq)]
 #[command(author, version, about, long_about = None)]
@@ -73,13 +72,12 @@ impl<'a> Config<'a> {
             }
         }
     }
-}
-
-fn db_url_shortener(config: &Config, db_url: &str) -> String {
-    if db_url == config.args.db1 {
-        "DB1".to_string()
-    } else {
-        "DB2".to_string()
+    pub fn db_url_shortener(&self, db_url: &str) -> String {
+        if db_url == self.args.db1 {
+            "DB1".to_string()
+        } else {
+            "DB2".to_string()
+        }
     }
 }
 

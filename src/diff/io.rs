@@ -18,11 +18,7 @@ pub trait IO {
 impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(f) => {
-                let file_path = f;
-                // let writer = Some(new_file(file_path));
-                Self::File(new_file(file_path))
-            }
+            Some(file_path) => Self::File(new_file(file_path)),
             _ => Self::Console,
         }
     }
@@ -57,6 +53,7 @@ fn flush_file(file: &mut LineWriter<File>) {
 }
 
 fn new_file(file_path: &String) -> LineWriter<File> {
-    let file = File::create(file_path).unwrap();
+    let file = File::create(file_path)
+        .unwrap_or_else(|_| panic!("unable to create diff file at {file_path}"));
     LineWriter::new(file)
 }

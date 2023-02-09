@@ -1,7 +1,7 @@
-use crate::{DBsResult, Diff};
+use crate::DBsResult;
 use similar::{ChangeTag, TextDiff};
 
-pub fn call(result: DBsResult) -> Diff {
+pub fn call(result: DBsResult) -> (String, String) {
     let (header, a, b) = result;
     let diff = print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
     (header, diff)
