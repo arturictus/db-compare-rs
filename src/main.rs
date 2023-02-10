@@ -4,6 +4,7 @@ mod diff;
 use diff::IO;
 mod last_created_records;
 mod last_updated_records;
+use std::cell::RefCell;
 
 use clap::Parser;
 
@@ -25,32 +26,32 @@ pub struct Args {
     #[arg(long = "tables-file")]
     tables_file: Option<String>,
 }
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub struct Config<'a> {
     args: &'a Args,
+    diff_io: RefCell<diff::IOType>,
     white_listed_tables: Option<Vec<String>>,
 }
 
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    println!("{:?}", args);
-    let mut out: diff::IOType = diff::IO::new(&args);
     let config = Config::new(&args);
     database::ping_db(&config, &args.db1)?;
     database::ping_db(&config, &args.db2)?;
-    counter::run(&config, &mut out)?;
-    last_updated_records::tables(&config, &mut out)?;
-    last_updated_records::only_updated_ats(&config, &mut out)?;
-    last_updated_records::all_columns(&config, &mut out)?;
-    last_created_records::tables(&config, &mut out)?;
-    last_created_records::only_created_ats(&config, &mut out)?;
-    last_created_records::all_columns(&config, &mut out)?;
-    out.close();
+    counter::run(&config)?;
+    last_updated_records::tables(&config)?;
+    last_updated_records::only_updated_ats(&config)?;
+    last_updated_records::all_columns(&config)?;
+    last_created_records::tables(&config)?;
+    last_created_records::only_created_ats(&config)?;
+    last_created_records::all_columns(&config)?;
+    config.diff_io.borrow_mut().close();
     Ok(())
 }
 
 impl<'a> Config<'a> {
     pub fn new(args: &'a Args) -> Config<'a> {
+        let diff_io: diff::IOType = diff::IO::new(args);
         if let Some(file_path) = &args.tables_file {
             let value = {
                 let text = std::fs::read_to_string(file_path)
@@ -62,11 +63,13 @@ impl<'a> Config<'a> {
             };
             Self {
                 args,
+                diff_io: RefCell::new(diff_io),
                 white_listed_tables: Some(value),
             }
         } else {
             Self {
                 args,
+                diff_io: RefCell::new(diff_io),
                 white_listed_tables: None,
             }
         }
@@ -97,14 +100,6 @@ mod test {
 
     #[test]
     fn test_config_new() {
-        let args = default_args();
-        assert_eq!(
-            Config::new(&args),
-            Config {
-                args: &args,
-                white_listed_tables: None
-            }
-        );
         let args_with_listed_file = Args {
             tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
             ..default_args()
