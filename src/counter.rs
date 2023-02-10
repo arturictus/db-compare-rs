@@ -1,23 +1,18 @@
 use crate::database;
-use crate::diff;
+use crate::diff::IO;
 use crate::Config;
-use postgres::Error;
 
-pub fn run<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
-    let count1 = count(config, &config.args.db1).unwrap();
-    let count2 = count(config, &config.args.db2).unwrap();
-
-    presenter.write(("======== Counts for all tables".to_string(), count1, count2));
-    Ok(())
-}
-
-fn count(config: &Config, db_url: &str) -> Result<Vec<String>, Error> {
-    let tables = database::all_tables(config, db_url)?;
-    let mut counts = Vec::new();
-    for table_name in tables {
-        let result = database::count_for(config, db_url, &table_name).unwrap();
-        counts.push(format!("{table_name} : {result}"));
+pub fn run(config: &Config) -> Result<(), postgres::Error> {
+    let tables = database::all_tables(config, &config.args.db1)?;
+    for table in tables {
+        let result1 = database::count_for(config, &config.args.db1, &table).unwrap();
+        let result2 = database::count_for(config, &config.args.db2, &table).unwrap();
+        let mut diff_io = config.diff_io.borrow_mut();
+        diff_io.write((
+            format!("== `{table}`"),
+            vec![format!("{result1}")],
+            vec![format!("{result2}")],
+        ));
     }
-    counts.sort();
-    Ok(counts)
+    Ok(())
 }

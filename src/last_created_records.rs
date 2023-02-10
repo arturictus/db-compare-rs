@@ -1,14 +1,15 @@
 use crate::database;
-use crate::diff;
+use crate::diff::IO;
 use crate::Config;
 
-pub fn tables<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
+pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     let db2_tables = non_updated_at_tables(config, &config.args.db2).unwrap();
     println!("# -----  List of tables without `updated_at`");
     println!("{db1_tables:?}");
     println!("# ---------------");
-    presenter.write((
+    let mut diff_io = config.diff_io.borrow_mut();
+    diff_io.write((
         "========  Tables with `created_at` column but not `updated_at` difference between DBs"
             .to_string(),
         db1_tables,
@@ -17,21 +18,18 @@ pub fn tables<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), pos
     Ok(())
 }
 
-pub fn only_created_ats<T: diff::IO>(
-    config: &Config,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     for table in db1_tables {
-        compare_table_created_ats(config, &table, presenter)?;
+        compare_table_created_ats(config, &table)?;
     }
     Ok(())
 }
 
-pub fn all_columns<T: diff::IO>(config: &Config, presenter: &mut T) -> Result<(), postgres::Error> {
+pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
     for table in db1_tables {
-        compare_rows(config, &table, presenter)?;
+        compare_rows(config, &table)?;
     }
     Ok(())
 }
@@ -52,17 +50,14 @@ fn non_updated_at_tables(config: &Config, db_url: &str) -> Result<Vec<String>, p
     Ok(difference)
 }
 
-fn compare_table_created_ats<T: diff::IO>(
-    config: &Config,
-    table: &str,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let records1 =
         database::id_and_column_value(config, &config.args.db1, table, column()).unwrap();
     let records2 =
         database::id_and_column_value(config, &config.args.db2, table, column()).unwrap();
 
-    presenter.write((
+    let mut diff_io = config.diff_io.borrow_mut();
+    diff_io.write((
         format!("====== `{table}` created_at values"),
         records1,
         records2,
@@ -70,15 +65,12 @@ fn compare_table_created_ats<T: diff::IO>(
     Ok(())
 }
 
-fn compare_rows<T: diff::IO>(
-    config: &Config,
-    table: &str,
-    presenter: &mut T,
-) -> Result<(), postgres::Error> {
+fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let records1 =
         database::full_row_ordered_by(config, &config.args.db1, table, column()).unwrap();
     let records2 =
         database::full_row_ordered_by(config, &config.args.db2, table, column()).unwrap();
-    presenter.write((format!("====== `{table}` all columns"), records1, records2));
+    let mut diff_io = config.diff_io.borrow_mut();
+    diff_io.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
 }

@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::LineWriter;
 
+#[derive(Debug)]
 pub enum IOType {
     Console,
     File(LineWriter<File>),
