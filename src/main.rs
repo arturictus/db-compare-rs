@@ -5,10 +5,15 @@ use diff::IO;
 mod last_created_records;
 mod last_updated_records;
 use std::cell::RefCell;
+use tokio;
 
 use clap::Parser;
 
 type DBsResults = (String, Vec<String>, Vec<String>);
+enum DBSelector {
+    Master,
+    Replica,
+}
 
 #[derive(Parser, Debug, PartialEq)]
 #[command(author, version, about, long_about = None)]
@@ -31,11 +36,14 @@ pub struct Config<'a> {
     args: &'a Args,
     diff_io: RefCell<diff::IOType>,
     white_listed_tables: Option<Vec<String>>,
+    db1_conn: tokio_postgres::Client,
+    db2_conn: tokio_postgres::Client,
 }
 
-fn main() -> Result<(), postgres::Error> {
+#[tokio::main]
+async fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    let config = Config::new(&args);
+    let config = Config::new(&args).await;
     database::ping_db(&config, &args.db1)?;
     database::ping_db(&config, &args.db2)?;
     counter::run(&config)?;
@@ -50,8 +58,10 @@ fn main() -> Result<(), postgres::Error> {
 }
 
 impl<'a> Config<'a> {
-    pub fn new(args: &'a Args) -> Config<'a> {
+    pub async fn new(args: &'a Args) -> Config<'a> {
         let diff_io: diff::IOType = diff::IO::new(args);
+        let db1_conn: tokio_postgres::Client = database::connect(args, &args.db1).await.unwrap();
+        let db2_conn: tokio_postgres::Client = database::connect(args, &args.db1).await.unwrap();
         if let Some(file_path) = &args.tables_file {
             let value = {
                 let text = std::fs::read_to_string(file_path)
@@ -65,12 +75,16 @@ impl<'a> Config<'a> {
                 args,
                 diff_io: RefCell::new(diff_io),
                 white_listed_tables: Some(value),
+                db1_conn,
+                db2_conn,
             }
         } else {
             Self {
                 args,
                 diff_io: RefCell::new(diff_io),
                 white_listed_tables: None,
+                db1_conn,
+                db2_conn,
             }
         }
     }
@@ -79,6 +93,22 @@ impl<'a> Config<'a> {
             "DB1".to_string()
         } else {
             "DB2".to_string()
+        }
+    }
+}
+
+impl DBSelector {
+    fn conn(&self, config: &Config) -> tokio_postgres::Client {
+        match self {
+            Self::Master => config.db1_conn,
+            _ => config.db2_conn,
+        }
+    }
+
+    fn name(&self) -> String {
+        match self {
+            Self::Master => "DB1".to_string(),
+            _ => "DB2".to_string(),
         }
     }
 }

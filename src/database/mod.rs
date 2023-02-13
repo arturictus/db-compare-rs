@@ -2,8 +2,10 @@ use crate::Config;
 use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
+pub use repo::connect;
 pub use repo::ping_db;
 use std::time::Instant;
+use tokio::macros::support::Future;
 
 struct Query<'a> {
     config: &'a Config<'a>,
@@ -15,8 +17,8 @@ struct Query<'a> {
 fn duration<T>(
     message: String,
     p: Query,
-    fun: fn(Query) -> Result<T, PgError>,
-) -> Result<T, PgError> {
+    fun: fn(Query) -> dyn Future<Output = Result<T, PgError>>,
+) -> dyn Future<Output = Result<T, PgError>> {
     println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
     let output = fun(p);
@@ -26,7 +28,7 @@ fn duration<T>(
     output
 }
 
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+pub fn count_for<'main>(config: &'main Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
         format!(
             "count from {} in {}",

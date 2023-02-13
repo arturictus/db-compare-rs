@@ -21,7 +21,7 @@ pub async fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32
     Ok(output)
 }
 
-async fn connect(args: &Args, db_url: &str) -> Result<Client, postgres::Error> {
+pub async fn connect(args: &Args, db_url: &str) -> Result<Client, postgres::Error> {
 
     let client = if args.no_tls {
         let (client, conn) = tokio_postgres::connect(db_url, NoTls).await?;
