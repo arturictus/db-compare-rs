@@ -3,6 +3,28 @@ use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
+pub fn get_rows_ids_from_offset(
+    config: &Config,
+    db_url: &str,
+    table: &str,
+    offset: u32,
+) -> Result<Vec<u32>, PgError> {
+    let mut client = connect(config, db_url)?;
+
+    let mut records = Vec::new();
+    if let Ok(row) = client.simple_query(&format!(
+        "SELECT id FROM {table} ORDER BY id DESC LIMIT {} OFFSET {offset};",
+        config.args.limit
+    )) {
+        for data in row {
+            if let SimpleQueryMessage::Row(result) = data {
+                records.push(result.get(0).unwrap_or("0").parse::<u32>().unwrap());
+            }
+        }
+    }
+    Ok(records)
+}
+
 pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;
@@ -124,6 +146,28 @@ pub fn full_row_ordered_by(
         cte;",
         config.args.limit
     )) {
+        for data in row {
+            if let SimpleQueryMessage::Row(result) = data {
+                let value = result.get(0).unwrap_or("[]");
+                let list: Vec<Value> = serde_json::from_str(value).unwrap();
+
+                for e in list {
+                    records.push(serde_json::to_string(&e).unwrap())
+                }
+            }
+        }
+    }
+    Ok(records)
+}
+
+pub fn find(config: &Config, db_url: &str, table: &str, id: u32) -> Result<Vec<String>, PgError> {
+    use serde_json::Value;
+    let mut records = Vec::new();
+
+    let mut client = connect(config, db_url)?;
+
+    let q = format!("SELECT json_agg({table}) FROM {table} WHERE id = {id};");
+    if let Ok(row) = client.simple_query(&q) {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
                 let value = result.get(0).unwrap_or("[]");

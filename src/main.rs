@@ -5,6 +5,7 @@ use diff::IO;
 mod last_created_records;
 mod last_updated_records;
 use std::cell::RefCell;
+mod all_rows;
 
 use clap::Parser;
 
@@ -33,24 +34,30 @@ pub struct Config<'a> {
     white_listed_tables: Option<Vec<String>>,
 }
 
+pub enum DBSelector {
+    MasterDB,
+    ReplicaDB,
+}
+
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
     database::ping_db(&config, &args.db1)?;
     database::ping_db(&config, &args.db2)?;
-    counter::run(&config)?;
-    last_updated_records::tables(&config)?;
-    last_updated_records::only_updated_ats(&config)?;
-    last_updated_records::all_columns(&config)?;
-    last_created_records::tables(&config)?;
-    last_created_records::only_created_ats(&config)?;
-    last_created_records::all_columns(&config)?;
+    all_rows::run(&config)?;
+    // counter::run(&config)?;
+    // last_updated_records::tables(&config)?;
+    // last_updated_records::only_updated_ats(&config)?;
+    // last_updated_records::all_columns(&config)?;
+    // last_created_records::tables(&config)?;
+    // last_created_records::only_created_ats(&config)?;
+    // last_created_records::all_columns(&config)?;
     config.diff_io.borrow_mut().close();
     Ok(())
 }
 
-impl<'a> Config<'a> {
-    pub fn new(args: &'a Args) -> Config<'a> {
+impl<'main> Config<'main> {
+    pub fn new(args: &'main Args) -> Config<'main> {
         let diff_io: diff::IOType = diff::IO::new(args);
         if let Some(file_path) = &args.tables_file {
             let value = {
@@ -79,6 +86,22 @@ impl<'a> Config<'a> {
             "DB1".to_string()
         } else {
             "DB2".to_string()
+        }
+    }
+}
+
+impl DBSelector {
+    fn name(&self) -> String {
+        match self {
+            Self::MasterDB => "DB1".to_string(),
+            Self::ReplicaDB => "DB2".to_string(),
+        }
+    }
+
+    fn url<'main>(&self, config: &'main Config) -> &'main String {
+        match self {
+            Self::MasterDB => &config.args.db1,
+            Self::ReplicaDB => &config.args.db2,
         }
     }
 }
