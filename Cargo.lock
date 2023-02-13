@@ -222,6 +222,8 @@ dependencies = [
  "serde",
  "serde_json",
  "similar",
+ "tokio",
+ "tokio-postgres",
 ]
 
 [[package]]

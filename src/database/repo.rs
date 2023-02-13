@@ -1,12 +1,17 @@
-use crate::Config;
+use crate::{Config, Args};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
-use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
+use postgres::{Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
+use tokio_postgres::{Client, Connection, Socket};
+use tokio;
 
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub async fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+    // let mut client = connect(config, db_url)?.await;
     let mut output: u32 = 0;
-    if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+    if let Ok(row) = client
+        .simple_query(&format!("SELECT COUNT(*) FROM {table};"))
+        .await?
+    {
         for data in row {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
@@ -16,16 +21,34 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
     Ok(output)
 }
 
-fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
-    if config.args.no_tls {
-        Client::connect(db_url, NoTls)
+async fn connect(args: &Args, db_url: &str) -> Result<Client, postgres::Error> {
+
+    let client = if args.no_tls {
+        let (client, conn) = tokio_postgres::connect(db_url, NoTls).await?;
+        // The connection object performs the actual communication with the database,
+        // so spawn it off to run on its own.
+        tokio::spawn(async move {
+            if let Err(e) = conn.await {
+                eprintln!("connection error: {}", e);
+            }
+        });
+        client
     } else {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
         builder.set_verify(SslVerifyMode::NONE);
         let connector = MakeTlsConnector::new(builder.build());
-        Client::connect(db_url, connector)
+        let (client, conn) = tokio_postgres::connect(db_url, connector).await?;
+         // The connection object performs the actual communication with the database,
+        // so spawn it off to run on its own.
+        tokio::spawn(async move {
+            if let Err(e) = conn.await {
+                eprintln!("connection error: {}", e);
+            }
+        });
+        client
     }
+    Ok(client)
 }
 
 pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
