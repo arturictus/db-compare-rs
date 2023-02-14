@@ -67,8 +67,8 @@ pub fn get_row_by_id_range(
 pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;
-    if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
-        for data in row {
+    if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
             }
@@ -134,11 +134,11 @@ pub fn id_and_column_value(
     let mut client = connect(config, db_url)?;
 
     let mut records = Vec::new();
-    if let Ok(row) = client.simple_query(&format!(
+    if let Ok(rows) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
         config.args.limit
     )) {
-        for data in row {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 records.push(format!(
                     "{} : {}",
@@ -171,7 +171,7 @@ pub fn full_row_ordered_by(
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(config, db_url)?;
-    if let Ok(row) = client.simple_query(&format!(
+    if let Ok(rows) = client.simple_query(&format!(
         "WITH
         cte AS
         (
@@ -187,7 +187,7 @@ pub fn full_row_ordered_by(
         cte;",
         config.args.limit
     )) {
-        for data in row {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 let value = result.get(0).unwrap_or("[]");
                 let list: Vec<Value> = serde_json::from_str(value).unwrap();
