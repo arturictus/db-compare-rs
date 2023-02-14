@@ -1,10 +1,12 @@
 use crate::database;
+use crate::database::DBSelector;
+use crate::database::DBSelector::{MasterDB, ReplicaDB};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
-    let db2_tables = non_updated_at_tables(config, &config.args.db2).unwrap();
+    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
+    let db2_tables = non_updated_at_tables(config, ReplicaDB).unwrap();
     println!("# -----  List of tables without `updated_at`");
     println!("{db1_tables:?}");
     println!("# ---------------");
@@ -19,7 +21,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
+    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
     for table in db1_tables {
         compare_table_created_ats(config, &table)?;
     }
@@ -27,7 +29,7 @@ pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, &config.args.db1).unwrap();
+    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
     for table in db1_tables {
         compare_rows(config, &table)?;
     }
@@ -38,10 +40,10 @@ fn column() -> String {
     "created_at".to_string()
 }
 
-fn non_updated_at_tables(config: &Config, db_url: &str) -> Result<Vec<String>, postgres::Error> {
-    let created_at_tables = database::tables_with_column(config, db_url, column()).unwrap();
+fn non_updated_at_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, postgres::Error> {
+    let created_at_tables = database::tables_with_column(config, db, column()).unwrap();
     let updated_at_tables =
-        database::tables_with_column(config, db_url, "updated_at".to_string()).unwrap();
+        database::tables_with_column(config, db, "updated_at".to_string()).unwrap();
     let difference: Vec<String> = created_at_tables
         .into_iter()
         .filter(|item| !updated_at_tables.contains(item))
@@ -51,10 +53,8 @@ fn non_updated_at_tables(config: &Config, db_url: &str) -> Result<Vec<String>, p
 }
 
 fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 =
-        database::id_and_column_value(config, &config.args.db1, table, column()).unwrap();
-    let records2 =
-        database::id_and_column_value(config, &config.args.db2, table, column()).unwrap();
+    let records1 = database::id_and_column_value(config, MasterDB, table, column()).unwrap();
+    let records2 = database::id_and_column_value(config, ReplicaDB, table, column()).unwrap();
 
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
@@ -66,10 +66,8 @@ fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgre
 }
 
 fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 =
-        database::full_row_ordered_by(config, &config.args.db1, table, column()).unwrap();
-    let records2 =
-        database::full_row_ordered_by(config, &config.args.db2, table, column()).unwrap();
+    let records1 = database::full_row_ordered_by(config, MasterDB, table, column()).unwrap();
+    let records2 = database::full_row_ordered_by(config, ReplicaDB, table, column()).unwrap();
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())

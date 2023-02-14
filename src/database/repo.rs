@@ -1,13 +1,74 @@
+use crate::database::DBSelector;
 use crate::Config;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
+pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+    let mut client = connect(config, db_url)?;
+    let mut output: u32 = 0;
+    if let Ok(row) =
+        client.simple_query(&format!("SELECT id FROM {table} ORDER BY id DESC LIMIT 1;"))
+    {
+        for data in row {
+            if let SimpleQueryMessage::Row(result) = data {
+                output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
+            }
+        }
+    }
+    Ok(output)
+}
+pub fn get_row_by_id_range(
+    config: &Config,
+    db_url: &str,
+    table: &str,
+    lower_bound: u32,
+    upper_bound: u32,
+) -> Result<Vec<String>, PgError> {
+    use serde_json::Value;
+    let mut client = connect(config, db_url)?;
+    let column = "id".to_string();
+    let limit = config.args.limit;
+    let mut records: Vec<String> = Vec::new();
+    let the_q = format!(
+        "WITH
+        cte AS
+        (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
+            FROM
+                {table}
+            WHERE
+               (id > {lower_bound}) AND (id <= {upper_bound})
+        )
+    SELECT
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+    FROM
+        cte;"
+    );
+
+    if let Ok(rows) = client.simple_query(&the_q) {
+        for data in rows {
+            if let SimpleQueryMessage::Row(result) = data {
+                let value = result.get(0).unwrap_or("[]");
+                let list: Vec<Value> = serde_json::from_str(value).unwrap();
+
+                for e in list {
+                    records.push(serde_json::to_string(&e).unwrap())
+                }
+            }
+        }
+    }
+
+    Ok(records)
+}
+
 pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;
-    if let Ok(row) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
-        for data in row {
+    if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
             }
@@ -35,7 +96,9 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    Ok(white_listed_tables(config, tables))
+    tables = white_listed_tables(config, tables);
+    tables.sort();
+    Ok(tables)
 }
 
 pub fn tables_with_column(
@@ -71,11 +134,11 @@ pub fn id_and_column_value(
     let mut client = connect(config, db_url)?;
 
     let mut records = Vec::new();
-    if let Ok(row) = client.simple_query(&format!(
+    if let Ok(rows) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
         config.args.limit
     )) {
-        for data in row {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 records.push(format!(
                     "{} : {}",
@@ -108,7 +171,7 @@ pub fn full_row_ordered_by(
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(config, db_url)?;
-    if let Ok(row) = client.simple_query(&format!(
+    if let Ok(rows) = client.simple_query(&format!(
         "WITH
         cte AS
         (
@@ -124,7 +187,7 @@ pub fn full_row_ordered_by(
         cte;",
         config.args.limit
     )) {
-        for data in row {
+        for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 let value = result.get(0).unwrap_or("[]");
                 let list: Vec<Value> = serde_json::from_str(value).unwrap();
@@ -138,13 +201,13 @@ pub fn full_row_ordered_by(
     Ok(records)
 }
 
-pub fn ping_db(config: &Config, db_url: &str) -> Result<(), PgError> {
-    let mut client = connect(config, db_url)?;
-    println!("Ping 10 -> {}", config.db_url_shortener(db_url));
+pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
+    let mut client = connect(config, db.url(config))?;
+    println!("Ping 10 -> {}", db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", config.db_url_shortener(db_url));
+    println!("Pong {value} <- {}", db.url(config));
     Ok(())
 }

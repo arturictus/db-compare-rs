@@ -5,8 +5,9 @@ use diff::IO;
 mod last_created_records;
 mod last_updated_records;
 use std::cell::RefCell;
-
+mod all_rows;
 use clap::Parser;
+use database::DBSelector::{MasterDB, ReplicaDB};
 
 type DBsResults = (String, Vec<String>, Vec<String>);
 
@@ -36,21 +37,31 @@ pub struct Config<'a> {
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
-    database::ping_db(&config, &args.db1)?;
-    database::ping_db(&config, &args.db2)?;
-    counter::run(&config)?;
-    last_updated_records::tables(&config)?;
-    last_updated_records::only_updated_ats(&config)?;
-    last_updated_records::all_columns(&config)?;
-    last_created_records::tables(&config)?;
-    last_created_records::only_created_ats(&config)?;
-    last_created_records::all_columns(&config)?;
+    database::ping_db(&config, MasterDB)?;
+    database::ping_db(&config, ReplicaDB)?;
+
+    if config.should_run_counters() {
+        counter::run(&config)?;
+    }
+    if config.should_run_updated_ats() {
+        last_updated_records::tables(&config)?;
+        last_updated_records::only_updated_ats(&config)?;
+        last_updated_records::all_columns(&config)?;
+    }
+    if config.should_run_created_ats() {
+        last_created_records::tables(&config)?;
+        last_created_records::only_created_ats(&config)?;
+        last_created_records::all_columns(&config)?;
+    }
+    if config.should_run_all_rows() {
+        all_rows::run(&config)?;
+    }
     config.diff_io.borrow_mut().close();
     Ok(())
 }
 
-impl<'a> Config<'a> {
-    pub fn new(args: &'a Args) -> Config<'a> {
+impl<'main> Config<'main> {
+    pub fn new(args: &'main Args) -> Config<'main> {
         let diff_io: diff::IOType = diff::IO::new(args);
         if let Some(file_path) = &args.tables_file {
             let value = {
@@ -74,12 +85,18 @@ impl<'a> Config<'a> {
             }
         }
     }
-    pub fn db_url_shortener(&self, db_url: &str) -> String {
-        if db_url == self.args.db1 {
-            "DB1".to_string()
-        } else {
-            "DB2".to_string()
-        }
+
+    pub fn should_run_counters(&self) -> bool {
+        false
+    }
+    pub fn should_run_updated_ats(&self) -> bool {
+        false
+    }
+    pub fn should_run_created_ats(&self) -> bool {
+        false
+    }
+    pub fn should_run_all_rows(&self) -> bool {
+        true
     }
 }
 

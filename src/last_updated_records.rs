@@ -1,10 +1,11 @@
 use crate::database;
+use crate::database::DBSelector::{MasterDB, ReplicaDB};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
-    let db2_tables = database::tables_with_column(config, &config.args.db2, column()).unwrap();
+    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
+    let db2_tables = database::tables_with_column(config, ReplicaDB, column()).unwrap();
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
         "========  Tables with `updated_at` column".to_string(),
@@ -15,7 +16,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
+    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
     for table in db1_tables {
         compare_table_updated_ats(config, &table)?;
     }
@@ -23,7 +24,7 @@ pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, &config.args.db1, column()).unwrap();
+    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
     for table in db1_tables {
         compare_rows(config, &table)?;
     }
@@ -35,10 +36,8 @@ fn column() -> String {
 }
 
 fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 =
-        database::id_and_column_value(config, &config.args.db1, table, column()).unwrap();
-    let records2 =
-        database::id_and_column_value(config, &config.args.db2, table, column()).unwrap();
+    let records1 = database::id_and_column_value(config, MasterDB, table, column()).unwrap();
+    let records2 = database::id_and_column_value(config, ReplicaDB, table, column()).unwrap();
 
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
@@ -50,10 +49,8 @@ fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgre
 }
 
 fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 =
-        database::full_row_ordered_by(config, &config.args.db1, table, column()).unwrap();
-    let records2 =
-        database::full_row_ordered_by(config, &config.args.db2, table, column()).unwrap();
+    let records1 = database::full_row_ordered_by(config, MasterDB, table, column()).unwrap();
+    let records2 = database::full_row_ordered_by(config, ReplicaDB, table, column()).unwrap();
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
