@@ -5,6 +5,28 @@ use chrono::prelude::*;
 pub use repo::ping_db;
 use std::time::Instant;
 
+#[derive(Clone, Copy)]
+pub enum DBSelector {
+    MasterDB,
+    ReplicaDB,
+}
+
+impl DBSelector {
+    fn name(&self) -> String {
+        match self {
+            Self::MasterDB => "DB1".to_string(),
+            Self::ReplicaDB => "DB2".to_string(),
+        }
+    }
+
+    fn url<'main>(&self, config: &'main Config) -> &'main String {
+        match self {
+            Self::MasterDB => &config.args.db1,
+            Self::ReplicaDB => &config.args.db2,
+        }
+    }
+}
+
 struct Query<'a> {
     config: &'a Config<'a>,
     db_url: &'a str,
@@ -13,15 +35,12 @@ struct Query<'a> {
     bounds: Option<(u32, u32)>,
 }
 
-pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
-        format!(
-            "Greatest id from `{table}` in {}",
-            config.db_url_shortener(db_url)
-        ),
+        format!("Greatest id from `{table}` in {}", db.name()),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: Some(table),
             column: None,
             bounds: None,
@@ -32,7 +51,7 @@ pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Resul
 
 pub fn get_row_by_id_range(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     lower_bound: u32,
     upper_bound: u32,
@@ -40,11 +59,11 @@ pub fn get_row_by_id_range(
     duration::<Vec<String>>(
         format!(
             "`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {}",
-            config.db_url_shortener(db_url)
+            db.name()
         ),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: Some(table),
             column: None,
             bounds: Some((lower_bound, upper_bound)),
@@ -61,16 +80,12 @@ pub fn get_row_by_id_range(
         },
     )
 }
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+pub fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
-        format!(
-            "count from {} in {}",
-            table,
-            config.db_url_shortener(db_url)
-        ),
+        format!("count from {} in {}", table, db.name()),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: Some(table),
             column: None,
             bounds: None,
@@ -79,12 +94,12 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
     )
 }
 
-pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
+pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
-        format!("Getting all tables for {}", config.db_url_shortener(db_url)),
+        format!("Getting all tables for {}", db.name()),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: None,
             column: None,
             bounds: None,
@@ -95,18 +110,14 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
 
 pub fn tables_with_column(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     column: String,
 ) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
-        format!(
-            "Getting all tables with column {} in {}",
-            column,
-            config.db_url_shortener(db_url)
-        ),
+        format!("Getting all tables with column {} in {}", column, db.name()),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             column: Some(column),
             table: None,
             bounds: None,
@@ -117,7 +128,7 @@ pub fn tables_with_column(
 
 pub fn id_and_column_value(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     column: String,
 ) -> Result<Vec<String>, PgError> {
@@ -126,11 +137,11 @@ pub fn id_and_column_value(
             "Getting `id` and values from column `{}` from table {} in {}",
             column,
             table,
-            config.db_url_shortener(db_url)
+            db.name()
         ),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: Some(table),
             column: Some(column),
             bounds: None,
@@ -148,19 +159,15 @@ pub fn id_and_column_value(
 
 pub fn full_row_ordered_by(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     column: String,
 ) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
-        format!(
-            "Getting rows from table {} in {}",
-            table,
-            config.db_url_shortener(db_url)
-        ),
+        format!("Getting rows from table {} in {}", table, db.name()),
         Query {
             config,
-            db_url,
+            db_url: db.url(config),
             table: Some(table),
             column: Some(column),
             bounds: None,

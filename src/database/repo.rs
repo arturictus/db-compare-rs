@@ -1,3 +1,4 @@
+use crate::database::DBSelector;
 use crate::Config;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
@@ -201,13 +202,13 @@ pub fn full_row_ordered_by(
     Ok(records)
 }
 
-pub fn ping_db(config: &Config, db_url: &str) -> Result<(), PgError> {
-    let mut client = connect(config, db_url)?;
-    println!("Ping 10 -> {}", config.db_url_shortener(db_url));
+pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
+    let mut client = connect(config, &db.url(config))?;
+    println!("Ping 10 -> {}", db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", config.db_url_shortener(db_url));
+    println!("Pong {value} <- {}", &db.url(config));
     Ok(())
 }

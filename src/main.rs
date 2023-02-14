@@ -6,8 +6,8 @@ mod last_created_records;
 mod last_updated_records;
 use std::cell::RefCell;
 mod all_rows;
-
 use clap::Parser;
+use database::DBSelector::{MasterDB, ReplicaDB};
 
 type DBsResults = (String, Vec<String>, Vec<String>);
 
@@ -34,16 +34,11 @@ pub struct Config<'a> {
     white_listed_tables: Option<Vec<String>>,
 }
 
-pub enum DBSelector {
-    MasterDB,
-    ReplicaDB,
-}
-
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
-    database::ping_db(&config, &args.db1)?;
-    database::ping_db(&config, &args.db2)?;
+    database::ping_db(&config, MasterDB)?;
+    database::ping_db(&config, ReplicaDB)?;
 
     if config.should_run_counters() {
         counter::run(&config)?;
@@ -90,13 +85,6 @@ impl<'main> Config<'main> {
             }
         }
     }
-    pub fn db_url_shortener(&self, db_url: &str) -> String {
-        if db_url == self.args.db1 {
-            "DB1".to_string()
-        } else {
-            "DB2".to_string()
-        }
-    }
 
     pub fn should_run_counters(&self) -> bool {
         false
@@ -109,22 +97,6 @@ impl<'main> Config<'main> {
     }
     pub fn should_run_all_rows(&self) -> bool {
         true
-    }
-}
-
-impl DBSelector {
-    fn name(&self) -> String {
-        match self {
-            Self::MasterDB => "DB1".to_string(),
-            Self::ReplicaDB => "DB2".to_string(),
-        }
-    }
-
-    fn url<'main>(&self, config: &'main Config) -> &'main String {
-        match self {
-            Self::MasterDB => &config.args.db1,
-            Self::ReplicaDB => &config.args.db2,
-        }
     }
 }
 
