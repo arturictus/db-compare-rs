@@ -12,7 +12,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let mut upper_bound = database::get_greatest_id_from(&config, MasterDB, table).unwrap();
+    let mut upper_bound = database::get_greatest_id_from(config, MasterDB, table).unwrap();
     while upper_bound != 0 {
         let lower_bound = if upper_bound > config.args.limit {
             upper_bound - config.args.limit

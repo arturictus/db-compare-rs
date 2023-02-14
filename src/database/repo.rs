@@ -43,10 +43,9 @@ pub fn get_row_by_id_range(
                (id > {lower_bound}) AND (id <= {upper_bound})
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
     FROM
-        cte;",
-        limit
+        cte;"
     );
 
     if let Ok(rows) = client.simple_query(&the_q) {
@@ -203,12 +202,12 @@ pub fn full_row_ordered_by(
 }
 
 pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
-    let mut client = connect(config, &db.url(config))?;
+    let mut client = connect(config, db.url(config))?;
     println!("Ping 10 -> {}", db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", &db.url(config));
+    println!("Pong {value} <- {}", db.url(config));
     Ok(())
 }
