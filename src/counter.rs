@@ -9,7 +9,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
         let result2 = database::count_for(config, &config.args.db2, &table).unwrap();
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write((
-            format!("== `{table}`"),
+            format!("== `{table}` count"),
             vec![format!("{result1}")],
             vec![format!("{result2}")],
         ));

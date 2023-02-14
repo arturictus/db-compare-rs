@@ -2,41 +2,61 @@ use crate::Config;
 use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
-pub use repo::{find, ping_db};
+pub use repo::ping_db;
 use std::time::Instant;
 
 struct Query<'a> {
     config: &'a Config<'a>,
     db_url: &'a str,
-    offset: Option<u32>,
     table: Option<&'a str>,
     column: Option<String>,
+    bounds: Option<(u32, u32)>,
 }
 
-pub fn get_rows_ids_from_offset(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    offset: u32,
-) -> Result<Vec<u32>, PgError> {
-    duration::<Vec<u32>>(
+pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+    duration::<u32>(
         format!(
-            "Getting ids from {table} with offset {offset} in {}",
+            "Greatest id from `{table}` in {}",
             config.db_url_shortener(db_url)
         ),
         Query {
             config,
             db_url,
-            offset: Some(offset),
             table: Some(table),
             column: None,
+            bounds: None,
+        },
+        |params| repo::get_greatest_id_from(params.config, params.db_url, params.table.unwrap()),
+    )
+}
+
+pub fn get_row_by_id_range(
+    config: &Config,
+    db_url: &str,
+    table: &str,
+    lower_bound: u32,
+    upper_bound: u32,
+) -> Result<Vec<String>, PgError> {
+    duration::<Vec<String>>(
+        format!(
+            "`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {}",
+            config.db_url_shortener(db_url)
+        ),
+        Query {
+            config,
+            db_url,
+            table: Some(table),
+            column: None,
+            bounds: Some((lower_bound, upper_bound)),
         },
         |params| {
-            repo::get_rows_ids_from_offset(
+            let (lower_bound, upper_bound) = params.bounds.unwrap();
+            repo::get_row_by_id_range(
                 params.config,
                 params.db_url,
                 params.table.unwrap(),
-                params.offset.unwrap(),
+                lower_bound,
+                upper_bound,
             )
         },
     )
@@ -51,9 +71,9 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
         Query {
             config,
             db_url,
-            offset: None,
             table: Some(table),
             column: None,
+            bounds: None,
         },
         |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
     )
@@ -66,8 +86,8 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
             config,
             db_url,
             table: None,
-            offset: None,
             column: None,
+            bounds: None,
         },
         |params| repo::all_tables(params.config, params.db_url),
     )
@@ -89,7 +109,7 @@ pub fn tables_with_column(
             db_url,
             column: Some(column),
             table: None,
-            offset: None,
+            bounds: None,
         },
         |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
     )
@@ -113,7 +133,7 @@ pub fn id_and_column_value(
             db_url,
             table: Some(table),
             column: Some(column),
-            offset: None,
+            bounds: None,
         },
         |params| {
             repo::id_and_column_value(
@@ -143,7 +163,7 @@ pub fn full_row_ordered_by(
             db_url,
             table: Some(table),
             column: Some(column),
-            offset: None,
+            bounds: None,
         },
         |params| {
             repo::full_row_ordered_by(

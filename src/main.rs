@@ -44,14 +44,23 @@ fn main() -> Result<(), postgres::Error> {
     let config = Config::new(&args);
     database::ping_db(&config, &args.db1)?;
     database::ping_db(&config, &args.db2)?;
-    all_rows::run(&config)?;
-    // counter::run(&config)?;
-    // last_updated_records::tables(&config)?;
-    // last_updated_records::only_updated_ats(&config)?;
-    // last_updated_records::all_columns(&config)?;
-    // last_created_records::tables(&config)?;
-    // last_created_records::only_created_ats(&config)?;
-    // last_created_records::all_columns(&config)?;
+
+    if config.should_run_counters() {
+        counter::run(&config)?;
+    }
+    if config.should_run_updated_ats() {
+        last_updated_records::tables(&config)?;
+        last_updated_records::only_updated_ats(&config)?;
+        last_updated_records::all_columns(&config)?;
+    }
+    if config.should_run_created_ats() {
+        last_created_records::tables(&config)?;
+        last_created_records::only_created_ats(&config)?;
+        last_created_records::all_columns(&config)?;
+    }
+    if config.should_run_all_rows() {
+        all_rows::run(&config)?;
+    }
     config.diff_io.borrow_mut().close();
     Ok(())
 }
@@ -87,6 +96,19 @@ impl<'main> Config<'main> {
         } else {
             "DB2".to_string()
         }
+    }
+
+    pub fn should_run_counters(&self) -> bool {
+        false
+    }
+    pub fn should_run_updated_ats(&self) -> bool {
+        false
+    }
+    pub fn should_run_created_ats(&self) -> bool {
+        false
+    }
+    pub fn should_run_all_rows(&self) -> bool {
+        true
     }
 }
 
