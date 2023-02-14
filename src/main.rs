@@ -63,7 +63,7 @@ fn main() -> Result<(), postgres::Error> {
 impl<'main> Config<'main> {
     pub fn new(args: &'main Args) -> Config<'main> {
         let diff_io: diff::IOType = diff::IO::new(args);
-        if let Some(file_path) = &args.tables_file {
+        let white_listed_tables = if let Some(file_path) = &args.tables_file {
             let value = {
                 let text = std::fs::read_to_string(file_path)
                     .unwrap_or_else(|_| panic!("unable to read file at: {file_path}"));
@@ -72,17 +72,15 @@ impl<'main> Config<'main> {
                     panic!("malformed json file at: {file_path}, expected list with strings ex: [\"users\"]")
                 })
             };
-            Self {
-                args,
-                diff_io: RefCell::new(diff_io),
-                white_listed_tables: Some(value),
-            }
+            Some(value)
         } else {
-            Self {
-                args,
-                diff_io: RefCell::new(diff_io),
-                white_listed_tables: None,
-            }
+            None
+        };
+
+        Self {
+            args,
+            diff_io: RefCell::new(diff_io),
+            white_listed_tables,
         }
     }
 
