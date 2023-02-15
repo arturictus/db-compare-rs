@@ -102,10 +102,8 @@ impl<'main> Config<'main> {
     }
 
     fn build_from_config_file(args: &'main Args) -> Option<Self> {
-        if args.config.is_none() {
-            return None;
-        }
-        let file_path = args.config.as_ref().unwrap();
+        let config_arg = args.config.as_ref()?;
+        let file_path = config_arg;
         let data = fs::read_to_string(file_path)
             .unwrap_or_else(|_| panic!("file not found for config argument: {file_path}"));
         let yaml = YamlLoader::load_from_str(&data)
@@ -115,7 +113,7 @@ impl<'main> Config<'main> {
             data => Some(
                 data.as_vec()
                     .unwrap()
-                    .into_iter()
+                    .iter()
                     .map(|e| e.clone().into_string().unwrap())
                     .collect(),
             ),
