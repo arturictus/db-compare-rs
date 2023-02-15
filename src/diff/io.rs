@@ -6,7 +6,7 @@ use std::io::LineWriter;
 
 #[derive(Debug)]
 pub enum IOType {
-    STDOUT,
+    Stdout,
     File(LineWriter<File>),
 }
 
@@ -22,13 +22,13 @@ impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
             Some(file_path) => Self::File(new_file(file_path)),
-            _ => Self::STDOUT,
+            _ => Self::Stdout,
         }
     }
     fn new_from_path(file_path: Option<String>) -> Self {
         match file_path {
             Some(f) => Self::File(new_file(&f)),
-            _ => Self::STDOUT,
+            _ => Self::Stdout,
         }
     }
     fn write(&mut self, result: DBsResults) {
@@ -51,10 +51,7 @@ impl IO for IOType {
         }
     }
     fn is_stdout(&self) -> bool {
-        match self {
-            Self::STDOUT => true,
-            _ => false,
-        }
+        matches!(self, Self::Stdout)
     }
 }
 

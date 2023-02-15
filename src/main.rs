@@ -81,7 +81,7 @@ impl<'main> Config<'main> {
         } else {
             None
         };
-        let from_file = Self::build_from_config_file(&args);
+        let from_file = Self::build_from_config_file(args);
 
         let from_args = Self {
             args,
@@ -89,13 +89,14 @@ impl<'main> Config<'main> {
                 let diff_io: diff::IOType = diff::IO::new(args);
                 RefCell::new(diff_io)
             } else {
-                RefCell::new(diff::IOType::STDOUT)
+                RefCell::new(diff::IOType::Stdout)
             },
             white_listed_tables,
             limit: args.limit,
         };
-        if from_file.is_some() {
-            Self::merge(from_file.unwrap(), from_args)
+
+        if let Some(file_config) = from_file {
+            Self::merge(file_config, from_args)
         } else {
             from_args
         }
@@ -124,14 +125,14 @@ impl<'main> Config<'main> {
         };
         let diff_io: RefCell<diff::IOType> = if args.diff_file.is_none() {
             match &yaml[0]["diff-file"] {
-                yaml_rust::Yaml::BadValue => RefCell::new(diff::IOType::STDOUT),
+                yaml_rust::Yaml::BadValue => RefCell::new(diff::IOType::Stdout),
                 data => {
                     let path = diff::IO::new_from_path(data.clone().into_string());
                     RefCell::new(path)
                 }
             }
         } else {
-            RefCell::new(diff::IOType::STDOUT)
+            RefCell::new(diff::IOType::Stdout)
         };
 
         Some(Self {
