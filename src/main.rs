@@ -153,9 +153,9 @@ impl<'main> Config<'main> {
                 old.limit
             },
             diff_io: if new.diff_io.borrow().is_stdout() {
-                new.diff_io
-            } else {
                 old.diff_io
+            } else {
+                new.diff_io
             },
             white_listed_tables: if new.white_listed_tables.is_some() {
                 new.white_listed_tables
