@@ -1,0 +1,9 @@
+tables:
+  - users
+jobs:
+  - counters
+  - last_updated_ats
+  - last_created_ats
+  - all_rows
+limit: 1
+diff-file: ./tmp/diff_from_yaml.diff
