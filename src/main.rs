@@ -38,6 +38,7 @@ pub struct Config<'a> {
     limit: u32,
     diff_io: RefCell<diff::IOType>,
     white_listed_tables: Option<Vec<String>>,
+    jobs: Option<Vec<String>>,
 }
 
 fn main() -> Result<(), postgres::Error> {
@@ -93,6 +94,7 @@ impl<'main> Config<'main> {
             },
             white_listed_tables,
             limit: args.limit,
+            jobs: None,
         };
 
         if let Some(file_config) = from_file {
@@ -134,12 +136,23 @@ impl<'main> Config<'main> {
         } else {
             RefCell::new(diff::IOType::Stdout)
         };
+        let jobs = match &yaml[0]["jobs"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(
+                data.as_vec()
+                    .unwrap()
+                    .iter()
+                    .map(|e| e.clone().into_string().unwrap())
+                    .collect(),
+            ),
+        };
 
         Some(Self {
             args,
             limit,
             diff_io,
             white_listed_tables,
+            jobs,
         })
     }
 
@@ -161,19 +174,36 @@ impl<'main> Config<'main> {
             } else {
                 old.white_listed_tables
             },
+            jobs: if new.jobs.is_some() {
+                new.jobs
+            } else {
+                old.jobs
+            },
         }
     }
 
     pub fn should_run_counters(&self) -> bool {
+        if let Some(list) = &self.jobs {
+            return list.contains(&"counters".to_string());
+        }
         false
     }
     pub fn should_run_updated_ats(&self) -> bool {
+        if let Some(list) = &self.jobs {
+            return list.contains(&"last_updated_ats".to_string());
+        }
         false
     }
     pub fn should_run_created_ats(&self) -> bool {
+        if let Some(list) = &self.jobs {
+            return list.contains(&"last_created_ats".to_string());
+        }
         false
     }
     pub fn should_run_all_rows(&self) -> bool {
+        if let Some(list) = &self.jobs {
+            return list.contains(&"all_rows".to_string());
+        }
         true
     }
 }
