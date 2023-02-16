@@ -49,8 +49,6 @@ pub struct Config {
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
-    println!("{:?}", config);
-    // panic!();
     database::ping_db(&config, MasterDB)?;
     database::ping_db(&config, ReplicaDB)?;
 

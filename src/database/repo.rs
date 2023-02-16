@@ -30,7 +30,7 @@ pub fn get_row_by_id_range(
     let column = "id".to_string();
     let limit = config.limit;
     let mut records: Vec<String> = Vec::new();
-    let the_q = format!(
+    let query = format!(
         "WITH
         cte AS
         (
@@ -48,7 +48,7 @@ pub fn get_row_by_id_range(
         cte;"
     );
 
-    if let Ok(rows) = client.simple_query(&the_q) {
+    if let Ok(rows) = client.simple_query(&query) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 let value = result.get(0).unwrap_or("[]");
