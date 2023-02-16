@@ -21,14 +21,14 @@ impl DBSelector {
 
     fn url<'main>(&self, config: &'main Config) -> &'main String {
         match self {
-            Self::MasterDB => &config.args.db1,
-            Self::ReplicaDB => &config.args.db2,
+            Self::MasterDB => &config.db1,
+            Self::ReplicaDB => &config.db2,
         }
     }
 }
 
 struct Query<'a> {
-    config: &'a Config<'a>,
+    config: &'a Config,
     db_url: &'a str,
     table: Option<&'a str>,
     column: Option<String>,
