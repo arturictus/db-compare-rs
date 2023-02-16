@@ -230,11 +230,15 @@ mod test {
             tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
             ..default_args()
         };
-
+        let config = Config::new(&args_with_listed_file);
         assert_eq!(
-            Config::new(&args_with_listed_file).white_listed_tables,
+            config.white_listed_tables,
             Some(vec!["table_from_tables_file".to_string()])
         );
+        assert_eq!(config.should_run_counters(), false);
+        assert_eq!(config.should_run_updated_ats(), false);
+        assert_eq!(config.should_run_created_ats(), false);
+        assert_eq!(config.should_run_all_rows(), true);
     }
     #[test]
     fn test_config_from_config_file() {
@@ -258,7 +262,11 @@ mod test {
                 "last_created_ats".to_string(),
                 "all_rows".to_string()
             ])
-        )
+        );
+        assert_eq!(config.should_run_counters(), true);
+        assert_eq!(config.should_run_updated_ats(), true);
+        assert_eq!(config.should_run_created_ats(), true);
+        assert_eq!(config.should_run_all_rows(), true);
     }
     #[test]
     fn test_config_from_config_file_with_args() {
@@ -283,6 +291,10 @@ mod test {
                 "last_created_ats".to_string(),
                 "all_rows".to_string()
             ])
-        )
+        );
+        assert_eq!(config.should_run_counters(), true);
+        assert_eq!(config.should_run_updated_ats(), true);
+        assert_eq!(config.should_run_created_ats(), true);
+        assert_eq!(config.should_run_all_rows(), true);
     }
 }
