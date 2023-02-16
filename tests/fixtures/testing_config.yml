@@ -6,4 +6,4 @@ jobs:
   - last_created_ats
   - all_rows
 limit: 999
-diff-file: ./tmp/diff_from_yaml.diff
+diff-file: ./diff_from_testing.diff
