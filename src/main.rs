@@ -102,10 +102,7 @@ impl Config {
             };
             Some(value)
         } else {
-            match config_file.white_listed_tables {
-                Some(tables) => Some(tables),
-                _ => None,
-            }
+            config_file.white_listed_tables
         };
 
         let diff_io = if args.diff_file.is_some() {

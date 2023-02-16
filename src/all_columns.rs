@@ -15,10 +15,10 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let mut upper_bound = database::get_greatest_id_from(config, MasterDB, table).unwrap();
     let mut counter = 0u32;
     while upper_bound != 0 {
-        if config.all_columns_sample_size.is_some() {
-            if counter > config.all_columns_sample_size.unwrap() {
-                break;
-            }
+        if config.all_columns_sample_size.is_some()
+            && counter > config.all_columns_sample_size.unwrap()
+        {
+            break;
         }
         let lower_bound = if upper_bound > config.limit {
             upper_bound - config.limit
@@ -39,7 +39,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             records2,
         ));
         upper_bound = lower_bound;
-        counter = counter + config.limit
+        counter += config.limit
     }
     Ok(())
 }
