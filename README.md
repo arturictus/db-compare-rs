@@ -6,18 +6,16 @@ Usefull to verify when migrating databases.
 
 ## Installation
 
-- get github token to access to repo releases
 - install [eget](https://github.com/zyedidia/eget)
 
 **run:**
 
 ```sh
-export EGET_GITHUB_TOKEN=ghp_1234567890
 
-eget --sha256 selma-finance/rust_db_migrate_checker
+eget --sha256 arturictus/db-compare-rs
 => sha256output
 
-eget --verify-sha256=sha256output selma-finance/rust_db_migrate_checker
+eget --verify-sha256=sha256output arturictus/db-compare-rs
 ```
 
 ## RUN
