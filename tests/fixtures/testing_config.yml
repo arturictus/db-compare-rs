@@ -9,4 +9,4 @@ jobs:
   - all_columns
 limit: 999
 diff-file: ./diff_from_testing.diff
-all-rows-sample-size: 10000
+all-columns-sample-size: 10000

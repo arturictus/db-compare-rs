@@ -18,13 +18,13 @@ const DEFAULT_LIMIT: u32 = 100;
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(long)]
-    db1: String,
+    db1: Option<String>,
     #[arg(long)]
-    db2: String,
+    db2: Option<String>,
     #[arg(long, default_value_t = DEFAULT_LIMIT)]
     limit: u32,
-    #[arg(long = "all-rows-sample-size")]
-    all_rows_sample_size: Option<u32>,
+    #[arg(long = "all-columns-sample-size")]
+    all_columns_sample_size: Option<u32>,
     #[arg(long = "no-tls")]
     no_tls: bool,
     #[arg(long = "diff-file")]
@@ -35,13 +35,15 @@ pub struct Args {
     config: Option<String>,
 }
 #[derive(Debug)]
-pub struct Config<'a> {
-    args: &'a Args,
+pub struct Config {
+    db1: String,
+    db2: String,
+    tls: bool,
     limit: u32,
     diff_io: RefCell<diff::IOType>,
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<String>>,
-    all_rows_sample_size: Option<u32>,
+    all_columns_sample_size: Option<u32>,
 }
 
 fn main() -> Result<(), postgres::Error> {
@@ -70,9 +72,24 @@ fn main() -> Result<(), postgres::Error> {
     Ok(())
 }
 
-impl<'main> Config<'main> {
-    pub fn new(args: &'main Args) -> Config<'main> {
+impl Config {
+    pub fn new(args: &Args) -> Config {
         let config_file = ConfigFile::build(args);
+
+        let db1 = if let Some(db_url) = args.db1.clone() {
+            db_url
+        } else {
+            config_file
+                .db1
+                .unwrap_or_else(|| panic!("Missing `db1` argument or attribute in config file"))
+        };
+        let db2 = if let Some(db_url) = args.db2.clone() {
+            db_url
+        } else {
+            config_file
+                .db2
+                .unwrap_or_else(|| panic!("Missing `db2` argument or attribute in config file"))
+        };
 
         let white_listed_tables = if let Some(file_path) = &args.tables_file {
             let value = {
@@ -112,19 +129,21 @@ impl<'main> Config<'main> {
             }
         };
 
-        let all_rows_sample_size = if args.all_rows_sample_size.is_some() {
-            args.all_rows_sample_size
+        let all_columns_sample_size = if args.all_columns_sample_size.is_some() {
+            args.all_columns_sample_size
         } else {
-            config_file.all_rows_sample_size
+            config_file.all_columns_sample_size
         };
 
         Self {
-            args,
+            db1,
+            db2,
             diff_io,
             white_listed_tables,
             limit,
             jobs: config_file.jobs,
-            all_rows_sample_size,
+            all_columns_sample_size,
+            tls: !args.no_tls,
         }
     }
 
@@ -156,11 +175,13 @@ impl<'main> Config<'main> {
 
 #[derive(Debug, Clone)]
 struct ConfigFile {
+    db1: Option<String>,
+    db2: Option<String>,
     limit: Option<u32>,
     diff_file: Option<String>,
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<String>>,
-    all_rows_sample_size: Option<u32>,
+    all_columns_sample_size: Option<u32>,
 }
 
 impl ConfigFile {
@@ -199,25 +220,37 @@ impl ConfigFile {
                         .collect(),
                 ),
             };
-            let all_rows_sample_size: Option<u32> = match &yaml[0]["all-rows-sample-size"] {
+            let all_columns_sample_size: Option<u32> = match &yaml[0]["all-columns-sample-size"] {
                 yaml_rust::Yaml::BadValue => None,
                 data => Some(data.as_i64().unwrap().try_into().unwrap()),
             };
+            let db1: Option<String> = match &yaml[0]["db1"] {
+                yaml_rust::Yaml::BadValue => None,
+                data => Some(data.clone().into_string().unwrap()),
+            };
+            let db2: Option<String> = match &yaml[0]["db1"] {
+                yaml_rust::Yaml::BadValue => None,
+                data => Some(data.clone().into_string().unwrap()),
+            };
 
             Self {
+                db1,
+                db2,
                 limit,
                 diff_file,
                 white_listed_tables,
                 jobs,
-                all_rows_sample_size,
+                all_columns_sample_size,
             }
         } else {
             Self {
+                db1: None,
+                db2: None,
                 limit: None,
                 diff_file: None,
                 white_listed_tables: None,
                 jobs: None,
-                all_rows_sample_size: None,
+                all_columns_sample_size: None,
             }
         }
     }
@@ -229,11 +262,11 @@ mod test {
 
     fn default_args() -> Args {
         Args {
-            db1: "postgresql://postgres:postgres@127.0.0.1/db1".to_string(),
-            db2: "postgresql://postgres:postgres@127.0.0.1/db2".to_string(),
+            db1: Some("postgresql://postgres:postgres@127.0.0.1/db1".to_string()),
+            db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
             limit: 1,
             no_tls: false,
-            all_rows_sample_size: None,
+            all_columns_sample_size: None,
             diff_file: None,
             tables_file: None,
             config: None,
