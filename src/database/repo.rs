@@ -1,26 +1,36 @@
 use crate::database::DBSelector;
 use crate::Config;
-use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
+// use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
-use postgres_openssl::MakeTlsConnector;
+// use postgres_openssl::MakeTlsConnector;
+use futures::TryStreamExt;
+use sqlx::{postgres::PgPoolOptions, Error as SqlxError, Pool, Postgres, Row};
 
-pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub async fn get_greatest_id_from(
+    config: &Config,
+    db: DBSelector,
+    table: &str,
+) -> Result<u32, SqlxError> {
+    let mut conn = db.client(config);
     let mut output: u32 = 0;
-    if let Ok(row) =
-        client.simple_query(&format!("SELECT id FROM {table} ORDER BY id DESC LIMIT 1;"))
-    {
-        for data in row {
-            if let SimpleQueryMessage::Row(result) = data {
-                output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
-            }
-        }
+    let rows =
+        sqlx::query(&format!("SELECT id FROM {table} ORDER BY id DESC LIMIT 1;")).fetch(&conn);
+    while let Some(row) = rows.try_next().await? {
+        // map the row into a user-defined domain type
+        output = row.try_get("id").unwrap().parse::<u32>().unwrap();
     }
+    // if let Ok(row) = {
+    //     for data in row {
+    //         if let SimpleQueryMessage::Row(result) = data {
+    //             output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
+    //         }
+    //     }
+    // }
     Ok(output)
 }
 pub fn get_row_by_id_range(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     lower_bound: u32,
     upper_bound: u32,
@@ -64,7 +74,7 @@ pub fn get_row_by_id_range(
     Ok(records)
 }
 
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
+pub fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;
     if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
@@ -77,7 +87,7 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
     Ok(output)
 }
 
-fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
+fn connect(config: &Config, db: DBSelector) -> Result<Client, PgError> {
     if config.args.no_tls {
         Client::connect(db_url, NoTls)
     } else {
@@ -89,7 +99,7 @@ fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
+pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
     let mut client = connect(config, db_url)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
@@ -103,7 +113,7 @@ pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError>
 
 pub fn tables_with_column(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     column: String,
 ) -> Result<Vec<String>, PgError> {
     let mut client = connect(config, db_url)?;
@@ -127,7 +137,7 @@ pub fn tables_with_column(
 
 pub fn id_and_column_value(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     column: String,
 ) -> Result<Vec<String>, PgError> {
@@ -164,7 +174,7 @@ fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
 
 pub fn full_row_ordered_by(
     config: &Config,
-    db_url: &str,
+    db: DBSelector,
     table: &str,
     column: String,
 ) -> Result<Vec<String>, PgError> {

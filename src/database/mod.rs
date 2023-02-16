@@ -3,6 +3,7 @@ use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
 pub use repo::ping_db;
+use sqlx::{Pool, Postgres};
 use std::time::Instant;
 
 #[derive(Clone, Copy)]
@@ -19,6 +20,13 @@ impl DBSelector {
         }
     }
 
+    fn client<'main>(&self, config: &'main Config) -> Pool<Postgres> {
+        match self {
+            Self::MasterDB => config.db1_conn,
+            Self::ReplicaDB => config.db2_conn,
+        }
+    }
+
     fn url<'main>(&self, config: &'main Config) -> &'main String {
         match self {
             Self::MasterDB => &config.args.db1,
@@ -29,7 +37,7 @@ impl DBSelector {
 
 struct Query<'a> {
     config: &'a Config<'a>,
-    db_url: &'a str,
+    db: DBSelector,
     table: Option<&'a str>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
@@ -40,12 +48,12 @@ pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Res
         format!("Greatest id from `{table}` in {}", db.name()),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: Some(table),
             column: None,
             bounds: None,
         },
-        |params| repo::get_greatest_id_from(params.config, params.db_url, params.table.unwrap()),
+        |params| repo::get_greatest_id_from(params.config, params.db, params.table.unwrap()),
     )
 }
 
@@ -63,7 +71,7 @@ pub fn get_row_by_id_range(
         ),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: Some(table),
             column: None,
             bounds: Some((lower_bound, upper_bound)),
@@ -72,7 +80,7 @@ pub fn get_row_by_id_range(
             let (lower_bound, upper_bound) = params.bounds.unwrap();
             repo::get_row_by_id_range(
                 params.config,
-                params.db_url,
+                params.db,
                 params.table.unwrap(),
                 lower_bound,
                 upper_bound,
@@ -85,12 +93,12 @@ pub fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, Pg
         format!("count from {} in {}", table, db.name()),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: Some(table),
             column: None,
             bounds: None,
         },
-        |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
+        |params| repo::count_for(params.config, params.db, params.table.unwrap()),
     )
 }
 
@@ -99,12 +107,12 @@ pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgErro
         format!("Getting all tables for {}", db.name()),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: None,
             column: None,
             bounds: None,
         },
-        |params| repo::all_tables(params.config, params.db_url),
+        |params| repo::all_tables(params.config, params.db),
     )
 }
 
@@ -117,12 +125,12 @@ pub fn tables_with_column(
         format!("Getting all tables with column {} in {}", column, db.name()),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             column: Some(column),
             table: None,
             bounds: None,
         },
-        |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
+        |params| repo::tables_with_column(params.config, params.db, params.column.unwrap()),
     )
 }
 
@@ -141,7 +149,7 @@ pub fn id_and_column_value(
         ),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: Some(table),
             column: Some(column),
             bounds: None,
@@ -149,7 +157,7 @@ pub fn id_and_column_value(
         |params| {
             repo::id_and_column_value(
                 params.config,
-                params.db_url,
+                params.db,
                 params.table.unwrap(),
                 params.column.unwrap(),
             )
@@ -167,7 +175,7 @@ pub fn full_row_ordered_by(
         format!("Getting rows from table {} in {}", table, db.name()),
         Query {
             config,
-            db_url: db.url(config),
+            db,
             table: Some(table),
             column: Some(column),
             bounds: None,
@@ -175,7 +183,7 @@ pub fn full_row_ordered_by(
         |params| {
             repo::full_row_ordered_by(
                 params.config,
-                params.db_url,
+                params.db,
                 params.table.unwrap(),
                 params.column.unwrap(),
             )
