@@ -1,0 +1,9 @@
+tables:
+  - testing_tables
+jobs:
+  - counters
+  - last_updated_ats
+  - last_created_ats
+  - all_rows
+limit: 999
+diff-file: ./diff_from_testing.diff
