@@ -28,7 +28,7 @@ pub fn get_row_by_id_range(
     use serde_json::Value;
     let mut client = connect(config, db_url)?;
     let column = "id".to_string();
-    let limit = config.args.limit;
+    let limit = config.limit;
     let mut records: Vec<String> = Vec::new();
     let the_q = format!(
         "WITH
@@ -136,7 +136,7 @@ pub fn id_and_column_value(
     let mut records = Vec::new();
     if let Ok(rows) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
-        config.args.limit
+        config.limit
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
@@ -185,7 +185,7 @@ pub fn full_row_ordered_by(
         JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
     FROM
         cte;",
-        config.args.limit
+        config.limit
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {

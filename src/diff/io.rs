@@ -14,7 +14,7 @@ pub trait IO {
     fn write(&mut self, result: DBsResults);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
-    fn new_from_path(file_path: Option<String>) -> Self;
+    fn new_from_path(file_path: String) -> Self;
     fn is_stdout(&self) -> bool;
 }
 
@@ -25,11 +25,8 @@ impl IO for IOType {
             _ => Self::Stdout,
         }
     }
-    fn new_from_path(file_path: Option<String>) -> Self {
-        match file_path {
-            Some(f) => Self::File(new_file(&f)),
-            _ => Self::Stdout,
-        }
+    fn new_from_path(file_path: String) -> Self {
+        Self::File(new_file(&file_path))
     }
     fn write(&mut self, result: DBsResults) {
         let (header, diff) = formatter::call(result);
