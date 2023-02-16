@@ -31,7 +31,7 @@ pub struct Args {
     diff_file: Option<String>,
     #[arg(long = "tables-file")]
     tables_file: Option<String>,
-    #[arg(long, short)]
+    #[arg(long, short, help = "Yaml config file")]
     config: Option<String>,
 }
 #[derive(Debug)]

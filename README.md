@@ -18,7 +18,7 @@ eget --sha256 arturictus/db-compare-rs
 eget --verify-sha256=sha256output arturictus/db-compare-rs
 ```
 
-## RUN
+## Usage
 
 ```sh
 db-compare --db1 postgresql://postgres:postgres@127.0.0.1/my_database --db2 postgresql://postgres:postgres@[other]/my_database
@@ -55,7 +55,7 @@ diff-file: ./diff_from_testing.diff
 all-columns-sample-size: 10000
 ```
 
-All configs can be overriden by command params.
+Most of the configs can be overriden by command params.
 
 ```sh
 db-compare --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100 --diff-file ./tmp/another_replica.diff
