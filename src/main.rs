@@ -233,11 +233,56 @@ mod test {
 
         assert_eq!(
             Config::new(&args_with_listed_file).white_listed_tables,
-            Some(vec!["users".to_string()])
+            Some(vec!["table_from_tables_file".to_string()])
         );
     }
     #[test]
     fn test_config_from_config_file() {
-        Config::build_from_config_file(&default_args());
+        let args = Args {
+            limit: DEFAULT_LIMIT,
+            config: Some("./tests/fixtures/testing_config.yml".to_string()),
+            ..default_args()
+        };
+        let config = Config::new(&args);
+        assert_eq!(
+            config.white_listed_tables,
+            Some(vec!["testing_tables".to_string()])
+        );
+        assert_eq!(config.limit, 999);
+        assert_eq!(config.diff_io.borrow().is_stdout(), false);
+        assert_eq!(
+            config.jobs,
+            Some(vec![
+                "counters".to_string(),
+                "last_updated_ats".to_string(),
+                "last_created_ats".to_string(),
+                "all_rows".to_string()
+            ])
+        )
+    }
+    #[test]
+    fn test_config_from_config_file_with_args() {
+        let args = Args {
+            limit: 22,
+            tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
+            config: Some("./tests/fixtures/testing_config.yml".to_string()),
+            ..default_args()
+        };
+        let config = Config::new(&args);
+        assert_eq!(
+            config.white_listed_tables,
+            Some(vec!["table_from_tables_file".to_string()])
+        );
+        assert_eq!(config.limit, 22);
+        assert_eq!(config.diff_io.borrow().is_stdout(), false);
+        assert_eq!(
+            config.jobs,
+            Some(vec![
+                "counters".to_string(),
+                "last_updated_ats".to_string(),
+                "last_created_ats".to_string(),
+                "all_rows".to_string()
+            ])
+        )
     }
 }
