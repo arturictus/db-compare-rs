@@ -49,6 +49,8 @@ pub struct Config {
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
+    println!("{:?}", config);
+    // panic!();
     database::ping_db(&config, MasterDB)?;
     database::ping_db(&config, ReplicaDB)?;
 
@@ -225,7 +227,7 @@ impl ConfigFile {
                 yaml_rust::Yaml::BadValue => None,
                 data => Some(data.clone().into_string().unwrap()),
             };
-            let db2: Option<String> = match &yaml[0]["db1"] {
+            let db2: Option<String> = match &yaml[0]["db2"] {
                 yaml_rust::Yaml::BadValue => None,
                 data => Some(data.clone().into_string().unwrap()),
             };
