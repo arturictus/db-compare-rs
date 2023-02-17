@@ -2,10 +2,10 @@ mod counter;
 mod database;
 mod diff;
 use diff::IO;
-mod last_created_records;
-mod last_updated_records;
+// mod last_created_records;
+// mod last_updated_records;
 use std::{cell::RefCell, fs};
-mod all_columns;
+// mod all_columns;
 use clap::Parser;
 use database::DBSelector::{MasterDB, ReplicaDB};
 extern crate yaml_rust;
@@ -45,29 +45,29 @@ pub struct Config {
     jobs: Option<Vec<String>>,
     all_columns_sample_size: Option<u32>,
 }
-
-fn main() -> Result<(), postgres::Error> {
+#[tokio::main]
+async fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
     database::ping_db(&config, MasterDB)?;
     database::ping_db(&config, ReplicaDB)?;
 
     if config.should_run_counters() {
-        counter::run(&config)?;
+        counter::run(&config).await?;
     }
-    if config.should_run_updated_ats() {
-        last_updated_records::tables(&config)?;
-        last_updated_records::only_updated_ats(&config)?;
-        last_updated_records::all_columns(&config)?;
-    }
-    if config.should_run_created_ats() {
-        last_created_records::tables(&config)?;
-        last_created_records::only_created_ats(&config)?;
-        last_created_records::all_columns(&config)?;
-    }
-    if config.should_run_all_columns() {
-        all_columns::run(&config)?;
-    }
+    // if config.should_run_updated_ats() {
+    //     last_updated_records::tables(&config)?;
+    //     last_updated_records::only_updated_ats(&config)?;
+    //     last_updated_records::all_columns(&config)?;
+    // }
+    // if config.should_run_created_ats() {
+    //     last_created_records::tables(&config)?;
+    //     last_created_records::only_created_ats(&config)?;
+    //     last_created_records::all_columns(&config)?;
+    // }
+    // if config.should_run_all_columns() {
+    //     all_columns::run(&config)?;
+    // }
     config.diff_io.borrow_mut().close();
     Ok(())
 }
@@ -148,7 +148,8 @@ impl Config {
         if let Some(list) = &self.jobs {
             return list.contains(&"counters".to_string());
         }
-        false
+        // FIX:
+        true
     }
     pub fn should_run_updated_ats(&self) -> bool {
         if let Some(list) = &self.jobs {
