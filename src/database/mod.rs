@@ -2,7 +2,7 @@ use crate::Config;
 use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
-pub use repo::ping_db;
+pub use repo::{count_for, ping_db};
 use std::time::Instant;
 use tokio_postgres::Error as TPgError;
 
@@ -81,35 +81,33 @@ struct Query<'a> {
 //         },
 //     )
 // }
-pub async fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
-    repo::count_for(config, db.url(config), table).await
-    // duration::<u32>(
-    //     format!("count from {} in {}", table, db.name()),
-    //     Query {
-    //         config,
-    //         db_url: db.url(config),
-    //         table: Some(table),
-    //         column: None,
-    //         bounds: None,
-    //     },
-    //     |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
-    // )
-    // .await
-}
-
-// pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
-//     duration::<Vec<String>>(
-//         format!("Getting all tables for {}", db.name()),
+// pub fn count_for(config: Config, db: DBSelector, table: String) -> Result<u32, PgError> {
+//     duration::<u32>(
+//         format!("count from {} in {}", table, db.name()),
 //         Query {
-//             config,
-//             db_url: db.url(config),
-//             table: None,
+//             config: &config,
+//             db_url: db.url(&config),
+//             table: Some(&table),
 //             column: None,
 //             bounds: None,
 //         },
-//         |params| repo::all_tables(params.config, params.db_url),
+//         |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
 //     )
 // }
+
+pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
+    duration::<Vec<String>>(
+        format!("Getting all tables for {}", db.name()),
+        Query {
+            config,
+            db_url: db.url(config),
+            table: None,
+            column: None,
+            bounds: None,
+        },
+        |params| repo::all_tables(params.config, params.db_url),
+    )
+}
 
 // pub fn tables_with_column(
 //     config: &Config,
@@ -186,7 +184,7 @@ pub async fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u
 //     )
 // }
 
-async fn duration<T>(
+fn duration<T>(
     message: String,
     p: Query,
     fun: fn(Query) -> Result<T, TPgError>,
