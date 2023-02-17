@@ -16,7 +16,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let mut counter = 0u32;
     while upper_bound != 0 {
         if config.all_columns_sample_size.is_some()
-            && counter > config.all_columns_sample_size.unwrap()
+            && counter >= config.all_columns_sample_size.unwrap()
         {
             break;
         }
@@ -32,8 +32,6 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             database::get_row_by_id_range(config, ReplicaDB, table, lower_bound, upper_bound)
                 .unwrap();
 
-        counter += records1.len() as u32;
-
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write((
             format!("====== `{table}` compare rows with ids from {lower_bound} to {upper_bound}"),
@@ -41,6 +39,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             records2,
         ));
         upper_bound = lower_bound;
+        counter += config.limit;
     }
     Ok(())
 }
