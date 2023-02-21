@@ -17,3 +17,11 @@ similar = "2.2.1"
 yaml-rust = "0.4.5"
 tokio = { version = "1.25.0", features = ["full"] }
 tokio-postgres = "0.7.7"
+rayon = "1.6.1"
+
+[dev-dependencies]
+criterion = "0.4.0"
+
+# [[bench]]
+# name = "rayon"
+# harness = false

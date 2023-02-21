@@ -4,7 +4,7 @@ mod diff;
 use diff::IO;
 // mod last_created_records;
 // mod last_updated_records;
-use std::{cell::RefCell, fs};
+use std::{cell::RefCell, fs, time::Instant};
 // mod all_columns;
 use clap::Parser;
 use database::DBSelector::{MasterDB, ReplicaDB};
@@ -45,8 +45,9 @@ pub struct Config {
     jobs: Option<Vec<String>>,
     all_columns_sample_size: Option<u32>,
 }
-#[tokio::main]
-async fn main() -> Result<(), postgres::Error> {
+fn main() -> Result<(), postgres::Error> {
+    let start = Instant::now();
+    println!("#===Start====");
     let args = Args::parse();
 
     let (config, diff_io) = Config::new(&args);
@@ -54,7 +55,7 @@ async fn main() -> Result<(), postgres::Error> {
     database::ping_db(&config, ReplicaDB)?;
 
     if config.should_run_counters() {
-        counter::run(&config, &diff_io).await?;
+        counter::run(&config, &diff_io);
     }
     // if config.should_run_updated_ats() {
     //     last_updated_records::tables(&config)?;
@@ -70,6 +71,7 @@ async fn main() -> Result<(), postgres::Error> {
     //     all_columns::run(&config)?;
     // }
     diff_io.borrow_mut().close();
+    println!("#===== END === took: {:?}", start.elapsed());
     Ok(())
 }
 

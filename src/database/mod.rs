@@ -20,7 +20,7 @@ impl DBSelector {
         }
     }
 
-    fn url<'main>(&self, config: &'main Config) -> &'main String {
+    pub fn url<'main>(&self, config: &'main Config) -> &'main String {
         match self {
             Self::MasterDB => &config.db1,
             Self::ReplicaDB => &config.db2,

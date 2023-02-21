@@ -3,7 +3,8 @@ use crate::Config;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
-use tokio_postgres::{Error as TPgError, NoTls as TNoTls};
+
+// use tokio_postgres::{Error as TPgError, NoTls as TNoTls};
 
 pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
@@ -65,40 +66,10 @@ pub fn get_row_by_id_range(
     Ok(records)
 }
 
-// pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-//     let mut client = connect(config, db_url)?;
-//     let mut output: u32 = 0;
-//     if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
-//         for data in rows {
-//             if let SimpleQueryMessage::Row(result) = data {
-//                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
-//             }
-//         }
-//     }
-//     Ok(output)
-// }
-pub async fn count_for(config: Config, db: DBSelector, table: String) -> Result<u32, TPgError> {
-    let db_url = db.url(&config);
-    let client = {
-        // let mut builder =
-        //     SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
-        // builder.set_verify(SslVerifyMode::NONE);
-        // let connector = MakeTlsConnector::new(builder.build());
-        let (cl, conn) = tokio_postgres::connect(db_url, TNoTls).await?;
-        // The connection object performs the actual communication with the database,
-        // so spawn it off to run on its own.
-        tokio::spawn(async move {
-            if let Err(e) = conn.await {
-                eprintln!("connection error: {}", e);
-            }
-        });
-        cl
-    };
+pub fn count_for(config: Config, db_url: String, table: String) -> Result<u32, PgError> {
+    let mut client = connect(&config, &db_url)?;
     let mut output: u32 = 0;
-    if let Ok(rows) = client
-        .simple_query(&format!("SELECT COUNT(*) FROM {table};"))
-        .await
-    {
+    if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
