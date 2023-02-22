@@ -5,6 +5,7 @@ use yaml_rust::YamlLoader;
 pub mod counter;
 pub mod database;
 pub mod diff;
+
 // pub use diff;
 // mod last_created_records;
 // mod last_updated_records;
@@ -13,25 +14,25 @@ pub mod diff;
 type DBsResults = (String, Vec<String>, Vec<String>);
 const DEFAULT_LIMIT: u32 = 100;
 
-#[derive(Parser, Debug, PartialEq)]
+#[derive(Parser, Debug, PartialEq, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(long)]
-    db1: Option<String>,
+    pub db1: Option<String>,
     #[arg(long)]
-    db2: Option<String>,
+    pub db2: Option<String>,
     #[arg(long, default_value_t = DEFAULT_LIMIT)]
-    limit: u32,
+    pub limit: u32,
     #[arg(long = "all-columns-sample-size")]
-    all_columns_sample_size: Option<u32>,
+    pub all_columns_sample_size: Option<u32>,
     #[arg(long = "no-tls")]
-    no_tls: bool,
+    pub no_tls: bool,
     #[arg(long = "diff-file")]
-    diff_file: Option<String>,
+    pub diff_file: Option<String>,
     #[arg(long = "tables-file")]
-    tables_file: Option<String>,
+    pub tables_file: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
-    config: Option<String>,
+    pub config: Option<String>,
 }
 #[derive(Debug, Clone)]
 pub struct Config {

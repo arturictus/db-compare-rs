@@ -1,0 +1,9 @@
+db1: "postgresql://postgres:postgres@127.0.0.1/warren_development"
+db2: "postgresql://postgres:postgres@127.0.0.1/warren_test"
+tables:
+  - users
+jobs:
+  - counters
+limit: 100
+diff-file: benches/counter.diff
+all-columns-sample-size: 10000

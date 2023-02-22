@@ -1,5 +1,5 @@
-mod counter;
 mod database;
+
 // mod last_created_records;
 // mod last_updated_records;
 // mod all_columns;
@@ -19,7 +19,7 @@ fn main() -> Result<(), postgres::Error> {
     database::ping_db(&config, ReplicaDB)?;
 
     if config.should_run_counters() {
-        counter::run(&config, &diff_io);
+        db_compare::counter::run(&config, &diff_io);
     }
     // if config.should_run_updated_ats() {
     //     last_updated_records::tables(&config)?;
