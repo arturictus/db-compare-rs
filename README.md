@@ -50,6 +50,7 @@ jobs:
   - last_updated_ats
   - last_created_ats
   - all_columns
+  - sequences
 limit: 100
 diff-file: ./diff_from_testing.diff
 all-columns-sample-size: 10000
