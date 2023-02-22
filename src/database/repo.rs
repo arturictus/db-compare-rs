@@ -4,6 +4,22 @@ use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
+pub fn get_sequences(config: &Config, db_url: &str) -> Result<Vec<(String, u32)>, PgError> {
+    let mut client = connect(config, db_url)?;
+    let mut records: Vec<(String, u32)> = Vec::new();
+    let q = "SELECT sequencename AS sequence,last_value FROM pg_sequences ORDER BY sequencename;";
+    if let Ok(rows) = client.simple_query(q) {
+        for data in rows {
+            if let SimpleQueryMessage::Row(result) = data {
+                records.push((
+                    result.get(0).unwrap_or("error").into(),
+                    result.get(1).unwrap_or("0").parse::<u32>().unwrap(),
+                ));
+            }
+        }
+    }
+    Ok(records)
+}
 pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;

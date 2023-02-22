@@ -19,7 +19,7 @@ impl DBSelector {
         }
     }
 
-    fn url<'main>(&self, config: &'main Config) -> &'main String {
+    pub fn url<'main>(&self, config: &'main Config) -> &'main String {
         match self {
             Self::MasterDB => &config.db1,
             Self::ReplicaDB => &config.db2,
@@ -35,6 +35,22 @@ struct Query<'a> {
     bounds: Option<(u32, u32)>,
 }
 
+pub fn get_sequences(
+    config: &Config,
+    db: DBSelector,
+) -> Result<Vec<(std::string::String, u32)>, PgError> {
+    duration::<Vec<(String, u32)>>(
+        format!("Getting sequences from {}", db.name()),
+        Query {
+            config,
+            db_url: db.url(config),
+            table: None,
+            column: None,
+            bounds: None,
+        },
+        |params| repo::get_sequences(params.config, params.db_url),
+    )
+}
 pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
     duration::<u32>(
         format!("Greatest id from `{table}` in {}", db.name()),
