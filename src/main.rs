@@ -4,6 +4,7 @@ mod diff;
 use diff::IO;
 mod last_created_records;
 mod last_updated_records;
+mod sequences;
 use std::{cell::RefCell, fs};
 mod all_columns;
 use clap::Parser;
@@ -67,6 +68,9 @@ fn main() -> Result<(), postgres::Error> {
     }
     if config.should_run_all_columns() {
         all_columns::run(&config)?;
+    }
+    if config.should_run_sequences() {
+        sequences::run(&config)?;
     }
     config.diff_io.borrow_mut().close();
     Ok(())
@@ -167,6 +171,12 @@ impl Config {
             return list.contains(&"all_columns".to_string());
         }
         true
+    }
+    pub fn should_run_sequences(&self) -> bool {
+        if let Some(list) = &self.jobs {
+            return list.contains(&"sequences".to_string());
+        }
+        false
     }
 }
 
