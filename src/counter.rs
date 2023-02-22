@@ -2,8 +2,10 @@ use crate::database;
 use crate::database::DBSelector::{MasterDB, ReplicaDB};
 use crate::diff::{IOType, IO};
 use crate::Config;
+
 use rayon::prelude::*;
 use std::cell::RefCell;
+
 pub fn rayon_run(config: &Config, diff_io: &RefCell<IOType>) -> Result<(), postgres::Error> {
     let tables = database::all_tables(config, MasterDB)?;
     for table in tables {

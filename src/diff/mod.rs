@@ -1,3 +1,3 @@
 mod formatter;
-mod io;
+pub mod io;
 pub use io::{IOType, IO};
