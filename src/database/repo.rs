@@ -4,8 +4,6 @@ use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
-// use tokio_postgres::{Error as TPgError, NoTls as TNoTls};
-
 pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
     let mut client = connect(config, db_url)?;
     let mut output: u32 = 0;
@@ -91,14 +89,14 @@ fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn all_tables(config: Config, db_url: String) -> Result<Vec<String>, PgError> {
+    let mut client = connect(&config, &db_url)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    tables = white_listed_tables(config, tables);
+    tables = white_listed_tables(&config, tables);
     tables.sort();
     Ok(tables)
 }
@@ -204,12 +202,12 @@ pub fn full_row_ordered_by(
 }
 
 pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
-    let mut client = connect(config, db.url(config))?;
+    let mut client = connect(&config, &db.url(&config))?;
     println!("Ping 10 -> {}", db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", db.url(config));
+    println!("Pong {value} <- {}", db.name());
     Ok(())
 }

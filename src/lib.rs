@@ -5,13 +5,14 @@ use yaml_rust::YamlLoader;
 pub mod counter;
 pub mod database;
 pub mod diff;
+use diff::{IOType, IO};
 
 // pub use diff;
-// mod last_created_records;
+pub mod last_created_records;
 // mod last_updated_records;
 // mod all_columns;
 
-type DBsResults = (String, Vec<String>, Vec<String>);
+pub type DBsResults = (String, Vec<String>, Vec<String>);
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Parser, Debug, PartialEq, Default)]

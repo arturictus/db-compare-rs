@@ -5,9 +5,9 @@ mod database;
 // mod all_columns;
 use clap::Parser;
 use database::DBSelector::{MasterDB, ReplicaDB};
-use db_compare::diff::IO;
-use db_compare::{Args, Config};
-use std::{cell::RefCell, fs, time::Instant};
+use db_compare::diff::{IOType, IO};
+use db_compare::*;
+use std::{cell::RefCell, time::Instant};
 
 fn main() -> Result<(), postgres::Error> {
     let start = Instant::now();
@@ -19,18 +19,18 @@ fn main() -> Result<(), postgres::Error> {
     database::ping_db(&config, ReplicaDB)?;
 
     if config.should_run_counters() {
-        db_compare::counter::run(&config, &diff_io);
+        db_compare::counter::rayon_run(&config, &diff_io)?;
     }
     // if config.should_run_updated_ats() {
     //     last_updated_records::tables(&config)?;
     //     last_updated_records::only_updated_ats(&config)?;
     //     last_updated_records::all_columns(&config)?;
     // }
-    // if config.should_run_created_ats() {
-    //     last_created_records::tables(&config)?;
-    //     last_created_records::only_created_ats(&config)?;
-    //     last_created_records::all_columns(&config)?;
-    // }
+    if config.should_run_created_ats() {
+        db_compare::last_created_records::tables(&config, &diff_io)?;
+        db_compare::last_created_records::only_created_ats(&config, &diff_io)?;
+        db_compare::last_created_records::all_columns(&config, &diff_io)?;
+    }
     // if config.should_run_all_columns() {
     //     all_columns::run(&config)?;
     // }

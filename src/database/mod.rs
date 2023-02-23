@@ -2,7 +2,7 @@ use crate::Config;
 use postgres::Error as PgError;
 mod repo;
 use chrono::prelude::*;
-pub use repo::{count_for, ping_db};
+pub use repo::ping_db;
 use std::time::Instant;
 use tokio_postgres::Error as TPgError;
 
@@ -20,18 +20,18 @@ impl DBSelector {
         }
     }
 
-    pub fn url<'main>(&self, config: &'main Config) -> &'main String {
+    pub fn url<'a>(&'a self, config: &'a Config) -> &String {
         match self {
-            Self::MasterDB => &config.db1,
-            Self::ReplicaDB => &config.db2,
+            DBSelector::MasterDB => &config.db1,
+            DBSelector::ReplicaDB => &config.db2,
         }
     }
 }
 
 struct Query<'a> {
-    config: &'a Config,
-    db_url: &'a str,
-    table: Option<&'a str>,
+    config: Config,
+    db_url: &'a String,
+    table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
 }
@@ -81,31 +81,37 @@ struct Query<'a> {
 //         },
 //     )
 // }
-// pub fn count_for(config: Config, db: DBSelector, table: String) -> Result<u32, PgError> {
-//     duration::<u32>(
-//         format!("count from {} in {}", table, db.name()),
-//         Query {
-//             config: &config,
-//             db_url: db.url(&config),
-//             table: Some(&table),
-//             column: None,
-//             bounds: None,
-//         },
-//         |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
-//     )
-// }
+pub fn count_for(config: Config, db: DBSelector, table: String) -> Result<u32, PgError> {
+    duration::<u32>(
+        format!("count from {} in {}", table, db.name()),
+        Query {
+            config: config.clone(),
+            db_url: db.url(&config),
+            table: Some(table),
+            column: None,
+            bounds: None,
+        },
+        |params| {
+            repo::count_for(
+                params.config,
+                params.db_url.to_string(),
+                params.table.unwrap(),
+            )
+        },
+    )
+}
 
-pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
+pub fn all_tables(config: Config, db: DBSelector) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!("Getting all tables for {}", db.name()),
         Query {
-            config,
-            db_url: db.url(config),
+            config: config.clone(),
+            db_url: db.url(&config),
             table: None,
             column: None,
             bounds: None,
         },
-        |params| repo::all_tables(params.config, params.db_url),
+        |params| repo::all_tables(params.config, params.db_url.to_string()),
     )
 }
 
@@ -127,36 +133,36 @@ pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgErro
 //     )
 // }
 
-// pub fn id_and_column_value(
-//     config: &Config,
-//     db: DBSelector,
-//     table: &str,
-//     column: String,
-// ) -> Result<Vec<String>, PgError> {
-//     duration::<Vec<String>>(
-//         format!(
-//             "Getting `id` and values from column `{}` from table {} in {}",
-//             column,
-//             table,
-//             db.name()
-//         ),
-//         Query {
-//             config,
-//             db_url: db.url(config),
-//             table: Some(table),
-//             column: Some(column),
-//             bounds: None,
-//         },
-//         |params| {
-//             repo::id_and_column_value(
-//                 params.config,
-//                 params.db_url,
-//                 params.table.unwrap(),
-//                 params.column.unwrap(),
-//             )
-//         },
-//     )
-// }
+pub fn id_and_column_value(
+    config: &Config,
+    db: DBSelector,
+    table: &str,
+    column: String,
+) -> Result<Vec<String>, PgError> {
+    duration::<Vec<String>>(
+        format!(
+            "Getting `id` and values from column `{}` from table {} in {}",
+            column,
+            table,
+            db.name()
+        ),
+        Query {
+            config,
+            db_url: db.url(config),
+            table: Some(table),
+            column: Some(column),
+            bounds: None,
+        },
+        |params| {
+            repo::id_and_column_value(
+                params.config,
+                params.db_url,
+                params.table.unwrap(),
+                params.column.unwrap(),
+            )
+        },
+    )
+}
 
 // pub fn full_row_ordered_by(
 //     config: &Config,
