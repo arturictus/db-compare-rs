@@ -1,10 +1,11 @@
 use crate::database;
-use crate::database::DBSelector::{MasterDB, ReplicaDB};
+use crate::database::RequestBuilder;
 use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let tables = database::tables_with_column(config, MasterDB, "id".to_string()).unwrap();
+    let q = RequestBuilder::new(config).column("id");
+    let tables = database::tables_with_column(q.build_master()).unwrap();
     for table in tables {
         compare_table(config, &table).unwrap();
     }
@@ -12,7 +13,8 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let mut upper_bound = database::get_greatest_id_from(config, MasterDB, table).unwrap();
+    let q = RequestBuilder::new(config).table(table);
+    let mut upper_bound = database::get_greatest_id_from(q.build_master()).unwrap();
     let mut counter = 0u32;
     while upper_bound != 0 {
         if config.all_columns_sample_size.is_some()
@@ -25,12 +27,15 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         } else {
             0
         };
-        let records1 =
-            database::get_row_by_id_range(config, MasterDB, table, lower_bound, upper_bound)
-                .unwrap();
-        let records2 =
-            database::get_row_by_id_range(config, ReplicaDB, table, lower_bound, upper_bound)
-                .unwrap();
+
+        let builder = RequestBuilder::new(config)
+            .table(table)
+            .bounds((lower_bound, upper_bound));
+
+        let (records1, records2) = rayon::join(
+            || database::get_row_by_id_range(builder.build_master()).unwrap(),
+            || database::get_row_by_id_range(builder.build_replica()).unwrap(),
+        );
 
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write((

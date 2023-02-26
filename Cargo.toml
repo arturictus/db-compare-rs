@@ -6,11 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.69"
 chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 openssl = "0.10.45"
 postgres = "0.19.4"
 postgres-openssl = "0.5.0"
+rayon = "1.6.1"
 serde = "1.0.152"
 serde_json = "1.0.91"
 similar = "2.2.1"

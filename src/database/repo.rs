@@ -1,11 +1,10 @@
-use crate::database::DBSelector;
-use crate::Config;
+use crate::database::Request;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
-pub fn get_sequences(config: &Config, db_url: &str) -> Result<Vec<(String, u32)>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn get_sequences(q: Request) -> Result<Vec<(String, u32)>, PgError> {
+    let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
     let q = "SELECT sequencename AS sequence,last_value FROM pg_sequences ORDER BY sequencename;";
     if let Ok(rows) = client.simple_query(q) {
@@ -20,8 +19,9 @@ pub fn get_sequences(config: &Config, db_url: &str) -> Result<Vec<(String, u32)>
     }
     Ok(records)
 }
-pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn get_greatest_id_from(q: Request) -> Result<u32, PgError> {
+    let mut client = connect(&q)?;
+    let table = q.table.unwrap();
     let mut output: u32 = 0;
     if let Ok(row) =
         client.simple_query(&format!("SELECT id FROM {table} ORDER BY id DESC LIMIT 1;"))
@@ -34,17 +34,13 @@ pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Resul
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    lower_bound: u32,
-    upper_bound: u32,
-) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
-    let mut client = connect(config, db_url)?;
+    let mut client = connect(&q)?;
     let column = "id".to_string();
-    let limit = config.limit;
+    let limit = q.config.limit;
+    let table = q.table.unwrap();
+    let (lower_bound, upper_bound) = q.bounds.unwrap();
     let mut records: Vec<String> = Vec::new();
     let query = format!(
         "WITH
@@ -80,10 +76,12 @@ pub fn get_row_by_id_range(
     Ok(records)
 }
 
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn count_for(query: Request) -> Result<u32, PgError> {
+    let mut client = connect(&query)?;
     let mut output: u32 = 0;
-    if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+    if let Ok(rows) =
+        client.simple_query(&format!("SELECT COUNT(*) FROM {};", query.table.unwrap()))
+    {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
@@ -93,37 +91,34 @@ pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgEr
     Ok(output)
 }
 
-fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
-    if config.tls {
+fn connect(query: &Request) -> Result<Client, PgError> {
+    if query.config.tls {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
         builder.set_verify(SslVerifyMode::NONE);
         let connector = MakeTlsConnector::new(builder.build());
-        Client::connect(db_url, connector)
+        Client::connect(&query.db.url(), connector)
     } else {
-        Client::connect(db_url, NoTls)
+        Client::connect(&query.db.url(), NoTls)
     }
 }
 
-pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn all_tables(q: Request) -> Result<Vec<String>, PgError> {
+    let mut client = connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    tables = white_listed_tables(config, tables);
+    tables = white_listed_tables(q, tables);
     tables.sort();
     Ok(tables)
 }
 
-pub fn tables_with_column(
-    config: &Config,
-    db_url: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn tables_with_column(q: Request) -> Result<Vec<String>, PgError> {
+    let mut client = connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
+    let column = q.column.as_ref().unwrap();
     for row in client.query(
         "select t.table_name
     from information_schema.tables t
@@ -138,21 +133,17 @@ pub fn tables_with_column(
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(white_listed_tables(config, tables))
+    Ok(white_listed_tables(q, tables))
 }
 
-pub fn id_and_column_value(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
-
+pub fn id_and_column_value(q: Request) -> Result<Vec<String>, PgError> {
+    let mut client = connect(&q)?;
+    let column = q.column.unwrap();
+    let table = q.table.unwrap();
     let mut records = Vec::new();
     if let Ok(rows) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
-        config.limit
+        q.config.limit
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
@@ -167,8 +158,8 @@ pub fn id_and_column_value(
     Ok(records)
 }
 
-fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
-    if let Some(whitelisted) = &config.white_listed_tables {
+fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
+    if let Some(whitelisted) = q.config.white_listed_tables {
         tables
             .into_iter()
             .filter(|t| whitelisted.contains(t))
@@ -178,15 +169,13 @@ fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
     }
 }
 
-pub fn full_row_ordered_by(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut records = Vec::new();
-    let mut client = connect(config, db_url)?;
+    let mut client = connect(&q)?;
+    let column = q.column.unwrap();
+    let table = q.table.unwrap();
+    let limit = q.config.limit;
     if let Ok(rows) = client.simple_query(&format!(
         "WITH
         cte AS
@@ -198,10 +187,9 @@ pub fn full_row_ordered_by(
                 {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
     FROM
-        cte;",
-        config.limit
+        cte;"
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
@@ -217,13 +205,13 @@ pub fn full_row_ordered_by(
     Ok(records)
 }
 
-pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
-    let mut client = connect(config, db.url(config))?;
-    println!("Ping 10 -> {}", db.name());
+pub fn ping_db(q: Request) -> Result<(), PgError> {
+    let mut client = connect(&q)?;
+    println!("Ping 10 -> {}", q.db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", db.url(config));
+    println!("Pong {value} <- {}", q.db.url());
     Ok(())
 }

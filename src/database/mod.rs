@@ -1,214 +1,102 @@
-use crate::Config;
 use postgres::Error as PgError;
 mod repo;
+mod request;
 use chrono::prelude::*;
 pub use repo::ping_db;
+use request::Request;
+pub use request::RequestBuilder;
 use std::time::Instant;
 
-#[derive(Clone, Copy)]
-pub enum DBSelector {
-    MasterDB,
-    ReplicaDB,
-}
-
-impl DBSelector {
-    fn name(&self) -> String {
-        match self {
-            Self::MasterDB => "DB1".to_string(),
-            Self::ReplicaDB => "DB2".to_string(),
-        }
-    }
-
-    pub fn url<'main>(&self, config: &'main Config) -> &'main String {
-        match self {
-            Self::MasterDB => &config.db1,
-            Self::ReplicaDB => &config.db2,
-        }
-    }
-}
-
-struct Query<'a> {
-    config: &'a Config,
-    db_url: &'a str,
-    table: Option<&'a str>,
-    column: Option<String>,
-    bounds: Option<(u32, u32)>,
-}
-
-pub fn get_sequences(
-    config: &Config,
-    db: DBSelector,
-) -> Result<Vec<(std::string::String, u32)>, PgError> {
+pub fn get_sequences(r: Request) -> Result<Vec<(std::string::String, u32)>, PgError> {
     duration::<Vec<(String, u32)>>(
-        format!("Getting sequences from {}", db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: None,
-            column: None,
-            bounds: None,
-        },
-        |params| repo::get_sequences(params.config, params.db_url),
+        format!("Getting sequences from {}", r.db.name()),
+        r,
+        repo::get_sequences,
     )
 }
-pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
+pub fn get_greatest_id_from(r: Request) -> Result<u32, PgError> {
+    let table = r.table.as_ref().unwrap();
     duration::<u32>(
-        format!("Greatest id from `{table}` in {}", db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: None,
-        },
-        |params| repo::get_greatest_id_from(params.config, params.db_url, params.table.unwrap()),
+        format!("Greatest id from `{table}` in {}", r.db.name()),
+        r,
+        repo::get_greatest_id_from,
     )
 }
 
-pub fn get_row_by_id_range(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    lower_bound: u32,
-    upper_bound: u32,
-) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(r: Request) -> Result<Vec<String>, PgError> {
+    let table = r.table.clone().unwrap();
+    let lower_bound = r.bounds.unwrap().0;
+    let upper_bound = r.bounds.unwrap().1;
+    let db = r.db.name();
     duration::<Vec<String>>(
+        format!("`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {db}"),
+        r,
+        repo::get_row_by_id_range,
+    )
+}
+pub fn count_for(r: Request) -> Result<u32, PgError> {
+    duration::<u32>(
         format!(
-            "`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {}",
-            db.name()
+            "count from {} in {}",
+            r.table.as_ref().unwrap(),
+            r.db.name()
         ),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: Some((lower_bound, upper_bound)),
-        },
-        |params| {
-            let (lower_bound, upper_bound) = params.bounds.unwrap();
-            repo::get_row_by_id_range(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                lower_bound,
-                upper_bound,
-            )
-        },
-    )
-}
-pub fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
-    duration::<u32>(
-        format!("count from {} in {}", table, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: None,
-        },
-        |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
+        r,
+        repo::count_for,
     )
 }
 
-pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
+pub fn all_tables(r: Request) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
-        format!("Getting all tables for {}", db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: None,
-            column: None,
-            bounds: None,
-        },
-        |params| repo::all_tables(params.config, params.db_url),
+        format!("Getting all tables for {}", r.db.name()),
+        r,
+        repo::all_tables,
     )
 }
 
-pub fn tables_with_column(
-    config: &Config,
-    db: DBSelector,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
-        format!("Getting all tables with column {} in {}", column, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            column: Some(column),
-            table: None,
-            bounds: None,
-        },
-        |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
-    )
-}
-
-pub fn id_and_column_value(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
+pub fn tables_with_column(r: Request) -> Result<Vec<String>, PgError> {
+    let column = r.column.as_ref().unwrap();
     duration::<Vec<String>>(
         format!(
-            "Getting `id` and values from column `{}` from table {} in {}",
+            "Getting all tables with column {} in {}",
             column,
-            table,
-            db.name()
+            r.db.name()
         ),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: Some(column),
-            bounds: None,
-        },
-        |params| {
-            repo::id_and_column_value(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                params.column.unwrap(),
-            )
-        },
+        r,
+        repo::tables_with_column,
     )
 }
 
-pub fn full_row_ordered_by(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
+pub fn id_and_column_value(r: Request) -> Result<Vec<String>, PgError> {
+    let column = r.column.as_ref().unwrap();
+    let table = r.table.as_ref().unwrap();
+    let db = r.db.name();
     duration::<Vec<String>>(
-        format!("Getting rows from table {} in {}", table, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: Some(column),
-            bounds: None,
-        },
-        |params| {
-            repo::full_row_ordered_by(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                params.column.unwrap(),
-            )
-        },
+        format!("Getting `id` and values from column `{column}` from table {table} in {db}"),
+        r,
+        repo::id_and_column_value,
+    )
+}
+
+pub fn full_row_ordered_by(r: Request) -> Result<Vec<String>, PgError> {
+    let table = r.table.as_ref().unwrap();
+    duration::<Vec<String>>(
+        format!("Getting rows from table {table} in {}", r.db.name()),
+        r,
+        repo::full_row_ordered_by,
     )
 }
 
 fn duration<T>(
     message: String,
-    p: Query,
-    fun: fn(Query) -> Result<T, PgError>,
+    p: Request,
+    fun: fn(Request) -> Result<T, PgError>,
 ) -> Result<T, PgError> {
     println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
     let output = fun(p);
     let duration = start.elapsed();
 
-    println!("=> took: {duration:?}");
+    println!("=> {message} took: {duration:?}");
     output
 }
