@@ -43,7 +43,7 @@ pub struct DBQuery {
 
 #[derive(Default, Clone, Debug)]
 pub struct QueryBuilder {
-    config: Option<QConfig>,
+    config: QConfig,
     table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
@@ -89,14 +89,14 @@ impl QueryBuilder {
         self
     }
     pub fn bounds(mut self, bounds: (u32, u32)) -> Self {
-        self.bounds = Some(bounds.into());
+        self.bounds = Some(bounds);
         self
     }
 
     pub fn build_master(self) -> Result<DBQuery> {
         Ok(DBQuery {
-            config: self.config.clone().unwrap().clone(),
-            db: DB::Master(self.config.clone().unwrap().db1.clone()),
+            config: self.config.clone(),
+            db: DB::Master(self.config.db1),
             table: self.table,
             column: self.column,
             bounds: self.bounds,
@@ -105,14 +105,14 @@ impl QueryBuilder {
 
     pub fn build(self) -> Result<(DBQuery, DBQuery)> {
         let master = DBQuery {
-            config: self.config.clone().unwrap().clone(),
-            db: DB::Master(self.config.clone().unwrap().db1.clone()),
+            config: self.config.clone(),
+            db: DB::Master(self.config.db1),
             table: self.table,
             column: self.column,
             bounds: self.bounds,
         };
         let replica = DBQuery {
-            db: DB::Replica(self.config.clone().unwrap().db2.clone()),
+            db: DB::Replica(self.config.db2),
             ..master.clone()
         };
         Ok((master, replica))
