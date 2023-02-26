@@ -3,7 +3,7 @@ use crate::Config;
 use anyhow::Result;
 
 #[derive(Clone, Debug, PartialEq)]
-enum DB {
+pub enum DB {
     Master(String),
     Replica(String),
     None,
@@ -34,11 +34,11 @@ impl DB {
 }
 #[derive(Clone, Debug)]
 pub struct DBQuery {
-    config: QConfig,
-    db: DB,
-    table: Option<String>,
-    column: Option<String>,
-    bounds: Option<(u32, u32)>,
+    pub config: QConfig,
+    pub db: DB,
+    pub table: Option<String>,
+    pub column: Option<String>,
+    pub bounds: Option<(u32, u32)>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -50,11 +50,11 @@ pub struct QueryBuilder {
 }
 
 #[derive(Clone, Debug)]
-struct QConfig {
-    db1: String,
-    db2: String,
-    tls: bool,
-    limit: u32,
+pub struct QConfig {
+    pub db1: String,
+    pub db2: String,
+    pub tls: bool,
+    pub limit: u32,
 }
 impl Default for QConfig {
     fn default() -> Self {
@@ -80,17 +80,27 @@ impl QueryBuilder {
             ..QueryBuilder::default()
         }
     }
-    pub fn table(&mut self, table: impl Into<String>) -> &mut Self {
+    pub fn table(mut self, table: impl Into<String>) -> Self {
         self.table = Some(table.into());
         self
     }
-    pub fn column(&mut self, column: impl Into<String>) -> &mut Self {
+    pub fn column(mut self, column: impl Into<String>) -> Self {
         self.column = Some(column.into());
         self
     }
-    pub fn bounds(&mut self, bounds: (u32, u32)) -> &mut Self {
+    pub fn bounds(mut self, bounds: (u32, u32)) -> Self {
         self.bounds = Some(bounds.into());
         self
+    }
+
+    pub fn build_master(self) -> Result<DBQuery> {
+        Ok(DBQuery {
+            config: self.config.clone().unwrap().clone(),
+            db: DB::Master(self.config.clone().unwrap().db1.clone()),
+            table: self.table,
+            column: self.column,
+            bounds: self.bounds,
+        })
     }
 
     pub fn build(self) -> Result<(DBQuery, DBQuery)> {
@@ -133,8 +143,10 @@ mod test {
     #[test]
     fn test_query_builder() {
         let config = config();
-        let mut builder = QueryBuilder::new(&config);
-        builder.table("table").bounds((1, 2)).column("column");
+        let builder = QueryBuilder::new(&config)
+            .table("table")
+            .bounds((1, 2))
+            .column("column");
 
         assert_eq!(builder.bounds, Some((1, 2)));
         assert_eq!(builder.column, Some("column".to_string()));

@@ -1,4 +1,4 @@
-use crate::database::DBSelector;
+use crate::database::{DBQuery, DBSelector};
 use crate::Config;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
@@ -80,10 +80,12 @@ pub fn get_row_by_id_range(
     Ok(records)
 }
 
-pub fn count_for(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
+    let mut client = new_connect(&query)?;
     let mut output: u32 = 0;
-    if let Ok(rows) = client.simple_query(&format!("SELECT COUNT(*) FROM {table};")) {
+    if let Ok(rows) =
+        client.simple_query(&format!("SELECT COUNT(*) FROM {};", query.table.unwrap()))
+    {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 output = result.get(0).unwrap_or("0").parse::<u32>().unwrap();
@@ -102,6 +104,17 @@ fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
         Client::connect(db_url, connector)
     } else {
         Client::connect(db_url, NoTls)
+    }
+}
+fn new_connect(query: &DBQuery) -> Result<Client, PgError> {
+    if query.config.tls {
+        let mut builder =
+            SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
+        builder.set_verify(SslVerifyMode::NONE);
+        let connector = MakeTlsConnector::new(builder.build());
+        Client::connect(&query.db.url(), connector)
+    } else {
+        Client::connect(&query.db.url(), NoTls)
     }
 }
 

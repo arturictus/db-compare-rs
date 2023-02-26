@@ -3,6 +3,7 @@ use postgres::Error as PgError;
 mod query;
 mod repo;
 use chrono::prelude::*;
+pub use query::{DBQuery, QueryBuilder};
 pub use repo::ping_db;
 use std::time::Instant;
 
@@ -96,17 +97,15 @@ pub fn get_row_by_id_range(
         },
     )
 }
-pub fn count_for(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
-    duration::<u32>(
-        format!("count from {} in {}", table, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: None,
-        },
-        |params| repo::count_for(params.config, params.db_url, params.table.unwrap()),
+pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
+    new_duration::<u32>(
+        format!(
+            "count from {} in {}",
+            query.table.as_ref().unwrap(),
+            query.db.name()
+        ),
+        query,
+        |q| repo::count_for(q),
     )
 }
 
@@ -203,6 +202,19 @@ fn duration<T>(
     message: String,
     p: Query,
     fun: fn(Query) -> Result<T, PgError>,
+) -> Result<T, PgError> {
+    println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
+    let start = Instant::now();
+    let output = fun(p);
+    let duration = start.elapsed();
+
+    println!("=> took: {duration:?}");
+    output
+}
+fn new_duration<T>(
+    message: String,
+    p: DBQuery,
+    fun: fn(DBQuery) -> Result<T, PgError>,
 ) -> Result<T, PgError> {
     println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
