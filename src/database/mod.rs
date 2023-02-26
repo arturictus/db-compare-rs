@@ -5,7 +5,7 @@ mod repo;
 use chrono::prelude::*;
 pub use query::{DBQuery, QueryBuilder};
 pub use repo::ping_db;
-use std::{borrow::Borrow, time::Instant};
+use std::time::Instant;
 
 #[derive(Clone, Copy, Debug)]
 pub enum DBSelector {
@@ -76,7 +76,7 @@ pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
             query.db.name()
         ),
         query,
-        |q| repo::get_row_by_id_range(q),
+        repo::get_row_by_id_range,
     )
 }
 pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
@@ -87,7 +87,7 @@ pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
             query.db.name()
         ),
         query,
-        |q| repo::count_for(q),
+        repo::count_for,
     )
 }
 

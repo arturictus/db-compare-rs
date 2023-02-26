@@ -93,29 +93,20 @@ impl QueryBuilder {
         self
     }
 
-    pub fn build_master(self) -> Result<DBQuery> {
-        Ok(DBQuery {
+    pub fn build_master(&self) -> DBQuery {
+        DBQuery {
             config: self.config.clone(),
-            db: DB::Master(self.config.db1),
-            table: self.table,
-            column: self.column,
+            db: DB::Master(self.config.db1.clone()),
+            table: self.table.clone(),
+            column: self.column.clone(),
             bounds: self.bounds,
-        })
+        }
     }
-
-    pub fn build(self) -> Result<(DBQuery, DBQuery)> {
-        let master = DBQuery {
-            config: self.config.clone(),
-            db: DB::Master(self.config.db1),
-            table: self.table,
-            column: self.column,
-            bounds: self.bounds,
-        };
-        let replica = DBQuery {
-            db: DB::Replica(self.config.db2),
-            ..master.clone()
-        };
-        Ok((master, replica))
+    pub fn build_replica(&self) -> DBQuery {
+        DBQuery {
+            db: DB::Replica(self.config.db2.clone()),
+            ..self.build_master()
+        }
     }
 }
 
@@ -153,11 +144,12 @@ mod test {
         assert_eq!(builder.table, Some("table".to_string()));
         println!("{builder:#?}");
 
-        let (master, replica) = builder.build().unwrap();
+        let master = builder.build_master();
         assert_eq!(master.db, DB::Master("db1".to_string()));
         assert_eq!(master.column, Some("column".to_string()));
         assert_eq!(master.table, Some("table".to_string()));
         assert_eq!(master.bounds, Some((1, 2)));
+        let replica = builder.build_replica();
 
         assert_eq!(replica.db, DB::Replica("db2".to_string()));
         assert_eq!(replica.column, Some("column".to_string()));
