@@ -1,10 +1,10 @@
 use postgres::Error as PgError;
-mod query;
 mod repo;
+mod request;
 use chrono::prelude::*;
-use query::DBRequest;
-pub use query::RequestBuilder;
 pub use repo::ping_db;
+use request::DBRequest;
+pub use request::RequestBuilder;
 use std::time::Instant;
 
 pub fn get_sequences(r: DBRequest) -> Result<Vec<(std::string::String, u32)>, PgError> {
