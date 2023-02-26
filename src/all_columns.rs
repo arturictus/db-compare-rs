@@ -1,5 +1,6 @@
 use crate::database;
 use crate::database::DBSelector::{MasterDB, ReplicaDB};
+use crate::database::QueryBuilder;
 use crate::diff::IO;
 use crate::Config;
 
@@ -25,12 +26,17 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         } else {
             0
         };
-        let records1 =
-            database::get_row_by_id_range(config, MasterDB, table, lower_bound, upper_bound)
-                .unwrap();
-        let records2 =
-            database::get_row_by_id_range(config, ReplicaDB, table, lower_bound, upper_bound)
-                .unwrap();
+
+        let (master_q, replica_q) = QueryBuilder::new(config)
+            .table(table)
+            .bounds((lower_bound, upper_bound))
+            .build()
+            .unwrap();
+
+        let (records1, records2) = rayon::join(
+            || database::get_row_by_id_range(master_q).unwrap(),
+            || database::get_row_by_id_range(replica_q).unwrap(),
+        );
 
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write((

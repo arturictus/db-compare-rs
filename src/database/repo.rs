@@ -34,17 +34,13 @@ pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Resul
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    lower_bound: u32,
-    upper_bound: u32,
-) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
-    let mut client = connect(config, db_url)?;
+    let mut client = new_connect(&query)?;
     let column = "id".to_string();
-    let limit = config.limit;
+    let limit = query.config.limit;
+    let table = query.table.unwrap();
+    let (lower_bound, upper_bound) = query.bounds.unwrap();
     let mut records: Vec<String> = Vec::new();
     let query = format!(
         "WITH

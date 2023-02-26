@@ -5,7 +5,7 @@ mod repo;
 use chrono::prelude::*;
 pub use query::{DBQuery, QueryBuilder};
 pub use repo::ping_db;
-use std::time::Instant;
+use std::{borrow::Borrow, time::Instant};
 
 #[derive(Clone, Copy, Debug)]
 pub enum DBSelector {
@@ -66,35 +66,17 @@ pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Res
     )
 }
 
-pub fn get_row_by_id_range(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    lower_bound: u32,
-    upper_bound: u32,
-) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
+pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
+    new_duration::<Vec<String>>(
         format!(
-            "`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {}",
-            db.name()
+            "`{}` rows with ids from `{}` to `{}` in {}",
+            query.table.clone().unwrap(),
+            query.bounds.unwrap().0,
+            query.bounds.unwrap().1,
+            query.db.name()
         ),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: Some((lower_bound, upper_bound)),
-        },
-        |params| {
-            let (lower_bound, upper_bound) = params.bounds.unwrap();
-            repo::get_row_by_id_range(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                lower_bound,
-                upper_bound,
-            )
-        },
+        query,
+        |q| repo::get_row_by_id_range(q),
     )
 }
 pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
