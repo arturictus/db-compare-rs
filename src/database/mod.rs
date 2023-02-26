@@ -24,14 +24,12 @@ pub fn get_greatest_id_from(r: Request) -> Result<u32, PgError> {
 }
 
 pub fn get_row_by_id_range(r: Request) -> Result<Vec<String>, PgError> {
+    let table = r.table.clone().unwrap();
+    let lower_bound = r.bounds.unwrap().0;
+    let upper_bound = r.bounds.unwrap().1;
+    let db = r.db.name();
     duration::<Vec<String>>(
-        format!(
-            "`{}` rows with ids from `{}` to `{}` in {}",
-            r.table.clone().unwrap(),
-            r.bounds.unwrap().0,
-            r.bounds.unwrap().1,
-            r.db.name()
-        ),
+        format!("`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {db}"),
         r,
         repo::get_row_by_id_range,
     )
@@ -70,13 +68,11 @@ pub fn tables_with_column(r: Request) -> Result<Vec<String>, PgError> {
 }
 
 pub fn id_and_column_value(r: Request) -> Result<Vec<String>, PgError> {
+    let column = r.column.as_ref().unwrap();
+    let table = r.table.as_ref().unwrap();
+    let db = r.db.name();
     duration::<Vec<String>>(
-        format!(
-            "Getting `id` and values from column `{}` from table {} in {}",
-            r.column.as_ref().unwrap(),
-            r.table.as_ref().unwrap(),
-            r.db.name()
-        ),
+        format!("Getting `id` and values from column `{column}` from table {table} in {db}"),
         r,
         repo::id_and_column_value,
     )
