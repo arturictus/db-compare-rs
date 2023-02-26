@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::Config;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -33,30 +32,30 @@ impl DB {
 }
 #[derive(Clone, Debug)]
 pub struct DBQuery {
-    pub config: QConfig,
+    pub config: DBConfig,
     pub db: DB,
     pub table: Option<String>,
     pub column: Option<String>,
     pub bounds: Option<(u32, u32)>,
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct QueryBuilder {
-    config: QConfig,
+    config: DBConfig,
     table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
 }
 
 #[derive(Clone, Debug)]
-pub struct QConfig {
+pub struct DBConfig {
     pub db1: String,
     pub db2: String,
     pub white_listed_tables: Option<Vec<String>>,
     pub tls: bool,
     pub limit: u32,
 }
-impl Default for QConfig {
+impl Default for DBConfig {
     fn default() -> Self {
         Self {
             db1: "FAKE".to_string(),
@@ -71,14 +70,13 @@ impl Default for QConfig {
 impl QueryBuilder {
     pub fn new(config: &Config) -> Self {
         QueryBuilder {
-            config: QConfig {
+            config: DBConfig {
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
                 white_listed_tables: config.white_listed_tables.clone(),
                 tls: config.tls,
                 limit: config.limit,
-            }
-            .into(),
+            },
             ..QueryBuilder::default()
         }
     }
@@ -144,7 +142,6 @@ mod test {
         assert_eq!(builder.bounds, Some((1, 2)));
         assert_eq!(builder.column, Some("column".to_string()));
         assert_eq!(builder.table, Some("table".to_string()));
-        println!("{builder:#?}");
 
         let master = builder.build_master();
         assert_eq!(master.db, DB::Master("db1".to_string()));
