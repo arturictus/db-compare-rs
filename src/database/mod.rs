@@ -52,17 +52,12 @@ pub fn get_sequences(
         |params| repo::get_sequences(params.config, params.db_url),
     )
 }
-pub fn get_greatest_id_from(config: &Config, db: DBSelector, table: &str) -> Result<u32, PgError> {
-    duration::<u32>(
-        format!("Greatest id from `{table}` in {}", db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: None,
-            bounds: None,
-        },
-        |params| repo::get_greatest_id_from(params.config, params.db_url, params.table.unwrap()),
+pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
+    let table = q.table.as_ref().unwrap();
+    new_duration::<u32>(
+        format!("Greatest id from `{table}` in {}", q.db.name()),
+        q,
+        repo::get_greatest_id_from,
     )
 }
 

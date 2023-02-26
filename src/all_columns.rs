@@ -1,5 +1,3 @@
-use clap::builder;
-
 use crate::database;
 use crate::database::DBSelector::MasterDB;
 use crate::database::QueryBuilder;
@@ -15,7 +13,8 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let mut upper_bound = database::get_greatest_id_from(config, MasterDB, table).unwrap();
+    let q = QueryBuilder::new(config).table(table);
+    let mut upper_bound = database::get_greatest_id_from(q.build_master()).unwrap();
     let mut counter = 0u32;
     while upper_bound != 0 {
         if config.all_columns_sample_size.is_some()

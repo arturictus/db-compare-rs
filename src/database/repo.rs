@@ -20,8 +20,9 @@ pub fn get_sequences(config: &Config, db_url: &str) -> Result<Vec<(String, u32)>
     }
     Ok(records)
 }
-pub fn get_greatest_id_from(config: &Config, db_url: &str, table: &str) -> Result<u32, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
+    let mut client = new_connect(&q)?;
+    let table = q.table.unwrap();
     let mut output: u32 = 0;
     if let Ok(row) =
         client.simple_query(&format!("SELECT id FROM {table} ORDER BY id DESC LIMIT 1;"))
