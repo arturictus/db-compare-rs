@@ -31,9 +31,7 @@ impl DBSelector {
 struct Query<'a> {
     config: &'a Config,
     db_url: &'a str,
-    table: Option<&'a str>,
     column: Option<String>,
-    bounds: Option<(u32, u32)>,
 }
 
 pub fn get_sequences(q: DBQuery) -> Result<Vec<(std::string::String, u32)>, PgError> {
@@ -83,9 +81,7 @@ pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgErro
         Query {
             config,
             db_url: db.url(config),
-            table: None,
             column: None,
-            bounds: None,
         },
         |params| repo::all_tables(params.config, params.db_url),
     )
@@ -102,8 +98,6 @@ pub fn tables_with_column(
             config,
             db_url: db.url(config),
             column: Some(column),
-            table: None,
-            bounds: None,
         },
         |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
     )
