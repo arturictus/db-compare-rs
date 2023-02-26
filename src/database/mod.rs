@@ -101,6 +101,6 @@ fn duration<T>(
     let output = fun(p);
     let duration = start.elapsed();
 
-    println!("=> took: {duration:?}");
+    println!("=> {message} took: {duration:?}");
     output
 }
