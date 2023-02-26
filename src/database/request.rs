@@ -31,7 +31,7 @@ impl DB {
     }
 }
 #[derive(Clone, Debug)]
-pub struct DBRequest {
+pub struct Request {
     pub config: DBConfig,
     pub db: DB,
     pub table: Option<String>,
@@ -93,8 +93,8 @@ impl RequestBuilder {
         self
     }
 
-    pub fn build_master(&self) -> DBRequest {
-        DBRequest {
+    pub fn build_master(&self) -> Request {
+        Request {
             config: self.config.clone(),
             db: DB::Master(self.config.db1.clone()),
             table: self.table.clone(),
@@ -102,8 +102,8 @@ impl RequestBuilder {
             bounds: self.bounds,
         }
     }
-    pub fn build_replica(&self) -> DBRequest {
-        DBRequest {
+    pub fn build_replica(&self) -> Request {
+        Request {
             db: DB::Replica(self.config.db2.clone()),
             ..self.build_master()
         }
