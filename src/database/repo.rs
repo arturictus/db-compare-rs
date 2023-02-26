@@ -1,11 +1,10 @@
-use crate::database::{DBQuery, DBSelector};
-use crate::Config;
+use crate::database::DBQuery;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
 pub fn get_sequences(q: DBQuery) -> Result<Vec<(String, u32)>, PgError> {
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
     let q = "SELECT sequencename AS sequence,last_value FROM pg_sequences ORDER BY sequencename;";
     if let Ok(rows) = client.simple_query(q) {
@@ -21,7 +20,7 @@ pub fn get_sequences(q: DBQuery) -> Result<Vec<(String, u32)>, PgError> {
     Ok(records)
 }
 pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let table = q.table.unwrap();
     let mut output: u32 = 0;
     if let Ok(row) =
@@ -37,7 +36,7 @@ pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
 }
 pub fn get_row_by_id_range(q: DBQuery) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let column = "id".to_string();
     let limit = q.config.limit;
     let table = q.table.unwrap();
@@ -78,7 +77,7 @@ pub fn get_row_by_id_range(q: DBQuery) -> Result<Vec<String>, PgError> {
 }
 
 pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
-    let mut client = new_connect(&query)?;
+    let mut client = connect(&query)?;
     let mut output: u32 = 0;
     if let Ok(rows) =
         client.simple_query(&format!("SELECT COUNT(*) FROM {};", query.table.unwrap()))
@@ -92,18 +91,7 @@ pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
     Ok(output)
 }
 
-fn connect(config: &Config, db_url: &str) -> Result<Client, PgError> {
-    if config.tls {
-        let mut builder =
-            SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
-        builder.set_verify(SslVerifyMode::NONE);
-        let connector = MakeTlsConnector::new(builder.build());
-        Client::connect(db_url, connector)
-    } else {
-        Client::connect(db_url, NoTls)
-    }
-}
-fn new_connect(query: &DBQuery) -> Result<Client, PgError> {
+fn connect(query: &DBQuery) -> Result<Client, PgError> {
     if query.config.tls {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
@@ -116,7 +104,7 @@ fn new_connect(query: &DBQuery) -> Result<Client, PgError> {
 }
 
 pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
         let table_name: Option<String> = row.get(0);
@@ -128,7 +116,7 @@ pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
 }
 
 pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
     let column = q.column.as_ref().unwrap();
     for row in client.query(
@@ -149,7 +137,7 @@ pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
 }
 
 pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
     let mut records = Vec::new();
@@ -184,7 +172,7 @@ fn white_listed_tables(q: DBQuery, tables: Vec<String>) -> Vec<String> {
 pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut records = Vec::new();
-    let mut client = new_connect(&q)?;
+    let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
     let limit = q.config.limit;
@@ -217,13 +205,13 @@ pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(records)
 }
 
-pub fn ping_db(config: &Config, db: DBSelector) -> Result<(), PgError> {
-    let mut client = connect(config, db.url(config))?;
-    println!("Ping 10 -> {}", db.name());
+pub fn ping_db(q: DBQuery) -> Result<(), PgError> {
+    let mut client = connect(&q)?;
+    println!("Ping 10 -> {}", q.db.name());
     let result = client
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", db.url(config));
+    println!("Pong {value} <- {}", q.db.url());
     Ok(())
 }

@@ -1,7 +1,4 @@
-use openssl::conf;
-
 use crate::database;
-use crate::database::DBSelector::MasterDB;
 use crate::database::QueryBuilder;
 use crate::diff::IO;
 use crate::Config;

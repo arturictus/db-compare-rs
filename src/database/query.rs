@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 use crate::Config;
-use anyhow::Result;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum DB {

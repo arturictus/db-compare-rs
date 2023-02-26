@@ -1,12 +1,10 @@
-use crate::database::DBSelector;
-use crate::database::DBSelector::{MasterDB, ReplicaDB};
 use crate::database::{self, QueryBuilder};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
-    let db2_tables = non_updated_at_tables(config, ReplicaDB).unwrap();
+    let db1_tables = non_updated_at_tables(config).unwrap();
+    let db2_tables = non_updated_at_tables(config).unwrap();
     println!("# -----  List of tables without `updated_at`");
     println!("{db1_tables:?}");
     println!("# ---------------");
@@ -21,7 +19,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
+    let db1_tables = non_updated_at_tables(config).unwrap();
     for table in db1_tables {
         compare_table_created_ats(config, &table)?;
     }
@@ -29,7 +27,7 @@ pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config, MasterDB).unwrap();
+    let db1_tables = non_updated_at_tables(config).unwrap();
     for table in db1_tables {
         compare_rows(config, &table)?;
     }
@@ -40,7 +38,7 @@ fn column() -> String {
     "created_at".to_string()
 }
 
-fn non_updated_at_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, postgres::Error> {
+fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error> {
     let q_created_at = QueryBuilder::new(config).column(column());
     let q_updated_at = QueryBuilder::new(config).column("updated_at");
 
