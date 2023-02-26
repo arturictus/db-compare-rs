@@ -1,18 +1,19 @@
 use crate::Config;
 use postgres::Error as PgError;
+mod query;
 mod repo;
 use chrono::prelude::*;
 pub use repo::ping_db;
 use std::time::Instant;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum DBSelector {
     MasterDB,
     ReplicaDB,
 }
 
 impl DBSelector {
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         match self {
             Self::MasterDB => "DB1".to_string(),
             Self::ReplicaDB => "DB2".to_string(),
@@ -26,7 +27,6 @@ impl DBSelector {
         }
     }
 }
-
 struct Query<'a> {
     config: &'a Config,
     db_url: &'a str,
