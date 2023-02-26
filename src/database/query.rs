@@ -53,6 +53,7 @@ pub struct QueryBuilder {
 pub struct QConfig {
     pub db1: String,
     pub db2: String,
+    pub white_listed_tables: Option<Vec<String>>,
     pub tls: bool,
     pub limit: u32,
 }
@@ -61,6 +62,7 @@ impl Default for QConfig {
         Self {
             db1: "FAKE".to_string(),
             db2: "FAKE".to_string(),
+            white_listed_tables: None,
             tls: true,
             limit: 100,
         }
@@ -73,6 +75,7 @@ impl QueryBuilder {
             config: QConfig {
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
+                white_listed_tables: config.white_listed_tables.clone(),
                 tls: config.tls,
                 limit: config.limit,
             }

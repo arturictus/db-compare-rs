@@ -35,13 +35,13 @@ pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(q: DBQuery) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
-    let mut client = new_connect(&query)?;
+    let mut client = new_connect(&q)?;
     let column = "id".to_string();
-    let limit = query.config.limit;
-    let table = query.table.unwrap();
-    let (lower_bound, upper_bound) = query.bounds.unwrap();
+    let limit = q.config.limit;
+    let table = q.table.unwrap();
+    let (lower_bound, upper_bound) = q.bounds.unwrap();
     let mut records: Vec<String> = Vec::new();
     let query = format!(
         "WITH
@@ -115,25 +115,22 @@ fn new_connect(query: &DBQuery) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(config: &Config, db_url: &str) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
+    let mut client = new_connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
         let table_name: Option<String> = row.get(0);
         tables.push(table_name.unwrap());
     }
-    tables = white_listed_tables(config, tables);
+    tables = white_listed_tables(q, tables);
     tables.sort();
     Ok(tables)
 }
 
-pub fn tables_with_column(
-    config: &Config,
-    db_url: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
+    let mut client = new_connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
+    let column = q.column.as_ref().unwrap();
     for row in client.query(
         "select t.table_name
     from information_schema.tables t
@@ -148,7 +145,7 @@ pub fn tables_with_column(
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(white_listed_tables(config, tables))
+    Ok(white_listed_tables(q, tables))
 }
 
 pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
@@ -173,8 +170,8 @@ pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(records)
 }
 
-fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
-    if let Some(whitelisted) = &config.white_listed_tables {
+fn white_listed_tables(q: DBQuery, tables: Vec<String>) -> Vec<String> {
+    if let Some(whitelisted) = q.config.white_listed_tables {
         tables
             .into_iter()
             .filter(|t| whitelisted.contains(t))

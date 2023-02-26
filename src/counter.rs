@@ -1,3 +1,5 @@
+use openssl::conf;
+
 use crate::database;
 use crate::database::DBSelector::MasterDB;
 use crate::database::QueryBuilder;
@@ -5,7 +7,7 @@ use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let tables = database::all_tables(config, MasterDB)?;
+    let tables = database::all_tables(QueryBuilder::new(config).build_master())?;
     for table in tables {
         let builder = QueryBuilder::new(config).table(&table);
         let (result1, result2) = rayon::join(

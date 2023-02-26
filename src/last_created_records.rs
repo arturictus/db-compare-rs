@@ -41,9 +41,13 @@ fn column() -> String {
 }
 
 fn non_updated_at_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, postgres::Error> {
-    let created_at_tables = database::tables_with_column(config, db, column()).unwrap();
-    let updated_at_tables =
-        database::tables_with_column(config, db, "updated_at".to_string()).unwrap();
+    let q_created_at = QueryBuilder::new(config).column(column());
+    let q_updated_at = QueryBuilder::new(config).column("updated_at");
+
+    let (created_at_tables, updated_at_tables) = rayon::join(
+        || database::tables_with_column(q_created_at.build_master()).unwrap(),
+        || database::tables_with_column(q_updated_at.build_master()).unwrap(),
+    );
     let difference: Vec<String> = created_at_tables
         .into_iter()
         .filter(|item| !updated_at_tables.contains(item))

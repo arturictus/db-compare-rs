@@ -75,31 +75,24 @@ pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
     )
 }
 
-pub fn all_tables(config: &Config, db: DBSelector) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
-        format!("Getting all tables for {}", db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            column: None,
-        },
-        |params| repo::all_tables(params.config, params.db_url),
+pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
+    new_duration::<Vec<String>>(
+        format!("Getting all tables for {}", q.db.name()),
+        q,
+        repo::all_tables,
     )
 }
 
-pub fn tables_with_column(
-    config: &Config,
-    db: DBSelector,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
-        format!("Getting all tables with column {} in {}", column, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            column: Some(column),
-        },
-        |params| repo::tables_with_column(params.config, params.db_url, params.column.unwrap()),
+pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
+    let column = q.column.as_ref().unwrap();
+    new_duration::<Vec<String>>(
+        format!(
+            "Getting all tables with column {} in {}",
+            column,
+            q.db.name()
+        ),
+        q,
+        repo::tables_with_column,
     )
 }
 

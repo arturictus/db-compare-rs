@@ -1,11 +1,13 @@
-use crate::database::DBSelector::{MasterDB, ReplicaDB};
 use crate::database::{self, QueryBuilder};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
-    let db2_tables = database::tables_with_column(config, ReplicaDB, column()).unwrap();
+    let query = QueryBuilder::new(config).column(column());
+    let (db1_tables, db2_tables) = rayon::join(
+        || database::tables_with_column(query.build_master()).unwrap(),
+        || database::tables_with_column(query.build_replica()).unwrap(),
+    );
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
         "========  Tables with `updated_at` column".to_string(),
@@ -16,7 +18,8 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
+    let query = QueryBuilder::new(config).column(column());
+    let db1_tables = database::tables_with_column(query.build_master()).unwrap();
     for table in db1_tables {
         compare_table_updated_ats(config, &table)?;
     }
@@ -24,7 +27,8 @@ pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = database::tables_with_column(config, MasterDB, column()).unwrap();
+    let query = QueryBuilder::new(config).column(column());
+    let db1_tables = database::tables_with_column(query.build_master()).unwrap();
     for table in db1_tables {
         compare_rows(config, &table)?;
     }

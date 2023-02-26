@@ -1,11 +1,11 @@
 use crate::database;
-use crate::database::DBSelector::MasterDB;
 use crate::database::QueryBuilder;
 use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let tables = database::tables_with_column(config, MasterDB, "id".to_string()).unwrap();
+    let q = QueryBuilder::new(config).column("id");
+    let tables = database::tables_with_column(q.build_master()).unwrap();
     for table in tables {
         compare_table(config, &table).unwrap();
     }
