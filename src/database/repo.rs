@@ -183,15 +183,13 @@ fn white_listed_tables(config: &Config, tables: Vec<String>) -> Vec<String> {
     }
 }
 
-pub fn full_row_ordered_by(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut records = Vec::new();
-    let mut client = connect(config, db_url)?;
+    let mut client = new_connect(&q)?;
+    let column = q.column.unwrap();
+    let table = q.table.unwrap();
+    let limit = q.config.limit;
     if let Ok(rows) = client.simple_query(&format!(
         "WITH
         cte AS
@@ -203,10 +201,9 @@ pub fn full_row_ordered_by(
                 {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
     FROM
-        cte;",
-        config.limit
+        cte;"
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {

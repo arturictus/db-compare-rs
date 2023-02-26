@@ -136,29 +136,12 @@ pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
     )
 }
 
-pub fn full_row_ordered_by(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
-        format!("Getting rows from table {} in {}", table, db.name()),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: Some(column),
-            bounds: None,
-        },
-        |params| {
-            repo::full_row_ordered_by(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                params.column.unwrap(),
-            )
-        },
+pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
+    let table = q.table.as_ref().unwrap();
+    new_duration::<Vec<String>>(
+        format!("Getting rows from table {table} in {}", q.db.name()),
+        q,
+        repo::full_row_ordered_by,
     )
 }
 

@@ -36,10 +36,10 @@ fn column() -> String {
 }
 
 fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let builder = QueryBuilder::new(config).table(table).column(column());
+    let query = QueryBuilder::new(config).table(table).column(column());
     let (records1, records2) = rayon::join(
-        || database::id_and_column_value(builder.build_master()).unwrap(),
-        || database::id_and_column_value(builder.build_replica()).unwrap(),
+        || database::id_and_column_value(query.build_master()).unwrap(),
+        || database::id_and_column_value(query.build_replica()).unwrap(),
     );
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
@@ -51,8 +51,11 @@ fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgre
 }
 
 fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 = database::full_row_ordered_by(config, MasterDB, table, column()).unwrap();
-    let records2 = database::full_row_ordered_by(config, ReplicaDB, table, column()).unwrap();
+    let query = QueryBuilder::new(config).table(table).column(column());
+    let (records1, records2) = rayon::join(
+        || database::full_row_ordered_by(query.build_master()).unwrap(),
+        || database::full_row_ordered_by(query.build_replica()).unwrap(),
+    );
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((format!("====== `{table}` all columns"), records1, records2));
     Ok(())
