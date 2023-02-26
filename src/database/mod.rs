@@ -123,34 +123,16 @@ pub fn tables_with_column(
     )
 }
 
-pub fn id_and_column_value(
-    config: &Config,
-    db: DBSelector,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    duration::<Vec<String>>(
+pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
+    new_duration::<Vec<String>>(
         format!(
             "Getting `id` and values from column `{}` from table {} in {}",
-            column,
-            table,
-            db.name()
+            q.column.as_ref().unwrap(),
+            q.table.as_ref().unwrap(),
+            q.db.name()
         ),
-        Query {
-            config,
-            db_url: db.url(config),
-            table: Some(table),
-            column: Some(column),
-            bounds: None,
-        },
-        |params| {
-            repo::id_and_column_value(
-                params.config,
-                params.db_url,
-                params.table.unwrap(),
-                params.column.unwrap(),
-            )
-        },
+        q,
+        repo::id_and_column_value,
     )
 }
 

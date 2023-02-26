@@ -150,18 +150,14 @@ pub fn tables_with_column(
     Ok(white_listed_tables(config, tables))
 }
 
-pub fn id_and_column_value(
-    config: &Config,
-    db_url: &str,
-    table: &str,
-    column: String,
-) -> Result<Vec<String>, PgError> {
-    let mut client = connect(config, db_url)?;
-
+pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
+    let mut client = new_connect(&q)?;
+    let column = q.column.unwrap();
+    let table = q.table.unwrap();
     let mut records = Vec::new();
     if let Ok(rows) = client.simple_query(&format!(
         "SELECT id, {column} FROM {table} ORDER BY {column} LIMIT {};",
-        config.limit
+        q.config.limit
     )) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {

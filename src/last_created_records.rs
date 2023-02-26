@@ -1,6 +1,6 @@
-use crate::database;
 use crate::database::DBSelector;
 use crate::database::DBSelector::{MasterDB, ReplicaDB};
+use crate::database::{self, QueryBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -53,8 +53,11 @@ fn non_updated_at_tables(config: &Config, db: DBSelector) -> Result<Vec<String>,
 }
 
 fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let records1 = database::id_and_column_value(config, MasterDB, table, column()).unwrap();
-    let records2 = database::id_and_column_value(config, ReplicaDB, table, column()).unwrap();
+    let builder = QueryBuilder::new(config).table(table).column(column());
+    let (records1, records2) = rayon::join(
+        || database::id_and_column_value(builder.build_master()).unwrap(),
+        || database::id_and_column_value(builder.build_replica()).unwrap(),
+    );
 
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((
