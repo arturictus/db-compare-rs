@@ -1,10 +1,10 @@
 use crate::database;
-use crate::database::QueryBuilder;
+use crate::database::RequestBuilder;
 use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let q = QueryBuilder::new(config).column("id");
+    let q = RequestBuilder::new(config).column("id");
     let tables = database::tables_with_column(q.build_master()).unwrap();
     for table in tables {
         compare_table(config, &table).unwrap();
@@ -13,7 +13,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let q = QueryBuilder::new(config).table(table);
+    let q = RequestBuilder::new(config).table(table);
     let mut upper_bound = database::get_greatest_id_from(q.build_master()).unwrap();
     let mut counter = 0u32;
     while upper_bound != 0 {
@@ -28,7 +28,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             0
         };
 
-        let builder = QueryBuilder::new(config)
+        let builder = RequestBuilder::new(config)
             .table(table)
             .bounds((lower_bound, upper_bound));
 

@@ -1,9 +1,9 @@
-use crate::database::{self, QueryBuilder};
+use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config);
+    let query = RequestBuilder::new(config);
     let (mut data1, data2) = rayon::join(
         || database::get_sequences(query.build_master()).unwrap(),
         || database::get_sequences(query.build_replica()).unwrap(),

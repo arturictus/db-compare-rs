@@ -31,7 +31,7 @@ impl DB {
     }
 }
 #[derive(Clone, Debug)]
-pub struct DBQuery {
+pub struct DBRequest {
     pub config: DBConfig,
     pub db: DB,
     pub table: Option<String>,
@@ -40,7 +40,7 @@ pub struct DBQuery {
 }
 
 #[derive(Default, Clone)]
-pub struct QueryBuilder {
+pub struct RequestBuilder {
     config: DBConfig,
     table: Option<String>,
     column: Option<String>,
@@ -67,9 +67,9 @@ impl Default for DBConfig {
     }
 }
 
-impl QueryBuilder {
+impl RequestBuilder {
     pub fn new(config: &Config) -> Self {
-        QueryBuilder {
+        RequestBuilder {
             config: DBConfig {
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
@@ -77,7 +77,7 @@ impl QueryBuilder {
                 tls: config.tls,
                 limit: config.limit,
             },
-            ..QueryBuilder::default()
+            ..RequestBuilder::default()
         }
     }
     pub fn table(mut self, table: impl Into<String>) -> Self {
@@ -93,8 +93,8 @@ impl QueryBuilder {
         self
     }
 
-    pub fn build_master(&self) -> DBQuery {
-        DBQuery {
+    pub fn build_master(&self) -> DBRequest {
+        DBRequest {
             config: self.config.clone(),
             db: DB::Master(self.config.db1.clone()),
             table: self.table.clone(),
@@ -102,8 +102,8 @@ impl QueryBuilder {
             bounds: self.bounds,
         }
     }
-    pub fn build_replica(&self) -> DBQuery {
-        DBQuery {
+    pub fn build_replica(&self) -> DBRequest {
+        DBRequest {
             db: DB::Replica(self.config.db2.clone()),
             ..self.build_master()
         }
@@ -134,7 +134,7 @@ mod test {
     #[test]
     fn test_query_builder() {
         let config = config();
-        let builder = QueryBuilder::new(&config)
+        let builder = RequestBuilder::new(&config)
             .table("table")
             .bounds((1, 2))
             .column("column");

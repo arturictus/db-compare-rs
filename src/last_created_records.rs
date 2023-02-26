@@ -1,4 +1,4 @@
-use crate::database::{self, QueryBuilder};
+use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -39,8 +39,8 @@ fn column() -> String {
 }
 
 fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error> {
-    let q_created_at = QueryBuilder::new(config).column(column());
-    let q_updated_at = QueryBuilder::new(config).column("updated_at");
+    let q_created_at = RequestBuilder::new(config).column(column());
+    let q_updated_at = RequestBuilder::new(config).column("updated_at");
 
     let (created_at_tables, updated_at_tables) = rayon::join(
         || database::tables_with_column(q_created_at.build_master()).unwrap(),
@@ -55,7 +55,7 @@ fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error
 }
 
 fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let builder = QueryBuilder::new(config).table(table).column(column());
+    let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = rayon::join(
         || database::id_and_column_value(builder.build_master()).unwrap(),
         || database::id_and_column_value(builder.build_replica()).unwrap(),
@@ -71,7 +71,7 @@ fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgre
 }
 
 fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let builder = QueryBuilder::new(config).table(table).column(column());
+    let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = rayon::join(
         || database::full_row_ordered_by(builder.build_master()).unwrap(),
         || database::full_row_ordered_by(builder.build_replica()).unwrap(),

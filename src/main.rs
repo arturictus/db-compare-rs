@@ -8,7 +8,7 @@ mod sequences;
 use std::{cell::RefCell, fs};
 mod all_columns;
 use clap::Parser;
-use database::QueryBuilder;
+use database::RequestBuilder;
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
 
@@ -50,8 +50,8 @@ pub struct Config {
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
     let config = Config::new(&args);
-    database::ping_db(QueryBuilder::new(&config).build_master())?;
-    database::ping_db(QueryBuilder::new(&config).build_replica())?;
+    database::ping_db(RequestBuilder::new(&config).build_master())?;
+    database::ping_db(RequestBuilder::new(&config).build_replica())?;
 
     if config.should_run_counters() {
         counter::run(&config)?;

@@ -1,9 +1,9 @@
-use crate::database::{self, QueryBuilder};
+use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config).column(column());
+    let query = RequestBuilder::new(config).column(column());
     let (db1_tables, db2_tables) = rayon::join(
         || database::tables_with_column(query.build_master()).unwrap(),
         || database::tables_with_column(query.build_replica()).unwrap(),
@@ -18,7 +18,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config).column(column());
+    let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master()).unwrap();
     for table in db1_tables {
         compare_table_updated_ats(config, &table)?;
@@ -27,7 +27,7 @@ pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config).column(column());
+    let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master()).unwrap();
     for table in db1_tables {
         compare_rows(config, &table)?;
@@ -40,7 +40,7 @@ fn column() -> String {
 }
 
 fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config).table(table).column(column());
+    let query = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = rayon::join(
         || database::id_and_column_value(query.build_master()).unwrap(),
         || database::id_and_column_value(query.build_replica()).unwrap(),
@@ -55,7 +55,7 @@ fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgre
 }
 
 fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let query = QueryBuilder::new(config).table(table).column(column());
+    let query = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = rayon::join(
         || database::full_row_ordered_by(query.build_master()).unwrap(),
         || database::full_row_ordered_by(query.build_replica()).unwrap(),

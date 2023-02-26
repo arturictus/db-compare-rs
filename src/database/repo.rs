@@ -1,9 +1,9 @@
-use crate::database::DBQuery;
+use crate::database::DBRequest;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
-pub fn get_sequences(q: DBQuery) -> Result<Vec<(String, u32)>, PgError> {
+pub fn get_sequences(q: DBRequest) -> Result<Vec<(String, u32)>, PgError> {
     let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
     let q = "SELECT sequencename AS sequence,last_value FROM pg_sequences ORDER BY sequencename;";
@@ -19,7 +19,7 @@ pub fn get_sequences(q: DBQuery) -> Result<Vec<(String, u32)>, PgError> {
     }
     Ok(records)
 }
-pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
+pub fn get_greatest_id_from(q: DBRequest) -> Result<u32, PgError> {
     let mut client = connect(&q)?;
     let table = q.table.unwrap();
     let mut output: u32 = 0;
@@ -34,7 +34,7 @@ pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(q: DBRequest) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut client = connect(&q)?;
     let column = "id".to_string();
@@ -76,7 +76,7 @@ pub fn get_row_by_id_range(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(records)
 }
 
-pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
+pub fn count_for(query: DBRequest) -> Result<u32, PgError> {
     let mut client = connect(&query)?;
     let mut output: u32 = 0;
     if let Ok(rows) =
@@ -91,7 +91,7 @@ pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
     Ok(output)
 }
 
-fn connect(query: &DBQuery) -> Result<Client, PgError> {
+fn connect(query: &DBRequest) -> Result<Client, PgError> {
     if query.config.tls {
         let mut builder =
             SslConnector::builder(SslMethod::tls()).expect("unable to create sslconnector builder");
@@ -103,7 +103,7 @@ fn connect(query: &DBQuery) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn all_tables(q: DBRequest) -> Result<Vec<String>, PgError> {
     let mut client = connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
@@ -115,7 +115,7 @@ pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(tables)
 }
 
-pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn tables_with_column(q: DBRequest) -> Result<Vec<String>, PgError> {
     let mut client = connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
     let column = q.column.as_ref().unwrap();
@@ -136,7 +136,7 @@ pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(white_listed_tables(q, tables))
 }
 
-pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn id_and_column_value(q: DBRequest) -> Result<Vec<String>, PgError> {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
@@ -158,7 +158,7 @@ pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(records)
 }
 
-fn white_listed_tables(q: DBQuery, tables: Vec<String>) -> Vec<String> {
+fn white_listed_tables(q: DBRequest, tables: Vec<String>) -> Vec<String> {
     if let Some(whitelisted) = q.config.white_listed_tables {
         tables
             .into_iter()
@@ -169,7 +169,7 @@ fn white_listed_tables(q: DBQuery, tables: Vec<String>) -> Vec<String> {
     }
 }
 
-pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by(q: DBRequest) -> Result<Vec<String>, PgError> {
     use serde_json::Value;
     let mut records = Vec::new();
     let mut client = connect(&q)?;
@@ -205,7 +205,7 @@ pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
     Ok(records)
 }
 
-pub fn ping_db(q: DBQuery) -> Result<(), PgError> {
+pub fn ping_db(q: DBRequest) -> Result<(), PgError> {
     let mut client = connect(&q)?;
     println!("Ping 10 -> {}", q.db.name());
     let result = client

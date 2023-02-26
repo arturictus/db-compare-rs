@@ -2,19 +2,19 @@ use postgres::Error as PgError;
 mod query;
 mod repo;
 use chrono::prelude::*;
-use query::DBQuery;
-pub use query::QueryBuilder;
+use query::DBRequest;
+pub use query::RequestBuilder;
 pub use repo::ping_db;
 use std::time::Instant;
 
-pub fn get_sequences(q: DBQuery) -> Result<Vec<(std::string::String, u32)>, PgError> {
+pub fn get_sequences(q: DBRequest) -> Result<Vec<(std::string::String, u32)>, PgError> {
     duration::<Vec<(String, u32)>>(
         format!("Getting sequences from {}", q.db.name()),
         q,
         repo::get_sequences,
     )
 }
-pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
+pub fn get_greatest_id_from(q: DBRequest) -> Result<u32, PgError> {
     let table = q.table.as_ref().unwrap();
     duration::<u32>(
         format!("Greatest id from `{table}` in {}", q.db.name()),
@@ -23,7 +23,7 @@ pub fn get_greatest_id_from(q: DBQuery) -> Result<u32, PgError> {
     )
 }
 
-pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(query: DBRequest) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "`{}` rows with ids from `{}` to `{}` in {}",
@@ -36,7 +36,7 @@ pub fn get_row_by_id_range(query: DBQuery) -> Result<Vec<String>, PgError> {
         repo::get_row_by_id_range,
     )
 }
-pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
+pub fn count_for(query: DBRequest) -> Result<u32, PgError> {
     duration::<u32>(
         format!(
             "count from {} in {}",
@@ -48,7 +48,7 @@ pub fn count_for(query: DBQuery) -> Result<u32, PgError> {
     )
 }
 
-pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn all_tables(q: DBRequest) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!("Getting all tables for {}", q.db.name()),
         q,
@@ -56,7 +56,7 @@ pub fn all_tables(q: DBQuery) -> Result<Vec<String>, PgError> {
     )
 }
 
-pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn tables_with_column(q: DBRequest) -> Result<Vec<String>, PgError> {
     let column = q.column.as_ref().unwrap();
     duration::<Vec<String>>(
         format!(
@@ -69,7 +69,7 @@ pub fn tables_with_column(q: DBQuery) -> Result<Vec<String>, PgError> {
     )
 }
 
-pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn id_and_column_value(q: DBRequest) -> Result<Vec<String>, PgError> {
     duration::<Vec<String>>(
         format!(
             "Getting `id` and values from column `{}` from table {} in {}",
@@ -82,7 +82,7 @@ pub fn id_and_column_value(q: DBQuery) -> Result<Vec<String>, PgError> {
     )
 }
 
-pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by(q: DBRequest) -> Result<Vec<String>, PgError> {
     let table = q.table.as_ref().unwrap();
     duration::<Vec<String>>(
         format!("Getting rows from table {table} in {}", q.db.name()),
@@ -93,8 +93,8 @@ pub fn full_row_ordered_by(q: DBQuery) -> Result<Vec<String>, PgError> {
 
 fn duration<T>(
     message: String,
-    p: DBQuery,
-    fun: fn(DBQuery) -> Result<T, PgError>,
+    p: DBRequest,
+    fun: fn(DBRequest) -> Result<T, PgError>,
 ) -> Result<T, PgError> {
     println!("[{} UTC] START: {message}", Utc::now().format("%F %X"));
     let start = Instant::now();
