@@ -4,8 +4,8 @@ use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 
-pub fn get_sequences(config: &Config, db_url: &str) -> Result<Vec<(String, u32)>, PgError> {
-    let mut client = connect(config, db_url)?;
+pub fn get_sequences(q: DBQuery) -> Result<Vec<(String, u32)>, PgError> {
+    let mut client = new_connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
     let q = "SELECT sequencename AS sequence,last_value FROM pg_sequences ORDER BY sequencename;";
     if let Ok(rows) = client.simple_query(q) {
