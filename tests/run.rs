@@ -1,14 +1,69 @@
 use anyhow::Result;
 use db_compare::*;
 
-static DBHOST: &str = "postgresql://postgres:postgres@127.0.0.1";
-static DB1: &str = "db_compare_test_db1";
-static DB2: &str = "db_compare_test_db2";
+enum DB {
+    A,
+    B,
+}
+
+impl DB {
+    fn url(&self) -> String {
+        format!("{}/{}", self.host(), self.name())
+    }
+    fn host(&self) -> &str {
+        "postgresql://postgres:postgres@127.0.0.1"
+    }
+    fn name(&self) -> &str {
+        match self {
+            DB::A => "db_compare_test_db1",
+            DB::B => "db_compare_test_db2",
+        }
+    }
+    fn host_connect(&self) -> Result<Client, Error> {
+        Client::connect(self.host(), NoTls)
+    }
+    fn connect(&self) -> Result<Client, Error> {
+        Client::connect(&self.url(), NoTls)
+    }
+    fn setup(&self) -> Result<(), Error> {
+        let mut client = self.host_connect()?;
+        let db_name = self.name();
+        client
+            .batch_execute(&format!("CREATE DATABASE {db_name}"))
+            .unwrap_or_else(|_| {
+                println!("Database already exists");
+            });
+
+        let mut client = self.connect()?;
+        client.batch_execute(
+            "
+        CREATE TABLE IF NOT EXISTS users (
+            id              SERIAL PRIMARY KEY,
+            name            VARCHAR NOT NULL,
+            created_at      INTEGER NOT NULL,
+            updated_at      INTEGER NOT NULL
+            )
+    ",
+        )?;
+
+        Ok(())
+    }
+    fn drop(&self) -> Result<(), Error> {
+        let mut client = self.host_connect()?;
+        let db_name = self.name();
+        client
+            .batch_execute(&format!("DROP database {db_name}"))
+            .unwrap_or_else(|_| {
+                println!("Database does not exists");
+            });
+        Ok(())
+    }
+}
 
 fn default_args() -> Args {
     Args {
-        db1: Some(format!("{DBHOST}/{DB1}").to_string()),
-        db2: Some(format!("{DBHOST}/{DB2}").to_string()),
+        db1: Some(DB::A.url().to_string()),
+        db2: Some(DB::B.url().to_string()),
         limit: 1,
         no_tls: false,
         all_columns_sample_size: None,
@@ -19,63 +74,66 @@ fn default_args() -> Args {
 }
 #[test]
 fn integration_test() {
-    around(|| db_compare::run(default_args()));
+    around(|| {
+        let first = User::new().insert(DB::A).unwrap();
+        assert_eq!(first.id, Some(1));
+        // let second = first.next(None).insert(DB1_URL).unwrap();
+        // let third = second.next(None).insert(DB1_URL).unwrap();
+
+        db_compare::run(default_args())
+    });
 }
 
 fn around(fun: fn() -> Result<(), postgres::Error>) {
-    let db1 = format!("{DBHOST}/{DB1}");
-    let db2 = format!("{DBHOST}/{DB2}");
-    setup_tables(&db1).unwrap();
-    setup_tables(&db2).unwrap();
+    DB::A.setup().unwrap();
+    DB::B.setup().unwrap();
     let r = fun();
-    drop_all(&db1).unwrap();
-    drop_all(&db2).unwrap();
+    DB::A.drop().unwrap();
+    DB::B.drop().unwrap();
     r.unwrap();
 }
 
 use postgres::{Client, Error, NoTls};
 
-fn drop_all(db: &str) -> Result<(), Error> {
-    let mut client = Client::connect(DBHOST, NoTls).unwrap();
-    let db_name = db.split("/").into_iter().last().unwrap();
-    assert!(vec![DB1, DB2].contains(&db_name));
-    client
-        .batch_execute(&format!("DROP database {db_name}"))
-        .unwrap_or_else(|_| {
-            println!("Database does not exists");
-        });
-    Ok(())
+#[derive(Debug, Clone)]
+struct User {
+    id: Option<u64>,
+    name: String,
+    created_at: i32,
+    updated_at: i32,
 }
-fn setup_tables(db: &str) -> Result<(), Error> {
-    let mut client = Client::connect(DBHOST, NoTls)?;
-    let db_name = db.split("/").into_iter().last().unwrap();
-    assert!(vec![DB1, DB2].contains(&db_name));
-    client
-        .batch_execute(&format!("CREATE DATABASE {db_name}"))
-        .unwrap_or_else(|_| {
-            println!("Database already exists");
-        });
+impl Default for User {
+    fn default() -> Self {
+        User {
+            id: None,
+            name: "John".to_string(),
+            created_at: 1,
+            updated_at: 1,
+        }
+    }
+}
 
-    let mut client = Client::connect(db, NoTls)?;
-    client.batch_execute(
-        "
-        CREATE TABLE IF NOT EXISTS author (
-            id              SERIAL PRIMARY KEY,
-            name            VARCHAR NOT NULL,
-            country         VARCHAR NOT NULL
-            )
-    ",
-    )?;
-
-    client.batch_execute(
-        "
-        CREATE TABLE IF NOT EXISTS book  (
-            id              SERIAL PRIMARY KEY,
-            title           VARCHAR NOT NULL,
-            author_id       INTEGER NOT NULL REFERENCES author
-            )
-    ",
-    )?;
-
-    Ok(())
+impl User {
+    fn new() -> Self {
+        Self::default()
+    }
+    fn next(&self, name: Option<String>) -> Self {
+        Self {
+            id: None,
+            name: name.unwrap_or_else(|| format!("{}-{}", self.name.clone(), self.created_at + 1)),
+            created_at: self.created_at + 1,
+            updated_at: self.updated_at + 1,
+        }
+    }
+    fn insert(&self, db: DB) -> Result<User, Error> {
+        let mut client = db.connect()?;
+        let id = client.execute(
+            "INSERT INTO users (name, created_at, updated_at) VALUES ($1, $2, $3) RETURNING id",
+            &[&self.name, &self.created_at, &self.updated_at],
+        )?;
+        Ok(User {
+            id: Some(id),
+            ..self.clone()
+        })
+    }
 }
