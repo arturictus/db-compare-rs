@@ -19,17 +19,12 @@ fn default_args() -> Args {
 }
 #[test]
 fn integration_test() {
-    let db1 = format!("{DBHOST}/{DB1}");
-    let db2 = format!("{DBHOST}/{DB1}");
-    drop_all(&db1).unwrap();
-    drop_all(&db2).unwrap();
-
     around(|| db_compare::run(default_args()));
 }
 
 fn around(fun: fn() -> Result<(), postgres::Error>) {
     let db1 = format!("{DBHOST}/{DB1}");
-    let db2 = format!("{DBHOST}/{DB1}");
+    let db2 = format!("{DBHOST}/{DB2}");
     setup_tables(&db1).unwrap();
     setup_tables(&db2).unwrap();
     let r = fun();
@@ -43,12 +38,23 @@ use postgres::{Client, Error, NoTls};
 fn drop_all(db: &str) -> Result<(), Error> {
     let mut client = Client::connect(DBHOST, NoTls).unwrap();
     let db_name = db.split("/").into_iter().last().unwrap();
-    client.batch_execute(&format!("DROP database {db_name}"))
+    assert!(vec![DB1, DB2].contains(&db_name));
+    client
+        .batch_execute(&format!("DROP database {db_name}"))
+        .unwrap_or_else(|_| {
+            println!("Database does not exists");
+        });
+    Ok(())
 }
 fn setup_tables(db: &str) -> Result<(), Error> {
     let mut client = Client::connect(DBHOST, NoTls)?;
     let db_name = db.split("/").into_iter().last().unwrap();
-    client.batch_execute(&format!("CREATE DATABASE {db_name}"))?;
+    assert!(vec![DB1, DB2].contains(&db_name));
+    client
+        .batch_execute(&format!("CREATE DATABASE {db_name}"))
+        .unwrap_or_else(|_| {
+            println!("Database already exists");
+        });
 
     let mut client = Client::connect(db, NoTls)?;
     client.batch_execute(
