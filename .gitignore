@@ -1,3 +1,4 @@
 /target
 /tmp
 *_testing.diff
+!bonnie.toml
