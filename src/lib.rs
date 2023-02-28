@@ -1,7 +1,8 @@
 mod counter;
+
 mod database;
 mod diff;
-use diff::IO;
+pub use diff::{IOType, IO};
 mod last_created_records;
 mod last_updated_records;
 mod sequences;
@@ -37,18 +38,17 @@ pub struct Args {
 }
 #[derive(Debug)]
 pub struct Config {
-    db1: String,
-    db2: String,
-    tls: bool,
-    limit: u32,
-    diff_io: RefCell<diff::IOType>,
-    white_listed_tables: Option<Vec<String>>,
-    jobs: Option<Vec<String>>,
-    all_columns_sample_size: Option<u32>,
+    pub db1: String,
+    pub db2: String,
+    pub tls: bool,
+    pub limit: u32,
+    pub diff_io: RefCell<diff::IOType>,
+    pub white_listed_tables: Option<Vec<String>>,
+    pub jobs: Option<Vec<String>>,
+    pub all_columns_sample_size: Option<u32>,
 }
 
-pub fn run(args: Args) -> Result<(), postgres::Error> {
-    let config = Config::new(&args);
+pub fn run(config: &Config) -> Result<(), postgres::Error> {
     database::ping_db(RequestBuilder::new(&config).build_master())?;
     database::ping_db(RequestBuilder::new(&config).build_replica())?;
 

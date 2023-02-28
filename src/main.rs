@@ -1,8 +1,9 @@
 use clap::Parser;
-use db_compare::Args;
+use db_compare::{Args, Config};
 
 fn main() -> Result<(), postgres::Error> {
     let args = Args::parse();
-    db_compare::run(args)?;
+    let config = Config::new(&args);
+    db_compare::run(&config)?;
     Ok(())
 }
