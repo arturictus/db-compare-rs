@@ -1,15 +1,10 @@
 mod common;
-use std::cell::RefCell;
-use std::fs::{File, OpenOptions};
-use std::io;
-use std::io::prelude::*;
-use std::path::Path;
-
 use common::{around, User, DB};
 use db_compare::IOType;
 use db_compare::*;
+use std::cell::RefCell;
 
-const REGENERATE_EXAMPLES: bool = true;
+const REGENERATE_EXAMPLES: bool = false;
 
 fn default_args() -> Args {
     Args {
@@ -34,10 +29,11 @@ fn default_config(jobs: Option<Vec<String>>) -> Config {
 fn integration_test() {
     around(|| {
         let first = User::new().insert(DB::A).unwrap();
-        println!("{:?}", User::all(DB::A));
+        println!("DB1: {:?}", User::all(DB::A));
+        println!("DB2: {:?}", User::all(DB::B));
         assert_eq!(first.id, Some(1));
         let config = default_config(Some(vec!["counters".to_string()]));
-
+        println!("{:?}", config);
         test_runner(&config);
         Ok(())
     });
@@ -54,7 +50,7 @@ fn test_runner(config: &Config) {
     let config = Config {
         diff_io: RefCell::new(IOType::new_from_path(tmp_file.clone())),
         db1: config.db1.clone(),
-        db2: config.db1.clone(),
+        db2: config.db2.clone(),
         limit: config.limit,
         tls: false,
         white_listed_tables: config.white_listed_tables.clone(),
@@ -67,6 +63,6 @@ fn test_runner(config: &Config) {
     }
     let tmp = std::fs::read_to_string(&tmp_file).unwrap();
     let fixture = std::fs::read_to_string(&fixture_file).unwrap();
-    assert_eq!(fixture, tmp);
     std::fs::remove_file(&tmp_file).unwrap();
+    assert_eq!(fixture, tmp)
 }

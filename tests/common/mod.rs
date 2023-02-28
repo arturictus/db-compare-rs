@@ -60,6 +60,8 @@ impl DB {
 }
 
 pub fn around(fun: fn() -> Result<(), postgres::Error>) {
+    DB::A.drop().unwrap();
+    DB::B.drop().unwrap();
     DB::A.setup().unwrap();
     DB::B.setup().unwrap();
     let r = fun();
