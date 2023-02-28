@@ -1,7 +1,8 @@
 version="0.3.2"
 
 [scripts]
-test = "cargo test %% -- --nocapture"
+test = "cargo test %% -- --nocapture --test-threads 1"
 check.cmd = "cargo check && cargo fmt -- --check && cargo clippy && cargo test"
 check.desc = "validates the code (same checks as on CI)"
+clippy = "cargo clippy -- -D warnings"
 run = "cargo run -- -c tmp/config.yml"

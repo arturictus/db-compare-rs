@@ -1,10 +1,7 @@
 mod common;
-use common::{around, User, DB};
-use db_compare::IOType;
-use db_compare::*;
-use std::cell::RefCell;
+use common::{TestRunner, User, DB};
 
-const REGENERATE_EXAMPLES: bool = false;
+use db_compare::*;
 
 fn default_args() -> Args {
     Args {
@@ -26,43 +23,58 @@ fn default_config(jobs: Option<Vec<String>>) -> Config {
     }
 }
 #[test]
-fn integration_test() {
-    around(|| {
+fn test_counters() {
+    let config = default_config(Some(vec!["counters".to_string()]));
+    TestRunner::new(&config).run(|c| {
         let first = User::new().insert(DB::A).unwrap();
-        println!("DB1: {:?}", User::all(DB::A));
-        println!("DB2: {:?}", User::all(DB::B));
         assert_eq!(first.id, Some(1));
-        let config = default_config(Some(vec!["counters".to_string()]));
-        println!("{:?}", config);
-        test_runner(&config);
-        Ok(())
+        assert_eq!(User::all(DB::A).len(), 1);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(&c).unwrap();
+    });
+}
+#[test]
+fn test_updated_ats() {
+    let config = default_config(Some(vec!["last_updated_ats".to_string()]));
+    TestRunner::new(&config).run(|c| {
+        let first = User::new().insert(DB::A).unwrap();
+        assert_eq!(first.id, Some(1));
+        assert_eq!(User::all(DB::A).len(), 1);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(&c).unwrap();
+    });
+}
+#[test]
+fn test_created_ats() {
+    let config = default_config(Some(vec!["last_created_ats".to_string()]));
+    TestRunner::new(&config).run(|c| {
+        let first = User::new().insert(DB::A).unwrap();
+        assert_eq!(first.id, Some(1));
+        assert_eq!(User::all(DB::A).len(), 1);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(&c).unwrap();
     });
 }
 
-use uuid::Uuid;
-fn test_runner(config: &Config) {
-    let tmp_file = format!("tmp/{}.diff", Uuid::new_v4());
-    let fixture_file = format!(
-        "tests/fixtures/examples/{}_{}_example.diff",
-        config.white_listed_tables.clone().unwrap().join("_"),
-        config.jobs.clone().unwrap().join("_")
-    );
-    let config = Config {
-        diff_io: RefCell::new(IOType::new_from_path(tmp_file.clone())),
-        db1: config.db1.clone(),
-        db2: config.db2.clone(),
-        limit: config.limit,
-        tls: false,
-        white_listed_tables: config.white_listed_tables.clone(),
-        jobs: config.jobs.clone(),
-        all_columns_sample_size: config.all_columns_sample_size,
-    };
-    db_compare::run(&config).unwrap();
-    if REGENERATE_EXAMPLES {
-        std::fs::copy(&tmp_file, &fixture_file).unwrap();
-    }
-    let tmp = std::fs::read_to_string(&tmp_file).unwrap();
-    let fixture = std::fs::read_to_string(&fixture_file).unwrap();
-    std::fs::remove_file(&tmp_file).unwrap();
-    assert_eq!(fixture, tmp)
+#[test]
+fn test_all_columns() {
+    let config = default_config(Some(vec!["all_columns".to_string()]));
+    TestRunner::new(&config).run(|c| {
+        let first = User::new().insert(DB::A).unwrap();
+        assert_eq!(first.id, Some(1));
+        assert_eq!(User::all(DB::A).len(), 1);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(&c).unwrap();
+    });
+}
+#[test]
+fn test_sequences() {
+    let config = default_config(Some(vec!["sequences".to_string()]));
+    TestRunner::new(&config).run(|c| {
+        let first = User::new().insert(DB::A).unwrap();
+        assert_eq!(first.id, Some(1));
+        assert_eq!(User::all(DB::A).len(), 1);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(&c).unwrap();
+    });
 }
