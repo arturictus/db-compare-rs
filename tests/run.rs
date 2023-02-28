@@ -1,6 +1,5 @@
 mod common;
 use std::cell::RefCell;
-use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::prelude::*;
@@ -10,7 +9,7 @@ use common::{around, User, DB};
 use db_compare::IOType;
 use db_compare::*;
 
-const REGENERATE_EXAMPLES: bool = false;
+const REGENERATE_EXAMPLES: bool = true;
 
 fn default_args() -> Args {
     Args {
@@ -35,6 +34,7 @@ fn default_config(jobs: Option<Vec<String>>) -> Config {
 fn integration_test() {
     around(|| {
         let first = User::new().insert(DB::A).unwrap();
+        println!("{:?}", User::all(DB::A));
         assert_eq!(first.id, Some(1));
         let config = default_config(Some(vec!["counters".to_string()]));
 
@@ -63,27 +63,10 @@ fn test_runner(config: &Config) {
     };
     db_compare::run(&config).unwrap();
     if REGENERATE_EXAMPLES {
-        // if Path::new(&fixture_file).exists() {
-        //     fs::remove_file(&fixture_file).unwrap();
-        // }
         std::fs::copy(&tmp_file, &fixture_file).unwrap();
     }
     let tmp = std::fs::read_to_string(&tmp_file).unwrap();
     let fixture = std::fs::read_to_string(&fixture_file).unwrap();
     assert_eq!(fixture, tmp);
-}
-
-fn echo(s: &str, path: &Path) -> io::Result<()> {
-    let mut f = File::create(path)?;
-
-    f.write_all(s.as_bytes())
-}
-
-fn touch(path: &Path) -> io::Result<()> {
-    let prefix = path.parent().unwrap();
-    std::fs::create_dir_all(prefix).unwrap();
-    match OpenOptions::new().create(true).write(true).open(path) {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    }
+    std::fs::remove_file(&tmp_file).unwrap();
 }

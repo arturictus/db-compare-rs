@@ -87,16 +87,21 @@ impl Default for User {
 }
 
 impl User {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn next(&self, name: Option<String>) -> Self {
-        Self {
-            id: None,
-            name: name.unwrap_or_else(|| format!("{}-{}", self.name.clone(), self.created_at + 1)),
-            created_at: self.created_at + 1,
-            updated_at: self.updated_at + 1,
+    pub fn all(db: DB) -> Vec<Self> {
+        let mut client = db.connect().unwrap();
+        let rows = client.query("SELECT * FROM users", &[]).unwrap();
+        let mut users = Vec::new();
+        for row in rows {
+            // TODO: fix this
+            // let id = row.get(0);
+            users.push(User {
+                id: None,
+                name: row.get(1),
+                created_at: row.get(2),
+                updated_at: row.get(3),
+            })
         }
+        users
     }
     pub fn insert(&self, db: DB) -> Result<User, Error> {
         let mut client = db.connect()?;
@@ -108,5 +113,16 @@ impl User {
             id: Some(id),
             ..self.clone()
         })
+    }
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn next(&self, name: Option<String>) -> Self {
+        Self {
+            id: None,
+            name: name.unwrap_or_else(|| format!("{}-{}", self.name.clone(), self.created_at + 1)),
+            created_at: self.created_at + 1,
+            updated_at: self.updated_at + 1,
+        }
     }
 }
