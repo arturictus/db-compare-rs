@@ -3,7 +3,9 @@ use db_compare::IOType;
 use db_compare::*;
 use postgres::{Client, Error, NoTls};
 use std::cell::RefCell;
+use std::fs;
 use std::path::Path;
+use uuid::Uuid;
 pub enum DB {
     A,
     B,
@@ -76,7 +78,7 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(config: &Config) -> Self {
-        use uuid::Uuid;
+        fs::create_dir_all("tmp").unwrap();
         let tmp_file = format!("tmp/{}.diff", Uuid::new_v4());
         let fixture_file = format!(
             "tests/fixtures/examples/{}_{}_example.diff",
