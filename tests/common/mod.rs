@@ -201,6 +201,7 @@ impl User {
     pub fn new() -> Self {
         Self::default()
     }
+    #[allow(dead_code)]
     pub fn next(&self, name: Option<String>) -> Self {
         Self {
             id: None,
