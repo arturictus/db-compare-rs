@@ -49,27 +49,27 @@ pub struct Config {
 }
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    database::ping_db(RequestBuilder::new(&config).build_master())?;
-    database::ping_db(RequestBuilder::new(&config).build_replica())?;
+    database::ping_db(RequestBuilder::new(config).build_master())?;
+    database::ping_db(RequestBuilder::new(config).build_replica())?;
 
     if config.should_run_counters() {
-        counter::run(&config)?;
+        counter::run(config)?;
     }
     if config.should_run_updated_ats() {
-        last_updated_records::tables(&config)?;
-        last_updated_records::only_updated_ats(&config)?;
-        last_updated_records::all_columns(&config)?;
+        last_updated_records::tables(config)?;
+        last_updated_records::only_updated_ats(config)?;
+        last_updated_records::all_columns(config)?;
     }
     if config.should_run_created_ats() {
-        last_created_records::tables(&config)?;
-        last_created_records::only_created_ats(&config)?;
-        last_created_records::all_columns(&config)?;
+        last_created_records::tables(config)?;
+        last_created_records::only_created_ats(config)?;
+        last_created_records::all_columns(config)?;
     }
     if config.should_run_all_columns() {
-        all_columns::run(&config)?;
+        all_columns::run(config)?;
     }
     if config.should_run_sequences() {
-        sequences::run(&config)?;
+        sequences::run(config)?;
     }
     config.diff_io.borrow_mut().close();
     Ok(())
