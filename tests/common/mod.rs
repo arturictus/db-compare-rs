@@ -16,7 +16,7 @@ impl DB {
         format!("{}/{}", self.host(), self.name())
     }
     fn host(&self) -> &str {
-        "postgresql://postgres:postgres@127.0.0.1"
+        "postgresql://postgres:postgres@127.0.0.1:5432"
     }
     fn name(&self) -> &str {
         match self {
