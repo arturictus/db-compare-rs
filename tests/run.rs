@@ -6,8 +6,8 @@ use db_compare::*;
 
 fn default_args() -> Args {
     Args {
-        db1: Some(DB::A.url().to_string()),
-        db2: Some(DB::B.url().to_string()),
+        db1: Some(DB::A.url()),
+        db2: Some(DB::B.url()),
         limit: 1,
         no_tls: false,
         all_columns_sample_size: None,
@@ -31,7 +31,7 @@ fn test_counters() {
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
-        db_compare::run(&c).unwrap();
+        db_compare::run(c).unwrap();
     });
 }
 #[test]
@@ -42,7 +42,7 @@ fn test_updated_ats() {
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
-        db_compare::run(&c).unwrap();
+        db_compare::run(c).unwrap();
     });
 }
 #[test]
@@ -53,7 +53,7 @@ fn test_created_ats() {
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
-        db_compare::run(&c).unwrap();
+        db_compare::run(c).unwrap();
     });
 }
 
@@ -65,7 +65,7 @@ fn test_all_columns() {
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
-        db_compare::run(&c).unwrap();
+        db_compare::run(c).unwrap();
     });
 }
 #[test]
@@ -76,6 +76,6 @@ fn test_sequences() {
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
-        db_compare::run(&c).unwrap();
+        db_compare::run(c).unwrap();
     });
 }

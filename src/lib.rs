@@ -3,7 +3,7 @@ mod diff;
 use clap::Parser;
 use database::RequestBuilder;
 pub use diff::{IOType, IO};
-use std::{cell::RefCell, fs};
+use std::{cell::RefCell, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
 mod jobs;
@@ -48,7 +48,7 @@ pub struct Config {
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
-    jobs::run(&config).unwrap();
+    jobs::run(config).unwrap();
     config.diff_io.borrow_mut().close();
     Ok(())
 }
@@ -252,7 +252,7 @@ mod test {
             Some(vec!["testing_tables".to_string()])
         );
         assert_eq!(config.limit, 999);
-        assert_eq!(config.diff_io.borrow().is_stdout(), false);
+        assert!(!config.diff_io.borrow().is_stdout());
         assert_eq!(config.jobs, Job::all());
     }
     #[test]
@@ -269,7 +269,7 @@ mod test {
             Some(vec!["table_from_tables_file".to_string()])
         );
         assert_eq!(config.limit, 22);
-        assert_eq!(config.diff_io.borrow().is_stdout(), false);
+        assert!(!config.diff_io.borrow().is_stdout());
         assert_eq!(config.jobs, Job::all());
     }
 }

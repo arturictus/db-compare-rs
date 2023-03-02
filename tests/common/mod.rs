@@ -1,4 +1,5 @@
 use anyhow::{self, Ok};
+use convert_case::{Case, Casing};
 use db_compare::IOType;
 use db_compare::*;
 use itertools::Itertools;
@@ -84,7 +85,13 @@ impl TestRunner {
         let fixture_file = format!(
             "tests/fixtures/examples/{}_{}_example.diff",
             config.white_listed_tables.clone().unwrap().join("_"),
-            config.jobs.clone().iter().map(|j| j.to_string()).join("_")
+            config
+                .jobs
+                .clone()
+                .iter()
+                .map(|j| j.to_string())
+                .join("_")
+                .to_case(Case::Snake)
         );
 
         Self {

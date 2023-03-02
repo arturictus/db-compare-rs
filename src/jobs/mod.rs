@@ -3,7 +3,7 @@ mod counter;
 mod last_created_records;
 mod last_updated_records;
 mod sequences;
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use crate::Config;
 use anyhow::Result;
@@ -19,12 +19,13 @@ pub enum Job {
 
 impl fmt::Display for Job {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
-impl Job {
-    pub fn from_str(s: &str) -> Result<Job> {
+impl FromStr for Job {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "counters" => Ok(Job::Counters),
             "updated_ats" => Ok(Job::UpdatedAts),
@@ -36,6 +37,9 @@ impl Job {
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
+}
+
+impl Job {
     fn run(&self, config: &Config) -> Result<(), postgres::Error> {
         match self {
             Job::Counters => counter::run(config),
