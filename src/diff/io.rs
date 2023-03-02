@@ -1,8 +1,9 @@
 use crate::diff::formatter;
 use crate::{Args, DBsResults};
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::LineWriter;
+use std::path::Path;
 
 #[derive(Debug)]
 pub enum IOType {
@@ -61,7 +62,12 @@ fn flush_file(file: &mut LineWriter<File>) {
     file.flush().unwrap()
 }
 
+// TODO: this should return a Result
 fn new_file(file_path: &String) -> LineWriter<File> {
+    let folder = Path::new(file_path).parent().unwrap();
+    fs::create_dir_all(folder).unwrap_or_else(|_| {
+        panic!("unable to create folder {folder:?}");
+    });
     let file = File::create(file_path)
         .unwrap_or_else(|_| panic!("unable to create diff file at {file_path}"));
     LineWriter::new(file)

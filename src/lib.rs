@@ -1,17 +1,14 @@
-mod counter;
-
 mod database;
 mod diff;
-pub use diff::{IOType, IO};
-mod last_created_records;
-mod last_updated_records;
-mod sequences;
-use std::{cell::RefCell, fs};
-mod all_columns;
 use clap::Parser;
 use database::RequestBuilder;
+pub use diff::{IOType, IO};
+use std::{cell::RefCell, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
+mod jobs;
+use itertools::Itertools;
+pub use jobs::Job;
 
 type DBsResults = (String, Vec<String>, Vec<String>);
 const DEFAULT_LIMIT: u32 = 100;
@@ -44,33 +41,14 @@ pub struct Config {
     pub limit: u32,
     pub diff_io: RefCell<diff::IOType>,
     pub white_listed_tables: Option<Vec<String>>,
-    pub jobs: Option<Vec<String>>,
+    pub jobs: Vec<Job>,
     pub all_columns_sample_size: Option<u32>,
 }
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
-
-    if config.should_run_counters() {
-        counter::run(config)?;
-    }
-    if config.should_run_updated_ats() {
-        last_updated_records::tables(config)?;
-        last_updated_records::only_updated_ats(config)?;
-        last_updated_records::all_columns(config)?;
-    }
-    if config.should_run_created_ats() {
-        last_created_records::tables(config)?;
-        last_created_records::only_created_ats(config)?;
-        last_created_records::all_columns(config)?;
-    }
-    if config.should_run_all_columns() {
-        all_columns::run(config)?;
-    }
-    if config.should_run_sequences() {
-        sequences::run(config)?;
-    }
+    jobs::run(config).unwrap();
     config.diff_io.borrow_mut().close();
     Ok(())
 }
@@ -141,123 +119,93 @@ impl Config {
             diff_io,
             white_listed_tables,
             limit,
-            jobs: config_file.jobs,
+            jobs: if let Some(jobs) = config_file.jobs {
+                jobs
+            } else {
+                Job::all()
+            },
             all_columns_sample_size,
             tls: !args.no_tls,
         }
     }
-
-    pub fn should_run_counters(&self) -> bool {
-        if let Some(list) = &self.jobs {
-            return list.contains(&"counters".to_string());
-        }
-        false
-    }
-    pub fn should_run_updated_ats(&self) -> bool {
-        if let Some(list) = &self.jobs {
-            return list.contains(&"last_updated_ats".to_string());
-        }
-        false
-    }
-    pub fn should_run_created_ats(&self) -> bool {
-        if let Some(list) = &self.jobs {
-            return list.contains(&"last_created_ats".to_string());
-        }
-        false
-    }
-    pub fn should_run_all_columns(&self) -> bool {
-        if let Some(list) = &self.jobs {
-            return list.contains(&"all_columns".to_string());
-        }
-        true
-    }
-    pub fn should_run_sequences(&self) -> bool {
-        if let Some(list) = &self.jobs {
-            return list.contains(&"sequences".to_string());
-        }
-        false
-    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct ConfigFile {
     db1: Option<String>,
     db2: Option<String>,
     limit: Option<u32>,
     diff_file: Option<String>,
     white_listed_tables: Option<Vec<String>>,
-    jobs: Option<Vec<String>>,
+    jobs: Option<Vec<Job>>,
     all_columns_sample_size: Option<u32>,
 }
 
 impl ConfigFile {
     fn build(args: &Args) -> Self {
-        if let Some(config_arg) = args.config.as_ref() {
-            let file_path = config_arg;
-            let data = fs::read_to_string(file_path)
-                .unwrap_or_else(|_| panic!("file not found for config argument: {file_path}"));
-            let yaml = YamlLoader::load_from_str(&data)
-                .unwrap_or_else(|_| panic!("Unable to parse yaml config file at: {file_path}"));
-            let white_listed_tables: Option<Vec<String>> = match &yaml[0]["tables"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(
-                    data.as_vec()
-                        .unwrap()
-                        .iter()
-                        .map(|e| e.clone().into_string().unwrap())
-                        .collect(),
-                ),
-            };
-            let limit: Option<u32> = match &yaml[0]["limit"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(data.as_i64().unwrap().try_into().unwrap()),
-            };
-            let diff_file: Option<String> = match &yaml[0]["diff-file"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => data.clone().into_string(),
-            };
-            let jobs = match &yaml[0]["jobs"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(
-                    data.as_vec()
-                        .unwrap()
-                        .iter()
-                        .map(|e| e.clone().into_string().unwrap())
-                        .collect(),
-                ),
-            };
-            let all_columns_sample_size: Option<u32> = match &yaml[0]["all-columns-sample-size"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(data.as_i64().unwrap().try_into().unwrap()),
-            };
-            let db1: Option<String> = match &yaml[0]["db1"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(data.clone().into_string().unwrap()),
-            };
-            let db2: Option<String> = match &yaml[0]["db2"] {
-                yaml_rust::Yaml::BadValue => None,
-                data => Some(data.clone().into_string().unwrap()),
-            };
+        if args.config.is_none() {
+            return Self::default();
+        }
 
-            Self {
-                db1,
-                db2,
-                limit,
-                diff_file,
-                white_listed_tables,
-                jobs,
-                all_columns_sample_size,
-            }
-        } else {
-            Self {
-                db1: None,
-                db2: None,
-                limit: None,
-                diff_file: None,
-                white_listed_tables: None,
-                jobs: None,
-                all_columns_sample_size: None,
-            }
+        let config_arg = args.config.as_ref().unwrap();
+        let file_path = config_arg;
+        let data = fs::read_to_string(file_path)
+            .unwrap_or_else(|_| panic!("file not found for config argument: {file_path}"));
+        let yaml = YamlLoader::load_from_str(&data)
+            .unwrap_or_else(|_| panic!("Unable to parse yaml config file at: {file_path}"));
+        let white_listed_tables: Option<Vec<String>> = match &yaml[0]["tables"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(
+                data.as_vec()
+                    .unwrap()
+                    .iter()
+                    .map(|e| e.clone().into_string().unwrap())
+                    .unique()
+                    .collect(),
+            ),
+        };
+        let limit: Option<u32> = match &yaml[0]["limit"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(data.as_i64().unwrap().try_into().unwrap()),
+        };
+        let diff_file: Option<String> = match &yaml[0]["diff-file"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => data.clone().into_string(),
+        };
+        let jobs: Option<Vec<Job>> = match &yaml[0]["jobs"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(
+                data.as_vec()
+                    .unwrap()
+                    .iter()
+                    .map(|e| {
+                        let s = e.clone().into_string().unwrap();
+                        Job::from_str(&s).unwrap()
+                    })
+                    .collect(), // .collect::<Job>(),
+            ),
+        };
+        let all_columns_sample_size: Option<u32> = match &yaml[0]["all-columns-sample-size"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(data.as_i64().unwrap().try_into().unwrap()),
+        };
+        let db1: Option<String> = match &yaml[0]["db1"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(data.clone().into_string().unwrap()),
+        };
+        let db2: Option<String> = match &yaml[0]["db2"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => Some(data.clone().into_string().unwrap()),
+        };
+
+        Self {
+            db1,
+            db2,
+            limit,
+            diff_file,
+            white_listed_tables,
+            jobs,
+            all_columns_sample_size,
         }
     }
 }
@@ -290,10 +238,6 @@ mod test {
             config.white_listed_tables,
             Some(vec!["table_from_tables_file".to_string()])
         );
-        assert_eq!(config.should_run_counters(), false);
-        assert_eq!(config.should_run_updated_ats(), false);
-        assert_eq!(config.should_run_created_ats(), false);
-        assert_eq!(config.should_run_all_columns(), true);
     }
     #[test]
     fn test_config_from_config_file() {
@@ -308,20 +252,8 @@ mod test {
             Some(vec!["testing_tables".to_string()])
         );
         assert_eq!(config.limit, 999);
-        assert_eq!(config.diff_io.borrow().is_stdout(), false);
-        assert_eq!(
-            config.jobs,
-            Some(vec![
-                "counters".to_string(),
-                "last_updated_ats".to_string(),
-                "last_created_ats".to_string(),
-                "all_columns".to_string()
-            ])
-        );
-        assert_eq!(config.should_run_counters(), true);
-        assert_eq!(config.should_run_updated_ats(), true);
-        assert_eq!(config.should_run_created_ats(), true);
-        assert_eq!(config.should_run_all_columns(), true);
+        assert!(!config.diff_io.borrow().is_stdout());
+        assert_eq!(config.jobs, Job::all());
     }
     #[test]
     fn test_config_from_config_file_with_args() {
@@ -337,19 +269,7 @@ mod test {
             Some(vec!["table_from_tables_file".to_string()])
         );
         assert_eq!(config.limit, 22);
-        assert_eq!(config.diff_io.borrow().is_stdout(), false);
-        assert_eq!(
-            config.jobs,
-            Some(vec![
-                "counters".to_string(),
-                "last_updated_ats".to_string(),
-                "last_created_ats".to_string(),
-                "all_columns".to_string()
-            ])
-        );
-        assert_eq!(config.should_run_counters(), true);
-        assert_eq!(config.should_run_updated_ats(), true);
-        assert_eq!(config.should_run_created_ats(), true);
-        assert_eq!(config.should_run_all_columns(), true);
+        assert!(!config.diff_io.borrow().is_stdout());
+        assert_eq!(config.jobs, Job::all());
     }
 }
