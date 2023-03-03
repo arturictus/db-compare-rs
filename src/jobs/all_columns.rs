@@ -3,18 +3,20 @@ use crate::database::RequestBuilder;
 use crate::diff::IO;
 use crate::Config;
 
+use super::par_run;
+
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let q = RequestBuilder::new(config).column("id");
-    let tables = database::tables_with_column(q.build_master()).unwrap();
+    let tables = database::tables_with_column(q.build_master())?;
     for table in tables {
-        compare_table(config, &table).unwrap();
+        compare_table(config, &table)?;
     }
     Ok(())
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let q = RequestBuilder::new(config).table(table);
-    let mut upper_bound = database::get_greatest_id_from(q.build_master()).unwrap();
+    let mut upper_bound = database::get_greatest_id_from(q.build_master())?;
     let mut counter = 0u32;
     while upper_bound != 0 {
         if config.all_columns_sample_size.is_some()
@@ -32,10 +34,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             .table(table)
             .bounds((lower_bound, upper_bound));
 
-        let (records1, records2) = rayon::join(
-            || database::get_row_by_id_range(builder.build_master()).unwrap(),
-            || database::get_row_by_id_range(builder.build_replica()).unwrap(),
-        );
+        let (records1, records2) = par_run(builder, database::get_row_by_id_range)?;
 
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write((

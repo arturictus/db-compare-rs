@@ -3,7 +3,9 @@ mod counter;
 mod last_created_records;
 mod last_updated_records;
 mod sequences;
+mod utils;
 use std::{fmt, str::FromStr};
+pub(crate) use utils::par_run;
 
 use crate::Config;
 use anyhow::Result;
@@ -77,3 +79,16 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
     }
     Ok(())
 }
+
+// use crate::database::{Request, RequestBuilder};
+
+// pub type DBResults<T: Send> = (T, T);
+
+// pub fn par_run<T: Send>(
+//     r: RequestBuilder,
+//     f: fn(Request) -> Result<T, postgres::Error>,
+// ) -> Result<DBResults<T>, postgres::Error> {
+//     let (result1, result2) = rayon::join(|| f(r.build_master()), || f(r.build_replica()));
+
+//     Ok((result1?, result2?))
+// }

@@ -1,13 +1,12 @@
+use super::par_run;
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
-    let query = RequestBuilder::new(config);
-    let (mut data1, data2) = rayon::join(
-        || database::get_sequences(query.build_master()).unwrap(),
-        || database::get_sequences(query.build_replica()).unwrap(),
-    );
+    let builder = RequestBuilder::new(config);
+    let (mut data1, data2) = par_run(builder, database::get_sequences)?;
+
     data1.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     let mut diff_io = config.diff_io.borrow_mut();
