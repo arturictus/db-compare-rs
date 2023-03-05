@@ -3,7 +3,9 @@ mod counter;
 mod last_created_records;
 mod last_updated_records;
 mod sequences;
-use std::{fmt, str::FromStr};
+mod utils;
+use std::{error, fmt, str::FromStr};
+pub(crate) use utils::par_run;
 
 use crate::Config;
 use anyhow::Result;
@@ -40,9 +42,12 @@ impl FromStr for Job {
 }
 
 impl Job {
-    fn run(&self, config: &Config) -> Result<(), postgres::Error> {
+    fn run(&self, config: &Config) -> Result<(), Box<dyn error::Error>> {
         match self {
-            Job::Counters => counter::run(config),
+            Job::Counters => {
+                counter::run(config)?;
+                Ok(())
+            }
             Job::UpdatedAts => {
                 last_updated_records::tables(config)?;
                 last_updated_records::only_updated_ats(config)?;
@@ -55,8 +60,14 @@ impl Job {
                 last_created_records::all_columns(config)?;
                 Ok(())
             }
-            Job::AllColumns => all_columns::run(config),
-            Job::Sequences => sequences::run(config),
+            Job::AllColumns => {
+                all_columns::run(config)?;
+                Ok(())
+            }
+            Job::Sequences => {
+                sequences::run(config)?;
+                Ok(())
+            }
         }
     }
 
@@ -71,7 +82,7 @@ impl Job {
     }
 }
 
-pub fn run(config: &Config) -> Result<(), postgres::Error> {
+pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
     for job in &config.jobs {
         job.run(config)?;
     }

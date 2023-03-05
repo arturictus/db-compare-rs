@@ -3,8 +3,8 @@ mod repo;
 mod request;
 use chrono::prelude::*;
 pub use repo::ping_db;
-use request::Request;
-pub use request::RequestBuilder;
+
+pub use request::{Request, RequestBuilder};
 use std::time::Instant;
 
 pub fn get_sequences(r: Request) -> Result<Vec<(std::string::String, u32)>, PgError> {

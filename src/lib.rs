@@ -3,7 +3,7 @@ mod diff;
 use clap::Parser;
 use database::RequestBuilder;
 pub use diff::{IOType, IO};
-use std::{cell::RefCell, fs, str::FromStr};
+use std::{cell::RefCell, error, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
 mod jobs;
@@ -45,10 +45,10 @@ pub struct Config {
     pub all_columns_sample_size: Option<u32>,
 }
 
-pub fn run(config: &Config) -> Result<(), postgres::Error> {
+pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
-    jobs::run(config).unwrap();
+    jobs::run(config)?;
     config.diff_io.borrow_mut().close();
     Ok(())
 }
