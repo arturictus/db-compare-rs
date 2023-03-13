@@ -32,6 +32,11 @@ pub struct Args {
     pub tables_file: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
     pub config: Option<String>,
+    #[arg(
+        long,
+        help = "check rows until this timestamp: example: `--rows_until $(date +%s)`"
+    )]
+    pub rows_until: Option<i32>,
 }
 #[derive(Debug)]
 pub struct Config {
@@ -43,6 +48,7 @@ pub struct Config {
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
     pub all_columns_sample_size: Option<u32>,
+    pub rows_until: Option<u32>,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
@@ -113,6 +119,8 @@ impl Config {
             config_file.all_columns_sample_size
         };
 
+        let rows_until = None;
+
         Self {
             db1,
             db2,
@@ -125,6 +133,7 @@ impl Config {
                 Job::all()
             },
             all_columns_sample_size,
+            rows_until,
             tls: !args.no_tls,
         }
     }
@@ -224,6 +233,7 @@ mod test {
             diff_file: None,
             tables_file: None,
             config: None,
+            rows_until: None,
         }
     }
 

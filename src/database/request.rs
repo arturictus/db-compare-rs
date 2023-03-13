@@ -37,6 +37,7 @@ pub struct Request {
     pub table: Option<String>,
     pub column: Option<String>,
     pub bounds: Option<(u32, u32)>,
+    pub until: Option<u32>,
 }
 
 #[derive(Default, Clone)]
@@ -45,6 +46,7 @@ pub struct RequestBuilder {
     table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
+    until: Option<u32>,
 }
 
 #[derive(Clone, Debug)]
@@ -93,6 +95,11 @@ impl RequestBuilder {
         self
     }
 
+    pub fn until(mut self, until: u32) -> Self {
+        self.until = Some(until);
+        self
+    }
+
     pub fn build_master(&self) -> Request {
         Request {
             config: self.config.clone(),
@@ -100,6 +107,7 @@ impl RequestBuilder {
             table: self.table.clone(),
             column: self.column.clone(),
             bounds: self.bounds,
+            until: self.until,
         }
     }
     pub fn build_replica(&self) -> Request {
@@ -125,6 +133,7 @@ mod test {
             diff_file: None,
             tables_file: None,
             config: None,
+            rows_until: None,
         }
     }
     fn config() -> Config {
@@ -137,22 +146,26 @@ mod test {
         let builder = RequestBuilder::new(&config)
             .table("table")
             .bounds((1, 2))
-            .column("column");
+            .column("column")
+            .until(3);
 
         assert_eq!(builder.bounds, Some((1, 2)));
         assert_eq!(builder.column, Some("column".to_string()));
         assert_eq!(builder.table, Some("table".to_string()));
+        assert_eq!(builder.until, Some(3));
 
         let master = builder.build_master();
         assert_eq!(master.db, DB::Master("db1".to_string()));
         assert_eq!(master.column, Some("column".to_string()));
         assert_eq!(master.table, Some("table".to_string()));
         assert_eq!(master.bounds, Some((1, 2)));
-        let replica = builder.build_replica();
+        assert_eq!(master.until, Some(3));
 
+        let replica = builder.build_replica();
         assert_eq!(replica.db, DB::Replica("db2".to_string()));
         assert_eq!(replica.column, Some("column".to_string()));
         assert_eq!(replica.table, Some("table".to_string()));
         assert_eq!(replica.bounds, Some((1, 2)));
+        assert_eq!(replica.until, Some(3));
     }
 }

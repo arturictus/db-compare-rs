@@ -204,6 +204,42 @@ pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
     }
     Ok(records)
 }
+pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
+    use serde_json::Value;
+    let mut records = Vec::new();
+    let mut client = connect(&q)?;
+    let column = q.column.unwrap();
+    let table = q.table.unwrap();
+    let limit = q.config.limit;
+    let until = q.until.unwrap();
+    if let Ok(rows) = client.simple_query(&format!(
+        "WITH
+        cte AS
+        (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (ORDER BY {column} DESC WHERE {column} <= DATE({until})) AS rn
+            FROM
+                {table}
+        )
+    SELECT
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+    FROM
+        cte;"
+    )) {
+        for data in rows {
+            if let SimpleQueryMessage::Row(result) = data {
+                let value = result.get(0).unwrap_or("[]");
+                let list: Vec<Value> = serde_json::from_str(value).unwrap();
+
+                for e in list {
+                    records.push(serde_json::to_string(&e).unwrap())
+                }
+            }
+        }
+    }
+    Ok(records)
+}
 
 pub fn ping_db(q: Request) -> Result<(), PgError> {
     let mut client = connect(&q)?;
@@ -212,6 +248,6 @@ pub fn ping_db(q: Request) -> Result<(), PgError> {
         .query_one("select 10", &[])
         .expect("failed to execute select 10 to postgres");
     let value: i32 = result.get(0);
-    println!("Pong {value} <- {}", q.db.url());
+    println!("Pong {value} <- {}", q.db.name());
     Ok(())
 }

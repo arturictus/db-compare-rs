@@ -14,6 +14,7 @@ fn default_args() -> Args {
         diff_file: None,
         tables_file: None,
         config: None,
+        rows_until: None,
     }
 }
 fn default_config(jobs: Vec<Job>) -> Config {

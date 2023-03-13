@@ -3,6 +3,7 @@ mod counter;
 mod last_created_records;
 mod last_updated_records;
 mod sequences;
+mod updated_ats_until;
 mod utils;
 use std::{error, fmt, str::FromStr};
 pub(crate) use utils::par_run;
@@ -17,6 +18,7 @@ pub enum Job {
     CreatedAts,
     AllColumns,
     Sequences,
+    UpdatedAtsUntil,
 }
 
 impl fmt::Display for Job {
@@ -36,6 +38,7 @@ impl FromStr for Job {
             "last_created_ats" => Ok(Job::CreatedAts),
             "all_columns" => Ok(Job::AllColumns),
             "sequences" => Ok(Job::Sequences),
+            "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -66,6 +69,10 @@ impl Job {
             }
             Job::Sequences => {
                 sequences::run(config)?;
+                Ok(())
+            }
+            Job::UpdatedAtsUntil => {
+                updated_ats_until::run(config)?;
                 Ok(())
             }
         }

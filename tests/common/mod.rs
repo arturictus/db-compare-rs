@@ -48,8 +48,8 @@ impl DB {
       CREATE TABLE IF NOT EXISTS users (
           id              SERIAL PRIMARY KEY,
           name            VARCHAR NOT NULL,
-          created_at      INTEGER NOT NULL,
-          updated_at      INTEGER NOT NULL
+          created_at      TIME NOT NULL,
+          updated_at      TIME NOT NULL
           )
   ",
             )
@@ -104,6 +104,7 @@ impl TestRunner {
                 white_listed_tables: config.white_listed_tables.clone(),
                 jobs: config.jobs.clone(),
                 all_columns_sample_size: config.all_columns_sample_size,
+                rows_until: config.rows_until,
             },
             regenerate_fixture: false,
             tmp_file,
@@ -161,16 +162,16 @@ fn after_each() -> anyhow::Result<()> {
 pub struct User {
     pub id: Option<u64>,
     pub name: String,
-    pub created_at: i32,
-    pub updated_at: i32,
+    pub created_at: chrono::NaiveTime,
+    pub updated_at: chrono::NaiveTime,
 }
 impl Default for User {
     fn default() -> Self {
         User {
             id: None,
             name: "John".to_string(),
-            created_at: 1,
-            updated_at: 1,
+            created_at: chrono::NaiveTime::from_hms_opt(10, 30, 0).unwrap(),
+            updated_at: chrono::NaiveTime::from_hms_opt(10, 30, 0).unwrap(),
         }
     }
 }
@@ -186,7 +187,7 @@ impl User {
             users.push(User {
                 id: None,
                 name: row.get(1),
-                created_at: row.get(2),
+                created_at: row.get(2).unwrap(),
                 updated_at: row.get(3),
             })
         }
@@ -213,9 +214,11 @@ impl User {
     pub fn next(&self, name: Option<String>) -> Self {
         Self {
             id: None,
-            name: name.unwrap_or_else(|| format!("{}-{}", self.name.clone(), self.created_at + 1)),
-            created_at: self.created_at + 1,
-            updated_at: self.updated_at + 1,
+            name: name.unwrap_or_else(|| {
+                format!("{}-{}", self.name.clone(), chrono::Utc::now().to_string())
+            }),
+            created_at: chrono::Utc::now().to_string(),
+            updated_at: chrono::Utc::now().to_string(),
         }
     }
 }
