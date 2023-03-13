@@ -1,4 +1,5 @@
 use anyhow::{self, Ok};
+use chrono::NaiveDateTime;
 use convert_case::{Case, Casing};
 use db_compare::IOType;
 use db_compare::*;
@@ -48,8 +49,8 @@ impl DB {
       CREATE TABLE IF NOT EXISTS users (
           id              SERIAL PRIMARY KEY,
           name            VARCHAR NOT NULL,
-          created_at      TIME NOT NULL,
-          updated_at      TIME NOT NULL
+          created_at      TIMESTAMP NOT NULL,
+          updated_at      TIMESTAMP NOT NULL
           )
   ",
             )
@@ -136,6 +137,7 @@ impl TestRunner {
         std::fs::remove_file(&self.tmp_file).unwrap();
         // Drop databases
         after_each().unwrap();
+        println!("comparing: result with {}", self.fixture_file);
         // Assert the current output is the expected output
         assert_eq!(fixture, tmp);
         self.runned = true;
@@ -160,18 +162,21 @@ fn after_each() -> anyhow::Result<()> {
 }
 #[derive(Debug, Clone)]
 pub struct User {
-    pub id: Option<u64>,
+    pub id: Option<i32>,
     pub name: String,
-    pub created_at: chrono::NaiveTime,
-    pub updated_at: chrono::NaiveTime,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
 }
 impl Default for User {
     fn default() -> Self {
+        let d = chrono::NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+        let t = chrono::NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+        let dt = NaiveDateTime::new(d, t);
         User {
             id: None,
             name: "John".to_string(),
-            created_at: chrono::NaiveTime::from_hms_opt(10, 30, 0).unwrap(),
-            updated_at: chrono::NaiveTime::from_hms_opt(10, 30, 0).unwrap(),
+            created_at: dt,
+            updated_at: dt,
         }
     }
 }
@@ -182,12 +187,10 @@ impl User {
         let rows = client.query("SELECT * FROM users", &[]).unwrap();
         let mut users = Vec::new();
         for row in rows {
-            // TODO: fix this
-            // let id = row.get(0);
             users.push(User {
-                id: None,
+                id: Some(row.get::<usize, i32>(0).into()),
                 name: row.get(1),
-                created_at: row.get(2).unwrap(),
+                created_at: row.get(2),
                 updated_at: row.get(3),
             })
         }
@@ -195,15 +198,12 @@ impl User {
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<User> {
         let mut client = db.connect()?;
-        let id = client
-            .execute(
-                "INSERT INTO users (name, created_at, updated_at) VALUES ($1, $2, $3) RETURNING id",
-                &[&self.name, &self.created_at, &self.updated_at],
-            )
-            .map_err(anyhow::Error::msg)
-            .unwrap();
+        let id = client.execute(
+            "INSERT INTO users (name, created_at, updated_at) VALUES ($1, $2, $3) RETURNING id",
+            &[&self.name, &self.created_at, &self.updated_at],
+        )?;
         Ok(User {
-            id: Some(id),
+            id: Some(id.try_into().unwrap()),
             ..self.clone()
         })
     }
@@ -217,8 +217,9 @@ impl User {
             name: name.unwrap_or_else(|| {
                 format!("{}-{}", self.name.clone(), chrono::Utc::now().to_string())
             }),
-            created_at: chrono::Utc::now().to_string(),
-            updated_at: chrono::Utc::now().to_string(),
+
+            created_at: NaiveDateTime::from_timestamp_millis(1662921288).unwrap(),
+            updated_at: NaiveDateTime::from_timestamp_millis(1662921288).unwrap(),
         }
     }
 }
