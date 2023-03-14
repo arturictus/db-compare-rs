@@ -15,7 +15,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
         with:
-          shared_key: "shared-cache"
+          shared-key: "shared-cache"
       - uses: actions-rs/cargo@v1
         with:
           command: check
@@ -41,7 +41,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
         with:
-          shared_key: "shared-cache"
+          shared-key: "shared-cache"
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -59,7 +59,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
         with:
-          shared_key: "shared-cache"
+          shared-key: "shared-cache"
       - run: rustup component add rustfmt
       - uses: actions-rs/cargo@v1
         with:
@@ -78,7 +78,7 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v2
         with:
-          shared_key: "shared-cache"
+          shared-key: "shared-cache"
       - run: rustup component add clippy
       - uses: actions-rs/cargo@v1
         with:
