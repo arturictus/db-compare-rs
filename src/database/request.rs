@@ -1,16 +1,11 @@
 use crate::Config;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum DB {
     Master(String),
     Replica(String),
+    #[default]
     None,
-}
-
-impl Default for DB {
-    fn default() -> Self {
-        DB::None
-    }
 }
 
 impl DB {
