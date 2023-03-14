@@ -67,6 +67,12 @@ impl DB {
             .unwrap_or_else(|_| {
                 println!("Database does not exists");
             });
+        client
+            .batch_execute(&format!("DROP SEQUENCE IF EXISTS users_id_seq"))
+            .map_err(anyhow::Error::msg)
+            .unwrap_or_else(|_| {
+                println!("sequence does not exists");
+            });
         Ok(())
     }
 }
@@ -75,7 +81,7 @@ pub struct TestRunner {
     config: Config,
     regenerate_fixture: bool,
     tmp_file: String,
-    fixture_file: String,
+    fixture_folder: String,
     runned: bool,
 }
 
@@ -83,8 +89,8 @@ impl TestRunner {
     pub fn new(config: &Config) -> Self {
         fs::create_dir_all("tmp").unwrap();
         let tmp_file = format!("tmp/{}.diff", Uuid::new_v4());
-        let fixture_file = format!(
-            "tests/fixtures/examples/{}_{}_example.diff",
+        let fixture_folder = format!(
+            "tests/fixtures/examples/{}_{}",
             config.white_listed_tables.clone().unwrap().join("_"),
             config
                 .jobs
@@ -109,7 +115,7 @@ impl TestRunner {
             },
             regenerate_fixture: false,
             tmp_file,
-            fixture_file,
+            fixture_folder,
             runned: false,
         }
     }
@@ -118,26 +124,37 @@ impl TestRunner {
         self.regenerate_fixture = true;
         self
     }
-    fn fixture_not_exists(&self) -> bool {
-        !Path::new(&self.fixture_file).exists()
+    fn fixture_file(&self, name: &str) -> String {
+        let name = name.to_case(Case::Lower).to_case(Case::Snake);
+        format!("{}/{}.diff", self.fixture_folder, name)
+    }
+    fn fixture_not_exists(&self, name: &str) -> bool {
+        !Path::new(&self.fixture_file(name)).exists()
     }
 
-    pub fn run(mut self, exec: fn(&Config)) -> Self {
+    pub fn run(mut self, name: &str, exec: fn(&Config)) -> Self {
         // setup databases
         before_each().unwrap();
         exec(&self.config);
-        if self.regenerate_fixture || self.fixture_not_exists() {
-            println!("[TestRunner]: generating fixture: {}", self.fixture_file);
+        let fixture_file = self.fixture_file(name);
+        if self.regenerate_fixture || self.fixture_not_exists(name) {
+            fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
+                panic!("unable to create folder {}", &self.fixture_folder);
+            });
+            println!(
+                "[TestRunner]: generating fixture: {}",
+                self.fixture_file(name)
+            );
             // If we are creating the fixtures we copy the result to the fixture
-            std::fs::copy(&self.tmp_file, &self.fixture_file).unwrap();
+            std::fs::copy(&self.tmp_file, &fixture_file).unwrap();
         }
         // Copy fixture and result to memory
         let tmp = std::fs::read_to_string(&self.tmp_file).unwrap();
-        let fixture = std::fs::read_to_string(&self.fixture_file).unwrap();
+        let fixture = std::fs::read_to_string(&fixture_file).unwrap();
         std::fs::remove_file(&self.tmp_file).unwrap();
         // Drop databases
         after_each().unwrap();
-        println!("comparing: result with {}", self.fixture_file);
+        println!("comparing: result with {}", &fixture_file);
         // Assert the current output is the expected output
         assert_eq!(fixture, tmp);
         self.runned = true;
@@ -147,11 +164,11 @@ impl TestRunner {
 
 pub fn before_each() -> anyhow::Result<()> {
     // Ensure that the databases are clean before running the test
-    DB::A.drop()?;
-    DB::B.drop()?;
+    DB::A.drop().unwrap();
+    DB::B.drop().unwrap();
     // Setup the databases
-    DB::A.setup()?;
-    DB::B.setup()?;
+    DB::A.setup().unwrap();
+    DB::B.setup().unwrap();
     Ok(())
 }
 fn after_each() -> anyhow::Result<()> {
@@ -218,8 +235,8 @@ impl User {
                 format!("{}-{}", self.name.clone(), chrono::Utc::now().to_string())
             }),
 
-            created_at: NaiveDateTime::from_timestamp_millis(1662921288).unwrap(),
-            updated_at: NaiveDateTime::from_timestamp_millis(1662921288).unwrap(),
+            created_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
+            updated_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
         }
     }
 }

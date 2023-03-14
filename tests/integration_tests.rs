@@ -27,7 +27,7 @@ fn default_config(jobs: Vec<Job>) -> Config {
 #[test]
 fn test_counters() {
     let config = default_config(vec![Job::Counters]);
-    TestRunner::new(&config).run(|c| {
+    TestRunner::new(&config).run("default", |c| {
         let first = User::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
@@ -38,7 +38,7 @@ fn test_counters() {
 #[test]
 fn test_updated_ats() {
     let config = default_config(vec![Job::UpdatedAts]);
-    TestRunner::new(&config).run(|c| {
+    TestRunner::new(&config).run("default", |c| {
         let first = User::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
@@ -49,7 +49,7 @@ fn test_updated_ats() {
 #[test]
 fn test_created_ats() {
     let config = default_config(vec![Job::CreatedAts]);
-    TestRunner::new(&config).run(|c| {
+    TestRunner::new(&config).run("default", |c| {
         let first = User::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
@@ -61,7 +61,7 @@ fn test_created_ats() {
 #[test]
 fn test_all_columns() {
     let config = default_config(vec![Job::AllColumns]);
-    TestRunner::new(&config).run(|c| {
+    TestRunner::new(&config).run("default", |c| {
         let first = User::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
@@ -72,7 +72,7 @@ fn test_all_columns() {
 #[test]
 fn test_sequences() {
     let config = default_config(vec![Job::Sequences]);
-    TestRunner::new(&config).run(|c| {
+    TestRunner::new(&config).run("default", |c| {
         let first = User::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
         assert_eq!(User::all(DB::A).len(), 1);
