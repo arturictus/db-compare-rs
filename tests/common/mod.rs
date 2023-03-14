@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::fs;
 use std::path::Path;
 use uuid::Uuid;
+
 pub enum DB {
     A,
     B,
@@ -43,9 +44,8 @@ impl DB {
             });
 
         let mut client = self.connect()?;
-        client
-            .batch_execute(
-                "
+        client.batch_execute(
+            "
       CREATE TABLE IF NOT EXISTS users (
           id              SERIAL PRIMARY KEY,
           name            VARCHAR NOT NULL,
@@ -53,8 +53,16 @@ impl DB {
           updated_at      TIMESTAMP NOT NULL
           )
   ",
-            )
-            .map_err(anyhow::Error::msg)?;
+        )?;
+        client.batch_execute(
+            "
+      CREATE TABLE IF NOT EXISTS messages (
+          id              SERIAL PRIMARY KEY,
+          txt            VARCHAR NOT NULL,
+          created_at      TIMESTAMP NOT NULL
+          )
+  ",
+        )?;
 
         Ok(())
     }
@@ -66,12 +74,6 @@ impl DB {
             .map_err(anyhow::Error::msg)
             .unwrap_or_else(|_| {
                 println!("Database does not exists");
-            });
-        client
-            .batch_execute(&format!("DROP SEQUENCE IF EXISTS users_id_seq"))
-            .map_err(anyhow::Error::msg)
-            .unwrap_or_else(|_| {
-                println!("sequence does not exists");
             });
         Ok(())
     }
@@ -177,7 +179,7 @@ fn after_each() -> anyhow::Result<()> {
     DB::B.drop()?;
     Ok(())
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct User {
     pub id: Option<i32>,
     pub name: String,
@@ -205,10 +207,10 @@ impl User {
         let mut users = Vec::new();
         for row in rows {
             users.push(User {
-                id: Some(row.get::<usize, i32>(0).into()),
-                name: row.get(1),
-                created_at: row.get(2),
-                updated_at: row.get(3),
+                id: Some(row.get::<&str, i32>("id").into()),
+                name: row.get("name"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
             })
         }
         users
@@ -237,6 +239,64 @@ impl User {
 
             created_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
             updated_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub struct Msg {
+    pub id: Option<i32>,
+    pub txt: String,
+    pub created_at: chrono::NaiveDateTime,
+}
+impl Default for Msg {
+    fn default() -> Self {
+        let d = chrono::NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
+        let t = chrono::NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+        let dt = NaiveDateTime::new(d, t);
+        Self {
+            id: None,
+            txt: "Important".to_string(),
+            created_at: dt,
+        }
+    }
+}
+impl Msg {
+    pub fn all(db: DB) -> Vec<Self> {
+        let mut client = db.connect().unwrap();
+        let rows = client.query("SELECT * FROM messages", &[]).unwrap();
+        let mut msgs = Vec::new();
+        for row in rows {
+            msgs.push(Self {
+                id: Some(row.get::<&str, i32>("id").into()),
+                txt: row.get("txt"),
+                created_at: row.get("created_at"),
+            })
+        }
+        msgs
+    }
+    pub fn insert(&self, db: DB) -> anyhow::Result<Self> {
+        let mut client = db.connect()?;
+        let id = client.execute(
+            "INSERT INTO messages (txt, created_at) VALUES ($1, $2) RETURNING id",
+            &[&self.txt, &self.created_at],
+        )?;
+        Ok(Self {
+            id: Some(id.try_into().unwrap()),
+            ..self.clone()
+        })
+    }
+    pub fn new() -> Self {
+        Self::default()
+    }
+    #[allow(dead_code)]
+    pub fn next(&self, name: Option<String>) -> Self {
+        Self {
+            id: None,
+            txt: name.unwrap_or_else(|| {
+                format!("{}-{}", self.txt.clone(), chrono::Utc::now().to_string())
+            }),
+
+            created_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
         }
     }
 }

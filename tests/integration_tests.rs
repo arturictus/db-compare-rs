@@ -1,5 +1,5 @@
 mod common;
-use common::{TestRunner, User, DB};
+use common::{Msg, TestRunner, User, DB};
 use db_compare::Job;
 
 use db_compare::*;
@@ -20,7 +20,7 @@ fn default_args() -> Args {
 fn default_config(jobs: Vec<Job>) -> Config {
     Config {
         jobs,
-        white_listed_tables: Some(vec!["users".to_string()]),
+        white_listed_tables: Some(vec!["users".to_string(), "messages".to_string()]),
         ..Config::new(&default_args())
     }
 }
@@ -50,8 +50,11 @@ fn test_updated_ats() {
 fn test_created_ats() {
     let config = default_config(vec![Job::CreatedAts]);
     TestRunner::new(&config).run("default", |c| {
-        let first = User::new().insert(DB::A).unwrap();
+        User::new().insert(DB::A).unwrap();
+        let first = Msg::new().insert(DB::A).unwrap();
         assert_eq!(first.id, Some(1));
+        assert_eq!(Msg::all(DB::A).len(), 1);
+        assert_eq!(Msg::all(DB::B).len(), 0);
         assert_eq!(User::all(DB::A).len(), 1);
         assert_eq!(User::all(DB::B).len(), 0);
         db_compare::run(c).unwrap();
