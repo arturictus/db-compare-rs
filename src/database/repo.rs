@@ -218,7 +218,7 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {column} DESC WHERE {column} <= DATE({until})) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC WHERE {column} <= {until}) AS rn
             FROM
                 {table}
         )

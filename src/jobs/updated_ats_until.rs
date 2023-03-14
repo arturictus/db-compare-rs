@@ -22,7 +22,12 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
         .table(table)
         .column(column())
         // date +%s
-        .until(1678715737);
+        .until(
+            config
+                .rows_until
+                .ok_or("`until` required to run UpdatedAtsUntil job")
+                .unwrap(),
+        );
     let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((format!("====== `{table}` all columns"), records1, records2));
