@@ -1,3 +1,5 @@
+== `messages_id_seq` sequence:
+✓
 == `users_id_seq` sequence:
 -  "1"
 +  "0"

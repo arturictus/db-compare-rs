@@ -86,6 +86,14 @@ pub fn full_row_ordered_by(r: Request) -> Result<Vec<String>, PgError> {
         repo::full_row_ordered_by,
     )
 }
+pub fn full_row_ordered_by_until(r: Request) -> Result<Vec<String>, PgError> {
+    let table = r.table.as_ref().unwrap();
+    duration::<Vec<String>>(
+        format!("Getting rows from table {table} in {}", r.db.name()),
+        r,
+        repo::full_row_ordered_by_until,
+    )
+}
 
 fn duration<T>(
     message: String,
