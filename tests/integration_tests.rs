@@ -83,3 +83,28 @@ fn test_sequences() {
         db_compare::run(c).unwrap();
     });
 }
+#[test]
+fn test_updated_ats_until() {
+    let mut updated_ats: Vec<i64> = vec![];
+    (1..=10).fold(vec![User::new()], |mut acc, _i| {
+        let u = acc.last().unwrap().next();
+        updated_ats.push(u.updated_at.timestamp());
+        acc.push(u);
+        acc
+    });
+
+    let mut config = default_config(vec![Job::UpdatedAtsUntil]);
+    config.rows_until = Some(updated_ats.last().unwrap().clone());
+
+    TestRunner::new(&config).run("db1 has one record more than db2", |c| {
+        (1..=10).fold(User::new(), |prev, _i| {
+            let u = prev.next();
+            u.insert(DB::A).unwrap();
+            u
+        });
+        println!("{:?}", User::all(DB::A));
+        assert_eq!(User::all(DB::A).len(), 10);
+        assert_eq!(User::all(DB::B).len(), 0);
+        db_compare::run(c).unwrap();
+    });
+}

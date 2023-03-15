@@ -32,7 +32,7 @@ pub struct Request {
     pub table: Option<String>,
     pub column: Option<String>,
     pub bounds: Option<(u32, u32)>,
-    pub until: Option<u32>,
+    pub until: Option<i64>,
 }
 
 #[derive(Default, Clone)]
@@ -41,7 +41,7 @@ pub struct RequestBuilder {
     table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
-    until: Option<u32>,
+    until: Option<i64>,
 }
 
 #[derive(Clone, Debug)]
@@ -90,7 +90,7 @@ impl RequestBuilder {
         self
     }
 
-    pub fn until(mut self, until: u32) -> Self {
+    pub fn until(mut self, until: i64) -> Self {
         self.until = Some(until);
         self
     }

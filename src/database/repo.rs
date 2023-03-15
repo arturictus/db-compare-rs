@@ -209,6 +209,7 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
     let mut records = Vec::new();
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
+
     let table = q.table.unwrap();
     let limit = q.config.limit;
     let until = q.until.unwrap();
@@ -218,12 +219,12 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {column} DESC WHERE {column} <= {until}) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
             FROM
                 {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit} AND WHERE {column} <= {until}) AS data
     FROM
         cte;"
     )) {

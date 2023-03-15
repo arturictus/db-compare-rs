@@ -28,6 +28,7 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
                 .ok_or("`until` required to run UpdatedAtsUntil job")
                 .unwrap(),
         );
+    println!("{:#?}", config);
     let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write((format!("====== `{table}` all columns"), records1, records2));

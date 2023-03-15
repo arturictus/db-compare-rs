@@ -48,7 +48,7 @@ pub struct Config {
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
     pub all_columns_sample_size: Option<u32>,
-    pub rows_until: Option<u32>,
+    pub rows_until: Option<i64>,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {

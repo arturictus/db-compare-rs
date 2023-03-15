@@ -188,16 +188,21 @@ pub struct User {
 }
 impl Default for User {
     fn default() -> Self {
-        let d = chrono::NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-        let t = chrono::NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
-        let dt = NaiveDateTime::new(d, t);
         User {
             id: None,
             name: "John".to_string(),
-            created_at: dt,
-            updated_at: dt,
+            created_at: initial_datetime(),
+            updated_at: initial_datetime(),
         }
     }
+}
+
+pub fn initial_timestamp() -> i64 {
+    initial_datetime().timestamp()
+}
+
+pub fn initial_datetime() -> chrono::NaiveDateTime {
+    NaiveDateTime::from_timestamp_opt(1_588_603_944, 0).unwrap() //Mon May 04 2020 14:52:24 GMT+0000
 }
 
 impl User {
@@ -229,16 +234,15 @@ impl User {
     pub fn new() -> Self {
         Self::default()
     }
-    #[allow(dead_code)]
-    pub fn next(&self, name: Option<String>) -> Self {
+
+    pub fn next(&self) -> Self {
         Self {
             id: None,
-            name: name.unwrap_or_else(|| {
-                format!("{}-{}", self.name.clone(), chrono::Utc::now().to_string())
-            }),
-
-            created_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
-            updated_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
+            name: format!("{}-I", self.name.clone()),
+            created_at: NaiveDateTime::from_timestamp_opt(self.created_at.timestamp() + 7200, 0)
+                .unwrap(),
+            updated_at: NaiveDateTime::from_timestamp_opt(self.updated_at.timestamp() + 7200, 0)
+                .unwrap(),
         }
     }
 }
@@ -250,13 +254,10 @@ pub struct Msg {
 }
 impl Default for Msg {
     fn default() -> Self {
-        let d = chrono::NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-        let t = chrono::NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
-        let dt = NaiveDateTime::new(d, t);
         Self {
             id: None,
             txt: "Important".to_string(),
-            created_at: dt,
+            created_at: initial_datetime(),
         }
     }
 }
@@ -288,15 +289,13 @@ impl Msg {
     pub fn new() -> Self {
         Self::default()
     }
-    #[allow(dead_code)]
-    pub fn next(&self, name: Option<String>) -> Self {
+
+    pub fn next(&self) -> Self {
         Self {
             id: None,
-            txt: name.unwrap_or_else(|| {
-                format!("{}-{}", self.txt.clone(), chrono::Utc::now().to_string())
-            }),
-
-            created_at: NaiveDateTime::from_timestamp_millis(1_662_921_288).unwrap(),
+            txt: format!("{}-I", self.txt.clone()),
+            created_at: NaiveDateTime::from_timestamp_opt(self.created_at.timestamp() + 7200, 0)
+                .unwrap(),
         }
     }
 }
