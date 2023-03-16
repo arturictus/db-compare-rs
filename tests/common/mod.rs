@@ -296,7 +296,7 @@ impl Msg {
     pub fn new() -> Self {
         Self::default()
     }
-
+    #[allow(dead_code)]
     pub fn next(&self) -> Self {
         Self {
             id: None,

@@ -1,5 +1,4 @@
 use crate::database::Request;
-use chrono::NaiveDateTime;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
@@ -212,7 +211,7 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
 
     let table = q.table.unwrap();
     let limit = q.config.limit;
-    let until = NaiveDateTime::from_timestamp_opt(q.until.unwrap(), 0).unwrap();
+    let until = q.until;
     let until = until.format("%Y-%m-%d %H:%M:%S").to_string();
     let q = format!(
         "WITH

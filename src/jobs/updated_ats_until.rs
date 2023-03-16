@@ -1,4 +1,3 @@
-use chrono::offset::Utc;
 use chrono::NaiveDateTime;
 
 use crate::database::{self, RequestBuilder};
@@ -21,15 +20,13 @@ fn column() -> String {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let mut last_date_time: Option<NaiveDateTime> = Some(config.rows_until);
-
     let builder = RequestBuilder::new(config)
         .table(table)
         .column(column())
-        .until(last_date_time.unwrap().timestamp());
-
+        .until(config.rows_until);
+    let mut last_date_time: Option<NaiveDateTime> = Some(config.rows_until);
     while last_date_time.is_some() {
-        let builder = builder.clone().until(last_date_time.unwrap().timestamp());
+        let builder = builder.clone().until(last_date_time.unwrap());
         let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
         let mut diff_io = config.diff_io.borrow_mut();
         let header = format!(
