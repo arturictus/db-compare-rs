@@ -30,7 +30,6 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config)
         .table(table)
         .column(column())
-        // date +%s
         .until(last_date_time.unwrap().timestamp());
 
     while last_date_time.is_some() {
@@ -54,13 +53,14 @@ fn get_last_date_time(records: &[String], prev: Option<NaiveDateTime>) -> Option
     if let Some(last) = records.last() {
         let value: serde_json::Value = serde_json::from_str(last).unwrap();
         let date = value[&column()].as_str().unwrap();
-        let date = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S").unwrap();
-        if let Some(prev_date) = prev {
-            if date == prev_date {
-                return NaiveDateTime::from_timestamp_opt(prev_date.timestamp() - 1, 0);
+        if let Ok(date) = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S") {
+            if let Some(prev_date) = prev {
+                if date == prev_date {
+                    return NaiveDateTime::from_timestamp_opt(prev_date.timestamp() - 1, 0);
+                }
             }
+            last_date_time = Some(date);
         }
-        last_date_time = Some(date);
     }
     last_date_time
 }

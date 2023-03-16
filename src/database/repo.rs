@@ -231,7 +231,6 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
     FROM
         cte;"
     );
-    println!("{}", q.clone());
     if let Ok(rows) = client.simple_query(&q) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
