@@ -85,13 +85,14 @@ fn test_sequences() {
 }
 #[test]
 fn test_updated_ats_until() {
-    let (updated_at, _) = (1..=10).fold((0i64, User::new()), |(_tm, u), _i| {
+    let mut config = default_config(vec![Job::UpdatedAtsUntil]);
+
+    let (updated_at, _) = (1..=10).fold((config.rows_until, User::new()), |(_tm, u), _i| {
         let u2 = u.next();
-        (u2.updated_at.clone().timestamp(), u2)
+        (u2.updated_at, u2)
     });
 
-    let mut config = default_config(vec![Job::UpdatedAtsUntil]);
-    config.rows_until = Some(updated_at);
+    config.rows_until = updated_at;
     config.limit = 2;
 
     TestRunner::new(&config).run("db1 has more records than db2", |c| {

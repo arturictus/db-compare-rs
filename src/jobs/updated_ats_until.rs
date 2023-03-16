@@ -21,11 +21,7 @@ fn column() -> String {
 }
 
 fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let mut last_date_time: Option<NaiveDateTime> = if let Some(until) = &config.rows_until {
-        Some(NaiveDateTime::from_timestamp_opt(until.to_owned(), 0).unwrap())
-    } else {
-        Some(NaiveDateTime::from_timestamp_opt(Utc::now().timestamp(), 0).unwrap())
-    };
+    let mut last_date_time: Option<NaiveDateTime> = Some(config.rows_until);
 
     let builder = RequestBuilder::new(config)
         .table(table)
