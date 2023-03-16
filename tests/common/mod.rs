@@ -5,6 +5,7 @@ use db_compare::IOType;
 use db_compare::*;
 use itertools::Itertools;
 use postgres::{Client, Error, NoTls};
+use pretty_assertions::assert_eq;
 use std::cell::RefCell;
 use std::fs;
 use std::path::Path;
@@ -198,11 +199,11 @@ impl Default for User {
 }
 
 pub fn initial_timestamp() -> i64 {
-    initial_datetime().timestamp()
+    1_588_603_944 //Mon May 04 2020 14:52:24 GMT+0000
 }
 
 pub fn initial_datetime() -> chrono::NaiveDateTime {
-    NaiveDateTime::from_timestamp_opt(1_588_603_944, 0).unwrap() //Mon May 04 2020 14:52:24 GMT+0000
+    NaiveDateTime::from_timestamp_opt(initial_timestamp(), 0).unwrap()
 }
 
 impl User {
@@ -221,6 +222,9 @@ impl User {
         users
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<User> {
+        if self.id.is_some() {
+            return Err(anyhow::anyhow!("User already inserted"));
+        }
         let mut client = db.connect()?;
         let id = client.execute(
             "INSERT INTO users (name, created_at, updated_at) VALUES ($1, $2, $3) RETURNING id",
@@ -276,6 +280,9 @@ impl Msg {
         msgs
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<Self> {
+        if self.id.is_some() {
+            return Err(anyhow::anyhow!("User already inserted"));
+        }
         let mut client = db.connect()?;
         let id = client.execute(
             "INSERT INTO messages (txt, created_at) VALUES ($1, $2) RETURNING id",

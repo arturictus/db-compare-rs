@@ -1,8 +1,8 @@
 use crate::database::Request;
+use chrono::NaiveDateTime;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
-
 pub fn get_sequences(q: Request) -> Result<Vec<(String, u32)>, PgError> {
     let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
@@ -212,8 +212,9 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
 
     let table = q.table.unwrap();
     let limit = q.config.limit;
-    let until = q.until.unwrap();
-    if let Ok(rows) = client.simple_query(&format!(
+    let until = NaiveDateTime::from_timestamp_opt(q.until.unwrap(), 0).unwrap();
+    let until = until.format("%Y-%m-%d %H:%M:%S").to_string();
+    let q = format!(
         "WITH
         cte AS
         (
@@ -222,12 +223,16 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
                 ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
             FROM
                 {table}
+            WHERE
+                {column} < '{until}'
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit} AND WHERE {column} <= {until}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
     FROM
         cte;"
-    )) {
+    );
+    println!("{}", q.clone());
+    if let Ok(rows) = client.simple_query(&q) {
         for data in rows {
             if let SimpleQueryMessage::Row(result) = data {
                 let value = result.get(0).unwrap_or("[]");
