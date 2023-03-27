@@ -2,6 +2,7 @@ use crate::database::Request;
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
+
 pub fn get_sequences(q: Request) -> Result<Vec<(String, u32)>, PgError> {
     let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
@@ -34,13 +35,11 @@ pub fn get_greatest_id_from(q: Request) -> Result<u32, PgError> {
     Ok(output)
 }
 pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
-    use serde_json::Value;
     let mut client = connect(&q)?;
     let column = "id".to_string();
     let limit = q.config.limit;
     let table = q.table.unwrap();
     let (lower_bound, upper_bound) = q.bounds.unwrap();
-    let mut records: Vec<String> = Vec::new();
     let query = format!(
         "WITH
         cte AS
@@ -59,19 +58,7 @@ pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
         cte;"
     );
 
-    if let Ok(rows) = client.simple_query(&query) {
-        for data in rows {
-            if let SimpleQueryMessage::Row(result) = data {
-                let value = result.get(0).unwrap_or("[]");
-                let list: Vec<Value> = serde_json::from_str(value).unwrap();
-
-                for e in list {
-                    records.push(serde_json::to_string(&e).unwrap())
-                }
-            }
-        }
-    }
-
+    let records = collect_records_with_rn(&query, &mut client)?;
     Ok(records)
 }
 
@@ -169,13 +156,11 @@ fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
 }
 
 pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
-    use serde_json::Value;
-    let mut records = Vec::new();
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
     let limit = q.config.limit;
-    if let Ok(rows) = client.simple_query(&format!(
+    let query = format!(
         "WITH
         cte AS
         (
@@ -189,23 +174,11 @@ pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
         JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
     FROM
         cte;"
-    )) {
-        for data in rows {
-            if let SimpleQueryMessage::Row(result) = data {
-                let value = result.get(0).unwrap_or("[]");
-                let list: Vec<Value> = serde_json::from_str(value).unwrap();
-
-                for e in list {
-                    records.push(serde_json::to_string(&e).unwrap())
-                }
-            }
-        }
-    }
+    );
+    let records = collect_records_with_rn(&query, &mut client)?;
     Ok(records)
 }
 pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
-    use serde_json::Value;
-    let mut records = Vec::new();
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
 
@@ -230,18 +203,7 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
     FROM
         cte;"
     );
-    if let Ok(rows) = client.simple_query(&q) {
-        for data in rows {
-            if let SimpleQueryMessage::Row(result) = data {
-                let value = result.get(0).unwrap_or("[]");
-                let list: Vec<Value> = serde_json::from_str(value).unwrap();
-
-                for e in list {
-                    records.push(serde_json::to_string(&e).unwrap())
-                }
-            }
-        }
-    }
+    let records = collect_records_with_rn(&q, &mut client)?;
     Ok(records)
 }
 
@@ -254,4 +216,23 @@ pub fn ping_db(q: Request) -> Result<(), PgError> {
     let value: i32 = result.get(0);
     println!("Pong {value} <- {}", q.db.name());
     Ok(())
+}
+
+fn collect_records_with_rn(query: &str, client: &mut Client) -> Result<Vec<String>, PgError> {
+    use serde_json::Value;
+    let mut records = Vec::new();
+    let rows = client.simple_query(query)?;
+
+    for data in rows {
+        if let SimpleQueryMessage::Row(result) = data {
+            let value = result.get(0).unwrap_or("[]");
+            let list: Vec<serde_json::Map<String, Value>> = serde_json::from_str(value).unwrap();
+
+            for mut e in list {
+                e.remove("rn");
+                records.push(serde_json::to_string(&e).unwrap())
+            }
+        }
+    }
+    Ok(records)
 }
