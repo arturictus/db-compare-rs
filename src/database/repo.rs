@@ -46,14 +46,14 @@ pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS db_compare_row_number
             FROM
                 {table}
             WHERE
                (id > {lower_bound}) AND (id <= {upper_bound})
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE db_compare_row_number <= {limit}) AS data
     FROM
         cte;"
     );
@@ -166,12 +166,12 @@ pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS db_compare_row_number
             FROM
                 {table}
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE db_compare_row_number <= {limit}) AS data
     FROM
         cte;"
     );
@@ -192,14 +192,14 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
         (
             SELECT
                 *,
-                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS rn
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS db_compare_row_number
             FROM
                 {table}
             WHERE
                 {column} < '{until}'
         )
     SELECT
-        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE rn <= {limit}) AS data
+        JSON_AGG(cte.* ORDER BY {column} DESC) FILTER (WHERE db_compare_row_number <= {limit}) AS data
     FROM
         cte;"
     );
@@ -229,7 +229,7 @@ fn collect_records_with_rn(query: &str, client: &mut Client) -> Result<Vec<Strin
             let list: Vec<serde_json::Map<String, Value>> = serde_json::from_str(value).unwrap();
 
             for mut e in list {
-                e.remove("rn");
+                e.remove("db_compare_row_number");
                 records.push(serde_json::to_string(&e).unwrap())
             }
         }
