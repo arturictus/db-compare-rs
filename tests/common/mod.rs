@@ -135,7 +135,7 @@ impl TestRunner {
         !Path::new(&self.fixture_file(name)).exists()
     }
 
-    pub fn run(mut self, name: &str, exec: fn(&Config)) -> Self {
+    pub fn run(mut self, name: &str, exec: impl Fn(&Config)) -> Self {
         // setup databases
         before_each().unwrap();
         exec(&self.config);
