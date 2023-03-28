@@ -1,6 +1,6 @@
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
-use crate::Config;
+use crate::{Config, DBResultTypes};
 
 use super::par_run;
 
@@ -14,8 +14,8 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     diff_io.write((
         "========  Tables with `created_at` column but not `updated_at` difference between DBs"
             .to_string(),
-        db1_tables,
-        db2_tables,
+        DBResultTypes::String(db1_tables),
+        DBResultTypes::String(db2_tables),
     ));
     Ok(())
 }
@@ -48,11 +48,15 @@ fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error
         || database::tables_with_column(q_created_at.build_master()),
         || database::tables_with_column(q_updated_at.build_master()),
     );
-    let updated_at_tables: Vec<String> = r_updated_at_tables?;
-    let difference: Vec<String> = created_at_tables?
-        .into_iter()
-        .filter(|item| !updated_at_tables.contains(item))
-        .collect();
+    let updated_at_tables = r_updated_at_tables?.to_s();
+
+    let difference = {
+        let other = created_at_tables?.to_s();
+        other
+            .into_iter()
+            .filter(|item| !updated_at_tables.contains(item))
+            .collect()
+    };
 
     Ok(difference)
 }

@@ -1,15 +1,34 @@
-use crate::DBsResults;
+use crate::{DBResultTypes, DBsResults};
 use similar::{ChangeTag, TextDiff};
 
 pub fn call(result: DBsResults) -> (String, String) {
     let (header, a, b) = result;
-    let diff = print_diff(&produce_diff(&to_json(&a).unwrap(), &to_json(&b).unwrap()));
+    let diff = print_diff(&produce_diff(
+        &normalize_input(&a).unwrap(),
+        &normalize_input(&b).unwrap(),
+    ));
     (header, diff)
 }
 
-fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {
-    serde_json::to_string_pretty(list)
+fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_json::Error> {
+    let list: Vec<String> = match list {
+        DBResultTypes::String(l) => l.clone(),
+        DBResultTypes::Map(e) => e
+            .into_iter()
+            .map(|e| serde_json::to_string(&e).unwrap())
+            .collect(),
+    };
+    serde_json::to_string_pretty(&list)
 }
+
+// fn normalize_input_one(i: &DBResultTypes) -> String {
+//     match i {
+//         DBResultTypes::String(s) => s.clone(),
+//         DBResultTypes::Map(e) => serde_json::to_string(&e).unwrap(),
+//         _ => panic!("Not implemented yet"),
+//     }
+// }
+// fn to_json(list: &Vec<String>) -> Result<std::string::String, serde_json::Error> {}
 
 fn produce_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);

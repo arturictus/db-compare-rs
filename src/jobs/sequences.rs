@@ -1,7 +1,7 @@
 use super::par_run;
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
-use crate::Config;
+use crate::{Config, DBResultTypes};
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config);
@@ -17,8 +17,8 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             .map(|data| data.1.to_string());
         diff_io.write((
             format!("== `{table}` sequence:"),
-            vec![num.to_string()],
-            vec![found.unwrap_or_else(|| "Not set".to_string())],
+            DBResultTypes::String(vec![num.to_string()]),
+            DBResultTypes::String(vec![found.unwrap_or_else(|| "Not set".to_string())]),
         ));
     }
 

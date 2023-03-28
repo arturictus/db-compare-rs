@@ -1,7 +1,7 @@
 version = "0.3.2"
 
 [scripts]
-test = "cargo test %% -- --test-threads 1"
+test = "RUST_BACKTRACE=1 cargo test %% -- --test-threads 1"
 testp = "cargo test %% -- --nocapture --test-threads 1"
 clippy = "cargo clippy -- -D warnings"
 run = "cargo run -- -c tmp/config.yml"

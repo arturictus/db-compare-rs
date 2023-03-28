@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use clap::Parser;
 use database::RequestBuilder;
 pub use diff::{IOType, IO};
+use serde_json::json;
 use std::{cell::RefCell, error, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
@@ -11,7 +12,28 @@ mod jobs;
 use itertools::Itertools;
 pub use jobs::Job;
 
-type DBsResults = (String, Vec<String>, Vec<String>);
+type JsonMap = serde_json::Map<String, serde_json::Value>;
+#[derive(Debug, Clone)]
+pub enum DBResultTypes {
+    String(Vec<String>),
+    Map(Vec<JsonMap>),
+}
+
+impl DBResultTypes {
+    pub fn to_s(&self) -> Vec<String> {
+        match self {
+            Self::String(v) => v.clone(),
+            _ => panic!("not a string: {:?}", self),
+        }
+    }
+    pub fn to_h(&self) -> Vec<JsonMap> {
+        match self {
+            Self::Map(v) => v.clone(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+}
+type DBsResults = (String, DBResultTypes, DBResultTypes);
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Parser, Debug, PartialEq)]

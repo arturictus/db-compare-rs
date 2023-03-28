@@ -1,8 +1,10 @@
-use crate::database::Request;
+use crate::{database::Request, DBResultTypes};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
+use serde_json::Value;
 
+pub type AResult = Result<DBResultTypes, PgError>;
 pub fn get_sequences(q: Request) -> Result<Vec<(String, u32)>, PgError> {
     let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
@@ -34,7 +36,7 @@ pub fn get_greatest_id_from(q: Request) -> Result<u32, PgError> {
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
+pub fn get_row_by_id_range(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let column = "id".to_string();
     let limit = q.config.limit;
@@ -59,7 +61,7 @@ pub fn get_row_by_id_range(q: Request) -> Result<Vec<String>, PgError> {
     );
 
     let records = collect_records_with_rn(&query, &mut client)?;
-    Ok(records)
+    Ok(DBResultTypes::Map(records))
 }
 
 pub fn count_for(query: Request) -> Result<u32, PgError> {
@@ -89,7 +91,7 @@ fn connect(query: &Request) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(q: Request) -> Result<Vec<String>, PgError> {
+pub fn all_tables(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
@@ -98,10 +100,10 @@ pub fn all_tables(q: Request) -> Result<Vec<String>, PgError> {
     }
     tables = white_listed_tables(q, tables);
     tables.sort();
-    Ok(tables)
+    Ok(DBResultTypes::String(tables))
 }
 
-pub fn tables_with_column(q: Request) -> Result<Vec<String>, PgError> {
+pub fn tables_with_column(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
     let column = q.column.as_ref().unwrap();
@@ -119,10 +121,10 @@ pub fn tables_with_column(q: Request) -> Result<Vec<String>, PgError> {
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(white_listed_tables(q, tables))
+    Ok(DBResultTypes::String(white_listed_tables(q, tables)))
 }
 
-pub fn id_and_column_value(q: Request) -> Result<Vec<String>, PgError> {
+pub fn id_and_column_value(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
@@ -141,7 +143,7 @@ pub fn id_and_column_value(q: Request) -> Result<Vec<String>, PgError> {
             }
         }
     }
-    Ok(records)
+    Ok(DBResultTypes::String(records))
 }
 
 fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
@@ -155,7 +157,7 @@ fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
     }
 }
 
-pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
@@ -176,9 +178,10 @@ pub fn full_row_ordered_by(q: Request) -> Result<Vec<String>, PgError> {
         cte;"
     );
     let records = collect_records_with_rn(&query, &mut client)?;
-    Ok(records)
+
+    Ok(DBResultTypes::Map(records))
 }
-pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
+pub fn full_row_ordered_by_until(q: Request) -> AResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
 
@@ -204,7 +207,7 @@ pub fn full_row_ordered_by_until(q: Request) -> Result<Vec<String>, PgError> {
         cte;"
     );
     let records = collect_records_with_rn(&q, &mut client)?;
-    Ok(records)
+    Ok(DBResultTypes::Map(records))
 }
 
 pub fn ping_db(q: Request) -> Result<(), PgError> {
@@ -218,8 +221,10 @@ pub fn ping_db(q: Request) -> Result<(), PgError> {
     Ok(())
 }
 
-fn collect_records_with_rn(query: &str, client: &mut Client) -> Result<Vec<String>, PgError> {
-    use serde_json::Value;
+fn collect_records_with_rn(
+    query: &str,
+    client: &mut Client,
+) -> Result<Vec<serde_json::Map<String, Value>>, PgError> {
     let mut records = Vec::new();
     let rows = client.simple_query(query)?;
 
@@ -230,7 +235,7 @@ fn collect_records_with_rn(query: &str, client: &mut Client) -> Result<Vec<Strin
 
             for mut e in list {
                 e.remove("db_compare_row_number");
-                records.push(serde_json::to_string(&e).unwrap())
+                records.push(e)
             }
         }
     }
