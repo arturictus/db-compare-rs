@@ -17,6 +17,7 @@ fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_js
             .into_iter()
             .map(|e| serde_json::to_string(&e).unwrap())
             .collect(),
+        DBResultTypes::Empty => vec![],
     };
     serde_json::to_string_pretty(&list)
 }

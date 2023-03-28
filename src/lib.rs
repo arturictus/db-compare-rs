@@ -17,18 +17,21 @@ type JsonMap = serde_json::Map<String, serde_json::Value>;
 pub enum DBResultTypes {
     String(Vec<String>),
     Map(Vec<JsonMap>),
+    Empty,
 }
 
 impl DBResultTypes {
     pub fn to_s(&self) -> Vec<String> {
         match self {
             Self::String(v) => v.clone(),
+            Self::Empty => vec![],
             _ => panic!("not a string: {:?}", self),
         }
     }
     pub fn to_h(&self) -> Vec<JsonMap> {
         match self {
             Self::Map(v) => v.clone(),
+            Self::Empty => vec![],
             _ => panic!("not a Map: {:?}", self),
         }
     }

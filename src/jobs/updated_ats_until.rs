@@ -2,7 +2,8 @@ use chrono::NaiveDateTime;
 
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes};
+use crate::{Config, DBResultTypes, JsonMap};
+use std::collections::{BTreeMap, HashMap};
 
 use super::par_run;
 
@@ -29,6 +30,11 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         let builder = builder.clone().until(last_date_time.unwrap());
         let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
 
+        let RowSelector {
+            matches: (result_a, result_b),
+            missing,
+        } = only_matching_ids(&records1, &records2);
+
         let mut diff_io = config.diff_io.borrow_mut();
         let header = format!(
             "====== `{table}` compare rows where `{}` is < '{:?}' ======",
@@ -36,9 +42,48 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             last_date_time.unwrap()
         );
         last_date_time = get_last_date_time(&records1, last_date_time);
-        diff_io.write((header, records1, records2));
+        // only_matching_ids(&records1, &records2);
+        diff_io.write((header, result_a, result_b));
+
+        diff_io.write((
+            format!("|== `{table}` missing rows"),
+            missing,
+            DBResultTypes::Empty,
+        ));
     }
     Ok(())
+}
+
+struct RowSelector {
+    matches: (DBResultTypes, DBResultTypes),
+    missing: DBResultTypes,
+}
+fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
+    let btree: BTreeMap<u64, JsonMap> =
+        b.to_h().into_iter().fold(BTreeMap::new(), |mut acc, data| {
+            acc.insert(data.get("id").unwrap().as_u64().unwrap(), data);
+            acc
+        });
+    let mut missing: Vec<JsonMap> = Vec::new();
+    let acc: Vec<(JsonMap, JsonMap)> = a.to_h().into_iter().fold(Vec::new(), |mut acc, data| {
+        let id = data.get("id").unwrap().as_u64().unwrap();
+        if let Some(value) = btree.get(&id) {
+            acc.push((data, value.clone()));
+        } else {
+            missing.push(data);
+        }
+        acc
+    });
+    let mut a_result: Vec<JsonMap> = vec![];
+    let mut b_result: Vec<JsonMap> = vec![];
+    for e in acc {
+        a_result.push(e.0);
+        b_result.push(e.1);
+    }
+    RowSelector {
+        matches: (DBResultTypes::Map(a_result), DBResultTypes::Map(b_result)),
+        missing: DBResultTypes::Map(missing),
+    }
 }
 
 fn get_last_date_time(
@@ -59,4 +104,38 @@ fn get_last_date_time(
         }
     }
     last_date_time
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use serde_json::{from_str, Map, Value};
+
+    #[test]
+    fn test_only_matching_ids() {
+        let a = gen_data(1);
+        let b = gen_data(2);
+        let c = gen_data(3);
+        let d = gen_data(4);
+
+        let RowSelector {
+            matches: (result_a, result_b),
+            missing,
+        } = only_matching_ids(
+            &DBResultTypes::Map(vec![a.clone(), b.clone(), c.clone()]),
+            &DBResultTypes::Map(vec![a.clone(), b.clone(), d.clone()]),
+        );
+        assert_eq!(result_a.to_h(), vec![a.clone(), b.clone()]);
+        assert_eq!(result_b.to_h(), vec![a.clone(), b.clone()]);
+        assert_eq!(missing.to_h(), vec![c.clone()]);
+    }
+
+    fn gen_data(id: u64) -> Map<String, Value> {
+        let data = format!(r#"{{"id": {id},"name": "John_{id}"}}"#);
+        let mut v: Value = from_str(&data).unwrap();
+        let val = v.as_object_mut().unwrap();
+        let mut m = Map::new();
+        m.append(val);
+        m
+    }
 }
