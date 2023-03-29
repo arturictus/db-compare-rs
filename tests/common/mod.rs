@@ -14,10 +14,12 @@ use uuid::Uuid;
 pub enum DB {
     A,
     B,
+    Both,
 }
 
 impl DB {
     pub fn url(&self) -> String {
+        self.not_both().unwrap();
         format!("{}/{}", self.host(), self.name())
     }
     fn host(&self) -> &str {
@@ -27,56 +29,82 @@ impl DB {
         match self {
             DB::A => "db_compare_test_db1",
             DB::B => "db_compare_test_db2",
+            DB::Both => panic!("Both is not a valid database name"),
         }
     }
     fn host_connect(&self) -> Result<Client, Error> {
         Client::connect(self.host(), NoTls)
     }
     fn connect(&self) -> Result<Client, Error> {
+        self.not_both().unwrap();
         Client::connect(&self.url(), NoTls)
     }
     fn setup(&self) -> anyhow::Result<()> {
-        let mut client = self.host_connect()?;
-        let db_name = self.name();
-        client
-            .batch_execute(&format!("CREATE DATABASE {db_name}"))
-            .unwrap_or_else(|_| {
-                println!("Database already exists");
-            });
+        match self {
+            DB::Both => {
+                Self::A.setup()?;
+                Self::B.setup()?;
+            }
+            _ => {
+                let mut client = self.host_connect()?;
+                let db_name = self.name();
+                client
+                    .batch_execute(&format!("CREATE DATABASE {db_name}"))
+                    .unwrap_or_else(|_| {
+                        println!("Database already exists");
+                    });
 
-        let mut client = self.connect()?;
-        client.batch_execute(
-            "
-      CREATE TABLE IF NOT EXISTS users (
-          id              SERIAL PRIMARY KEY,
-          name            VARCHAR NOT NULL,
-          created_at      TIMESTAMP NOT NULL,
-          updated_at      TIMESTAMP NOT NULL
-          )
-  ",
-        )?;
-        client.batch_execute(
-            "
-      CREATE TABLE IF NOT EXISTS messages (
-          id              SERIAL PRIMARY KEY,
-          txt            VARCHAR NOT NULL,
-          created_at      TIMESTAMP NOT NULL
-          )
-  ",
-        )?;
+                let mut client = self.connect()?;
+                client.batch_execute(
+                    "
+        CREATE TABLE IF NOT EXISTS users (
+            id              INTEGER,
+            name            VARCHAR NOT NULL,
+            created_at      TIMESTAMP NOT NULL,
+            updated_at      TIMESTAMP NOT NULL
+            )
+    ",
+                )?;
+                client.batch_execute(
+                    "
+        CREATE TABLE IF NOT EXISTS messages (
+            id              INTEGER,
+            txt             VARCHAR NOT NULL,
+            created_at      TIMESTAMP NOT NULL
+            )
+    ",
+                )?;
+            }
+        };
 
         Ok(())
     }
     fn drop(&self) -> anyhow::Result<()> {
-        let mut client = self.host_connect()?;
-        let db_name = self.name();
-        client
-            .batch_execute(&format!("DROP database {db_name}"))
-            .map_err(anyhow::Error::msg)
-            .unwrap_or_else(|_| {
-                println!("Database does not exists");
-            });
+        match self {
+            DB::Both => {
+                Self::A.drop()?;
+                Self::B.drop()?;
+            }
+            _ => {
+                let mut client = self.host_connect()?;
+                let db_name = self.name();
+                client
+                    .batch_execute(&format!("DROP database {db_name}"))
+                    .map_err(anyhow::Error::msg)
+                    .unwrap_or_else(|_| {
+                        println!("Database does not exists");
+                    });
+            }
+        }
+
         Ok(())
+    }
+
+    fn not_both(&self) -> anyhow::Result<()> {
+        match self {
+            DB::Both => Err(anyhow::Error::msg("Both is not allowed for this operation")),
+            _ => Ok(()),
+        }
     }
 }
 
@@ -135,7 +163,7 @@ impl TestRunner {
         !Path::new(&self.fixture_file(name)).exists()
     }
 
-    pub fn run(mut self, name: &str, exec: fn(&Config)) -> Self {
+    pub fn run(mut self, name: &str, exec: impl Fn(&Config)) -> Self {
         // setup databases
         before_each().unwrap();
         exec(&self.config);
@@ -167,22 +195,19 @@ impl TestRunner {
 
 pub fn before_each() -> anyhow::Result<()> {
     // Ensure that the databases are clean before running the test
-    DB::A.drop().unwrap();
-    DB::B.drop().unwrap();
+    DB::Both.drop().unwrap();
     // Setup the databases
-    DB::A.setup().unwrap();
-    DB::B.setup().unwrap();
+    DB::Both.setup().unwrap();
     Ok(())
 }
 fn after_each() -> anyhow::Result<()> {
     // Clean up the databases
-    DB::A.drop()?;
-    DB::B.drop()?;
+    DB::Both.drop()?;
     Ok(())
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
-    pub id: Option<i32>,
+    pub id: i32,
     pub name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -190,7 +215,7 @@ pub struct User {
 impl Default for User {
     fn default() -> Self {
         User {
-            id: None,
+            id: 1,
             name: "John".to_string(),
             created_at: initial_datetime(),
             updated_at: initial_datetime(),
@@ -207,13 +232,14 @@ pub fn initial_datetime() -> chrono::NaiveDateTime {
 }
 
 impl User {
+    #[allow(dead_code)]
     pub fn all(db: DB) -> Vec<Self> {
         let mut client = db.connect().unwrap();
         let rows = client.query("SELECT * FROM users", &[]).unwrap();
         let mut users = Vec::new();
         for row in rows {
             users.push(User {
-                id: Some(row.get::<&str, i32>("id").into()),
+                id: row.get::<&str, i32>("id"),
                 name: row.get("name"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
@@ -222,18 +248,13 @@ impl User {
         users
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<User> {
-        if self.id.is_some() {
-            return Err(anyhow::anyhow!("User already inserted"));
-        }
+        println!("inserting: {:?}", self);
         let mut client = db.connect()?;
-        let id = client.execute(
-            "INSERT INTO users (name, created_at, updated_at) VALUES ($1, $2, $3) RETURNING id",
-            &[&self.name, &self.created_at, &self.updated_at],
+        let _id = client.execute(
+            "INSERT INTO users (id, name, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id",
+            &[&self.id, &self.name, &self.created_at, &self.updated_at],
         )?;
-        Ok(User {
-            id: Some(id.try_into().unwrap()),
-            ..self.clone()
-        })
+        Ok(self.clone())
     }
     pub fn new() -> Self {
         Self::default()
@@ -241,7 +262,7 @@ impl User {
 
     pub fn next(&self) -> Self {
         Self {
-            id: None,
+            id: self.id + 1,
             name: format!("{}-I", self.name.clone()),
             created_at: NaiveDateTime::from_timestamp_opt(self.created_at.timestamp() + 7200, 0)
                 .unwrap(),
@@ -252,27 +273,28 @@ impl User {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct Msg {
-    pub id: Option<i32>,
+    pub id: i32,
     pub txt: String,
     pub created_at: chrono::NaiveDateTime,
 }
 impl Default for Msg {
     fn default() -> Self {
         Self {
-            id: None,
+            id: 1,
             txt: "Important".to_string(),
             created_at: initial_datetime(),
         }
     }
 }
 impl Msg {
+    #[allow(dead_code)]
     pub fn all(db: DB) -> Vec<Self> {
         let mut client = db.connect().unwrap();
         let rows = client.query("SELECT * FROM messages", &[]).unwrap();
         let mut msgs = Vec::new();
         for row in rows {
             msgs.push(Self {
-                id: Some(row.get::<&str, i32>("id").into()),
+                id: row.get::<&str, i32>("id"),
                 txt: row.get("txt"),
                 created_at: row.get("created_at"),
             })
@@ -280,18 +302,12 @@ impl Msg {
         msgs
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<Self> {
-        if self.id.is_some() {
-            return Err(anyhow::anyhow!("User already inserted"));
-        }
         let mut client = db.connect()?;
-        let id = client.execute(
-            "INSERT INTO messages (txt, created_at) VALUES ($1, $2) RETURNING id",
-            &[&self.txt, &self.created_at],
+        client.execute(
+            "INSERT INTO messages (id, txt, created_at) VALUES ($1, $2, $3) RETURNING id",
+            &[&self.id, &self.txt, &self.created_at],
         )?;
-        Ok(Self {
-            id: Some(id.try_into().unwrap()),
-            ..self.clone()
-        })
+        Ok(self.clone())
     }
     pub fn new() -> Self {
         Self::default()
@@ -299,7 +315,7 @@ impl Msg {
     #[allow(dead_code)]
     pub fn next(&self) -> Self {
         Self {
-            id: None,
+            id: self.id + 1,
             txt: format!("{}-I", self.txt.clone()),
             created_at: NaiveDateTime::from_timestamp_opt(self.created_at.timestamp() + 7200, 0)
                 .unwrap(),

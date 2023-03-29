@@ -30,15 +30,17 @@ impl IO for IOType {
         Self::File(new_file(&file_path))
     }
     fn write(&mut self, result: DBsResults) {
-        let (header, diff) = formatter::call(result);
-        match self {
-            Self::File(file) => {
-                write_to_file(file, &header);
-                write_to_file(file, &diff);
-            }
-            _ => {
-                println!("{header}");
-                println!("{diff}");
+        let list = formatter::call(result);
+        for (header, diff) in list {
+            match self {
+                Self::File(file) => {
+                    write_to_file(file, &header);
+                    write_to_file(file, &diff);
+                }
+                _ => {
+                    println!("{header}");
+                    println!("{diff}");
+                }
             }
         }
     }

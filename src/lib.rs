@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use clap::Parser;
 use database::RequestBuilder;
 pub use diff::{IOType, IO};
+
 use std::{cell::RefCell, error, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
@@ -11,7 +12,51 @@ mod jobs;
 use itertools::Itertools;
 pub use jobs::Job;
 
-type DBsResults = (String, Vec<String>, Vec<String>);
+type JsonMap = serde_json::Map<String, serde_json::Value>;
+#[derive(Debug, Clone)]
+pub enum DBResultTypes {
+    String(Vec<String>),
+    Map(Vec<JsonMap>),
+    Empty,
+}
+
+impl DBResultTypes {
+    pub fn to_s(&self) -> Vec<String> {
+        match self {
+            Self::String(v) => v.clone(),
+            Self::Empty => vec![],
+            _ => panic!("not a string: {:?}", self),
+        }
+    }
+    pub fn to_h(&self) -> Vec<JsonMap> {
+        match self {
+            Self::Map(v) => v.clone(),
+            Self::Empty => vec![],
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Self::Empty => true,
+            Self::Map(e) => e.is_empty(),
+            Self::String(e) => e.is_empty(),
+        }
+    }
+
+    pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
+        match self {
+            Self::Map(e) => e.iter(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
+        match self {
+            Self::String(e) => e.iter(),
+            _ => panic!("not a String: {:?}", self),
+        }
+    }
+}
+type DBsResults = (String, DBResultTypes, DBResultTypes);
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Parser, Debug, PartialEq)]
