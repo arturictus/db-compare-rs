@@ -17,7 +17,9 @@
 ====== `users` compare rows with ids from 16 to 17
 
 ====== `users` compare rows with ids from 15 to 16
-{"created_at":"2020-05-05T20:52:24","id":16,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-05T20:52:24"}
+- {"created_at":"2020-05-05T20:52:24","id":16,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-05T20:52:24"}
++ {"created_at":"2020-05-05T20:52:24","id":16,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I changed","updated_at":"2020-05-05T20:52:24"}
+
 ====== `users` compare rows with ids from 14 to 15
 
 ====== `users` compare rows with ids from 13 to 14
@@ -37,7 +39,9 @@
 ====== `users` compare rows with ids from 10 to 11
 
 ====== `users` compare rows with ids from 9 to 10
-{"created_at":"2020-05-05T08:52:24","id":10,"name":"John-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-05T08:52:24"}
+- {"created_at":"2020-05-05T08:52:24","id":10,"name":"John-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-05T08:52:24"}
++ {"created_at":"2020-05-05T08:52:24","id":10,"name":"John-I-I-I-I-I-I-I-I-I changed","updated_at":"2020-05-05T08:52:24"}
+
 ====== `users` compare rows with ids from 8 to 9
 
 ====== `users` compare rows with ids from 7 to 8
@@ -57,7 +61,9 @@
 ====== `users` compare rows with ids from 4 to 5
 
 ====== `users` compare rows with ids from 3 to 4
-{"created_at":"2020-05-04T20:52:24","id":4,"name":"John-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-04T20:52:24"}
+- {"created_at":"2020-05-04T20:52:24","id":4,"name":"John-I-I-I","updated_at":"2020-05-04T20:52:24"}
++ {"created_at":"2020-05-04T20:52:24","id":4,"name":"John-I-I-I changed","updated_at":"2020-05-04T20:52:24"}
+
 ====== `users` compare rows with ids from 2 to 3
 
 ====== `users` compare rows with ids from 1 to 2
@@ -87,7 +93,9 @@
 ====== `messages` compare rows with ids from 16 to 17
 
 ====== `messages` compare rows with ids from 15 to 16
-{"created_at":"2020-05-05T20:52:24","id":16,"txt":"Important-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m"}
+- {"created_at":"2020-05-05T20:52:24","id":16,"txt":"Important-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I"}
++ {"created_at":"2020-05-05T20:52:24","id":16,"txt":"Important-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I changed"}
+
 ====== `messages` compare rows with ids from 14 to 15
 
 ====== `messages` compare rows with ids from 13 to 14
@@ -107,7 +115,9 @@
 ====== `messages` compare rows with ids from 10 to 11
 
 ====== `messages` compare rows with ids from 9 to 10
-{"created_at":"2020-05-05T08:52:24","id":10,"txt":"Important-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m"}
+- {"created_at":"2020-05-05T08:52:24","id":10,"txt":"Important-I-I-I-I-I-I-I-I-I"}
++ {"created_at":"2020-05-05T08:52:24","id":10,"txt":"Important-I-I-I-I-I-I-I-I-I changed"}
+
 ====== `messages` compare rows with ids from 8 to 9
 
 ====== `messages` compare rows with ids from 7 to 8
@@ -127,7 +137,9 @@
 ====== `messages` compare rows with ids from 4 to 5
 
 ====== `messages` compare rows with ids from 3 to 4
-{"created_at":"2020-05-04T20:52:24","id":4,"txt":"Important-I-I-I[42;37m [0m[32mchanged[0m"}
+- {"created_at":"2020-05-04T20:52:24","id":4,"txt":"Important-I-I-I"}
++ {"created_at":"2020-05-04T20:52:24","id":4,"txt":"Important-I-I-I changed"}
+
 ====== `messages` compare rows with ids from 2 to 3
 
 ====== `messages` compare rows with ids from 1 to 2

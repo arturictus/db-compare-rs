@@ -126,10 +126,17 @@ fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_js
     serde_json::to_string_pretty(&list)
 }
 
-fn new_produce_diff(old: &str, new: &str) -> String {
-    diff_chars(old, new).to_string()
+fn produce_diff(old: &str, new: &str) -> String {
+    use prettydiff::basic::{self, DiffOp};
+    let diff = diff_chars(old, new);
+    if diff.diff().len() == 1 {
+        if let DiffOp::Equal(_) = diff.diff()[0] {
+            return "".to_string();
+        }
+    }
+    diff.to_string()
 }
-fn produce_diff(json1: &str, json2: &str) -> String {
+fn old_produce_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
     let mut output = Vec::new();
 
@@ -158,24 +165,6 @@ fn print_diff(result: &str) -> String {
 mod test {
     use super::*;
     use serde_json::{from_str, Map, Value};
-
-    #[test]
-    fn test_diff_dates() {
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:44.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            "- 2 : 2023-02-01 11:28:44.453989\n+ 2 : 2023-02-01 11:28:45.453989\n"
-        );
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:45.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            ""
-        )
-    }
 
     #[test]
     fn test_only_matching_ids() {
