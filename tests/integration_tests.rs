@@ -127,6 +127,20 @@ fn test_updated_ats_until_limit_2() {
         db_compare::run(c).unwrap();
     });
 }
+#[test]
+fn test_updated_ats_until_limit_5() {
+    let mut config = default_config(vec![Job::UpdatedAtsUntil]);
+    let (users, updated_at) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
+    config.rows_until = updated_at.add(Days::new(10));
+    config.limit = 5;
+
+    TestRunner::new(&config).run("db1 has more records than db2 limit 5", |c| {
+        seed_test_data(Some(&users), Some(&msgs));
+        db_compare::run(c).unwrap();
+    });
+}
 
 fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
     let first = User::new();

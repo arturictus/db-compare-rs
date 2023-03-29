@@ -8,7 +8,7 @@ pub fn call(result: DBsResults) -> Vec<(String, String)> {
     let mut out = vec![(header, rows)];
 
     if !missing.is_empty() {
-        out.push(("|- missing rows".to_string(), missing));
+        out.push(("|- missing rows".to_string(), format!("{missing}\n")));
     }
     out
 }
@@ -43,52 +43,24 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
             ))
         })
         .collect();
-    let missing = print_diff(&produce_diff(
-        &normalize_input(&missing).unwrap(),
-        &normalize_input(&DBResultTypes::Empty).unwrap(),
-    ));
+    let missing = do_missing_format(&missing);
     (rows, missing)
 }
 
 #[allow(dead_code)]
 fn do_missing_format(missing: &DBResultTypes) -> String {
     match missing {
-        DBResultTypes::Map(_) => missing
-            .m_into_iter()
-            .map(|m| {
-                print_diff(&produce_diff(
-                    &serde_json::to_string(&m).unwrap(),
-                    &serde_json::to_string(&m).unwrap(),
-                ))
-            })
+        DBResultTypes::Map(s) => s
+            .iter()
+            .map(|e| format!("{}\n", serde_json::to_string(&e).unwrap()))
             .collect(),
         DBResultTypes::Empty => "".to_string(),
-        DBResultTypes::String(_) => {
-            if missing.is_empty() {
-                "".to_string()
-            } else {
-                print_diff(&produce_diff(
-                    &normalize_input(missing).unwrap(),
-                    &normalize_input(&DBResultTypes::Empty).unwrap(),
-                ))
-            }
+        DBResultTypes::String(s) => {
+            panic!("unexpected string: {:?}", s);
         }
     }
 }
-// match missing {
-//     DBResultTypes::Map(_) => missing.m_into_iter(),
-//     DBResultTypes::String(_) => missing
-//         .s_into_iter()
-//         .map(|m| {
-//             let val = serde_json::from_str(&m).unwrap();
-//             let mut m = serde_json::Map::new();
-//             m.append(val);
-//             m
-//         })
-//         .collect()
-//         .into_iter(),
-//     DBResultTypes::Empty => vec![].into_iter(),
-// }
+
 #[derive(Debug)]
 struct RowSelector {
     matches: (DBResultTypes, DBResultTypes),
@@ -172,7 +144,7 @@ fn produce_diff(json1: &str, json2: &str) -> String {
 
 fn print_diff(result: &str) -> String {
     match result {
-        "" => "✓".to_string(),
+        "" => "".to_string(),
         diff => diff.to_string(),
     }
 }
