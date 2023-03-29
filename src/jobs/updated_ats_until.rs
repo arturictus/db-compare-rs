@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::{Config, DBResultTypes, JsonMap};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use super::par_run;
 
@@ -30,6 +30,9 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         let builder = builder.clone().until(last_date_time.unwrap());
         let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
 
+        println!("records1: {:?}", records1.to_h());
+        println!("records2: {:?}", records2.to_h());
+
         let RowSelector {
             matches: (result_a, result_b),
             missing,
@@ -42,6 +45,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             last_date_time.unwrap()
         );
         last_date_time = get_last_date_time(&records1, last_date_time);
+        println!("last_date_time: {:?}", last_date_time);
         // only_matching_ids(&records1, &records2);
         diff_io.write((header, result_a, result_b));
 
@@ -53,12 +57,14 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     }
     Ok(())
 }
-
+#[derive(Debug)]
 struct RowSelector {
     matches: (DBResultTypes, DBResultTypes),
     missing: DBResultTypes,
 }
 fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
+    println!("a: {:?}", a.to_h());
+    println!("b: {:?}", b.to_h());
     let btree: BTreeMap<u64, JsonMap> =
         b.to_h().into_iter().fold(BTreeMap::new(), |mut acc, data| {
             acc.insert(data.get("id").unwrap().as_u64().unwrap(), data);
@@ -80,10 +86,12 @@ fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
         a_result.push(e.0);
         b_result.push(e.1);
     }
-    RowSelector {
+    let r = RowSelector {
         matches: (DBResultTypes::Map(a_result), DBResultTypes::Map(b_result)),
         missing: DBResultTypes::Map(missing),
-    }
+    };
+    println!("r: {:?}", &r);
+    r
 }
 
 fn get_last_date_time(

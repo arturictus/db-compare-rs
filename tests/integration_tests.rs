@@ -1,5 +1,7 @@
 mod common;
-use chrono::NaiveDateTime;
+use std::ops::Add;
+
+use chrono::{Days, NaiveDateTime};
 use common::{Msg, TestRunner, User, DB};
 use db_compare::Job;
 
@@ -123,24 +125,25 @@ fn test_updated_ats_until() {
 #[test]
 fn test_updated_ats_until_with_differences() {
     let mut config = default_config(vec![Job::UpdatedAtsUntil]);
-    let (users, updated_at) = generate_users(10);
+    let (users, updated_at) = generate_users(20);
 
-    config.rows_until = updated_at;
+    config.rows_until = updated_at.add(Days::new(10));
     config.limit = 2;
+    println!("config: {:#?}", config);
 
     TestRunner::new(&config).run("with differences db1 has more records than db2", |c| {
         for (i, u) in users.iter().enumerate() {
             u.insert(DB::A).unwrap();
             if i % 2 == 0 {
-                let db2_user = if i % 4 == 0 {
-                    User {
-                        name: format!("{} changed", u.name.clone()),
-                        ..u.clone()
-                    }
-                } else {
-                    u.clone()
-                };
-                db2_user.insert(DB::B).unwrap();
+                u.insert(DB::B).unwrap();
+            }
+            if i % 3 == 0 {
+                User {
+                    name: format!("{} changed", u.name.clone()),
+                    ..u.clone()
+                }
+                .insert(DB::B)
+                .unwrap();
             }
         }
         // (1..=users.len()).fold(User::new(), |prev, _i| {
@@ -148,8 +151,6 @@ fn test_updated_ats_until_with_differences() {
         //     u.insert(DB::A).unwrap();
         //     u
         // });
-        assert_eq!(User::all(DB::A).len(), 10);
-        assert_eq!(User::all(DB::B).len(), 5);
         db_compare::run(c).unwrap();
     });
 
@@ -171,11 +172,16 @@ fn test_updated_ats_until_with_differences() {
 }
 
 fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
-    let acc = (1..=amount).fold(Vec::new(), |mut acc, _i| {
-        let u = User::new();
-        acc.push(u);
-        acc
-    });
-    let updated_at = acc.last().unwrap().updated_at;
-    (acc, updated_at)
+    let first = User::new();
+    let (_u, t, acc) = (1..=amount).fold(
+        (first.clone(), first.updated_at.clone(), vec![first]),
+        |(u, _t, mut acc), _i| {
+            let u = u.next();
+            let t = u.updated_at.clone();
+            acc.push(u.clone());
+            (u, t, acc)
+        },
+    );
+
+    (acc, t.clone())
 }
