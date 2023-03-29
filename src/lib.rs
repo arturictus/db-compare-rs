@@ -35,6 +35,12 @@ impl DBResultTypes {
             _ => panic!("not a Map: {:?}", self),
         }
     }
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Self::Empty => true,
+            _ => false,
+        }
+    }
 }
 type DBsResults = (String, DBResultTypes, DBResultTypes);
 const DEFAULT_LIMIT: u32 = 100;

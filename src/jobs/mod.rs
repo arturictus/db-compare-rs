@@ -53,13 +53,11 @@ impl Job {
             }
             Job::UpdatedAts => {
                 last_updated_records::tables(config)?;
-                last_updated_records::only_updated_ats(config)?;
                 last_updated_records::all_columns(config)?;
                 Ok(())
             }
             Job::CreatedAts => {
                 last_created_records::tables(config)?;
-                last_created_records::only_created_ats(config)?;
                 last_created_records::all_columns(config)?;
                 Ok(())
             }

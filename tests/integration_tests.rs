@@ -90,12 +90,9 @@ fn test_sequences() {
 fn test_updated_ats_until() {
     let mut config = default_config(vec![Job::UpdatedAtsUntil]);
 
-    let (updated_at, _) = (1..=10).fold((config.rows_until, User::new()), |(_tm, u), _i| {
-        let u2 = u.next();
-        (u2.updated_at, u2)
-    });
+    let (users, updated_at) = generate_users(20);
 
-    config.rows_until = updated_at;
+    config.rows_until = updated_at.add(Days::new(10));
     config.limit = 2;
 
     TestRunner::new(&config).run("db1 has more records than db2", |c| {
@@ -180,4 +177,50 @@ fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
     );
 
     (acc, t.clone())
+}
+fn generate_msgs(amount: u32) -> (Vec<Msg>, NaiveDateTime) {
+    let first = Msg::new();
+    let (_u, t, acc) = (1..=amount).fold(
+        (first.clone(), first.created_at.clone(), vec![first]),
+        |(u, _t, mut acc), _i| {
+            let u = u.next();
+            let t = u.created_at.clone();
+            acc.push(u.clone());
+            (u, t, acc)
+        },
+    );
+
+    (acc, t.clone())
+}
+fn databse_test_data(users: &Vec<User>, msgs: &Vec<Msg>) {
+    for (i, u) in users.iter().enumerate() {
+        u.insert(DB::A).unwrap();
+        if i % 2 == 0 {
+            u.insert(DB::B).unwrap();
+        }
+        if i % 3 == 0 {
+            User {
+                name: format!("{} changed", u.name.clone()),
+                ..u.clone()
+            }
+            .insert(DB::B)
+            .unwrap();
+        }
+    }
+    users.last().unwrap().next().insert(DB::B).unwrap();
+    for (i, msg) in msgs.iter().enumerate() {
+        msg.insert(DB::A).unwrap();
+        if i % 2 == 0 {
+            msg.insert(DB::B).unwrap();
+        }
+        if i % 3 == 0 {
+            Msg {
+                txt: format!("{} changed", msg.txt.clone()),
+                ..msg.clone()
+            }
+            .insert(DB::B)
+            .unwrap();
+        }
+    }
+    msgs.last().unwrap().next().insert(DB::B).unwrap();
 }

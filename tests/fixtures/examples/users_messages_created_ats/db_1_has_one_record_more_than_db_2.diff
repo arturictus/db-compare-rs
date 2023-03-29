@@ -1,10 +1,10 @@
 ========  Tables with `created_at` column but not `updated_at` difference between DBs
 ✓
-====== `messages` created_at values
+====== `messages` all columns
+
+|- missing rows
 -[
--  "1 : 2020-05-04 14:52:24"
+-  "{\"created_at\":\"2020-05-04T14:52:24\",\"id\":1,\"txt\":\"Important\"}"
 -]
 +[]
-
-====== `messages` all columns
 

@@ -1,0 +1,10 @@
+========  Tables with `updated_at` column
+✓
+====== `users` updated_at values
+-[
+-  "1 : 2020-05-04 14:52:24"
+-]
++[]
+
+====== `users` all columns
+
