@@ -1,4 +1,5 @@
 use anyhow::{self, Ok};
+use chrono::Days;
 use chrono::NaiveDateTime;
 use convert_case::{Case, Casing};
 use db_compare::IOType;
@@ -8,6 +9,7 @@ use postgres::{Client, Error, NoTls};
 use pretty_assertions::assert_eq;
 use std::cell::RefCell;
 use std::fs;
+use std::ops::Add;
 use std::path::Path;
 use uuid::Uuid;
 
@@ -164,10 +166,17 @@ impl TestRunner {
         !Path::new(&self.fixture_file(name)).exists()
     }
 
-    pub fn run(mut self, name: &str, exec: impl Fn(&Config)) -> Self {
+    pub fn run(mut self, name: &str) -> Self {
         // setup databases
         before_each().unwrap();
-        exec(&self.config);
+        let (users, updated_at) = generate_users(20);
+        let (msgs, _) = generate_msgs(20);
+        seed_test_data(Some(&users), Some(&msgs));
+
+        self.config.rows_until = updated_at.add(Days::new(10));
+
+        db_compare::run(&self.config).unwrap();
+
         let fixture_file = self.fixture_file(name);
         if self.regenerate_fixture || self.fixture_not_exists(name) {
             fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
@@ -321,5 +330,70 @@ impl Msg {
             created_at: NaiveDateTime::from_timestamp_opt(self.created_at.timestamp() + 7200, 0)
                 .unwrap(),
         }
+    }
+}
+
+fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
+    let first = User::new();
+    let (_u, t, acc) = (1..=amount).fold(
+        (first.clone(), first.updated_at, vec![first]),
+        |(u, _t, mut acc), _i| {
+            let u = u.next();
+            let t = u.updated_at;
+            acc.push(u.clone());
+            (u, t, acc)
+        },
+    );
+
+    (acc, t)
+}
+fn generate_msgs(amount: u32) -> (Vec<Msg>, NaiveDateTime) {
+    let first = Msg::new();
+    let (_u, t, acc) = (1..=amount).fold(
+        (first.clone(), first.created_at, vec![first]),
+        |(u, _t, mut acc), _i| {
+            let u = u.next();
+            let t = u.created_at;
+            acc.push(u.clone());
+            (u, t, acc)
+        },
+    );
+
+    (acc, t)
+}
+fn seed_test_data(users: Option<&Vec<User>>, msgs: Option<&Vec<Msg>>) {
+    if let Some(users) = users {
+        for (i, u) in users.iter().enumerate() {
+            let u = u.insert(DB::A).unwrap();
+            if i % 2 == 0 {
+                u.insert(DB::B).unwrap();
+            }
+            if i % 3 == 0 {
+                User {
+                    name: format!("{} changed", u.name.clone()),
+                    ..u.clone()
+                }
+                .insert(DB::B)
+                .unwrap();
+            }
+        }
+        users.last().unwrap().next().insert(DB::B).unwrap();
+    }
+    if let Some(msgs) = msgs {
+        for (i, msg) in msgs.iter().enumerate() {
+            let msg = msg.insert(DB::A).unwrap();
+            if i % 2 == 0 {
+                msg.insert(DB::B).unwrap();
+            }
+            if i % 3 == 0 {
+                Msg {
+                    txt: format!("{} changed", msg.txt.clone()),
+                    ..msg.clone()
+                }
+                .insert(DB::B)
+                .unwrap();
+            }
+        }
+        msgs.last().unwrap().next().insert(DB::B).unwrap();
     }
 }

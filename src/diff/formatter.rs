@@ -1,12 +1,12 @@
-use crate::{Config, DBResultTypes, DBsResults, JsonMap};
-use prettydiff::{diff_chars, diff_words};
+use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
+use prettydiff::diff_chars;
 
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
 pub fn call(config: &Config, result: DBsResults) -> Vec<(String, String)> {
     let (header, a, b) = result;
-    let (rows, missing) = generate_diff(&a, &b);
+    let (rows, missing) = generate_diff(config, &a, &b);
     let mut out = vec![(header, rows)];
 
     if !missing.is_empty() {
@@ -15,11 +15,12 @@ pub fn call(config: &Config, result: DBsResults) -> Vec<(String, String)> {
     out
 }
 
-fn generate_diff(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
+fn generate_diff(config: &Config, a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
     let (rows, missing) = match (a, b) {
-        (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(a, b),
+        (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(config, a, b),
         _ => (
             print_diff(&produce_diff(
+                config,
                 &normalize_input(a).unwrap(),
                 &normalize_input(b).unwrap(),
             )),
@@ -29,7 +30,7 @@ fn generate_diff(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
     (rows, missing)
 }
 
-fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
+fn normalize_map_type(config: &Config, a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
     let RowSelector {
         matches: (result_a, result_b),
         missing,
@@ -40,6 +41,7 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
         .zip(result_b.to_h())
         .map(|(a, b)| {
             print_diff(&produce_diff(
+                config,
                 &serde_json::to_string(&a).unwrap(),
                 &serde_json::to_string(&b).unwrap(),
             ))
@@ -126,8 +128,14 @@ fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_js
     serde_json::to_string_pretty(&list)
 }
 
-fn produce_diff(old: &str, new: &str) -> String {
-    use prettydiff::basic::{self, DiffOp};
+fn produce_diff(config: &Config, json1: &str, json2: &str) -> String {
+    match config.diff_format {
+        DiffFormat::Char => produce_char_diff(json1, json2),
+        DiffFormat::Simple => produce_simple_diff(json1, json2),
+    }
+}
+fn produce_char_diff(old: &str, new: &str) -> String {
+    use prettydiff::basic::DiffOp;
     let diff = diff_chars(old, new);
     if diff.diff().len() == 1 {
         if let DiffOp::Equal(_) = diff.diff()[0] {
@@ -136,7 +144,7 @@ fn produce_diff(old: &str, new: &str) -> String {
     }
     format!("{diff}\n")
 }
-fn old_produce_diff(json1: &str, json2: &str) -> String {
+fn produce_simple_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
     let mut output = Vec::new();
 
