@@ -50,6 +50,7 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
     (rows, missing)
 }
 
+#[allow(dead_code)]
 fn do_missing_format(missing: &DBResultTypes) -> String {
     match missing {
         DBResultTypes::Map(_) => missing
@@ -67,7 +68,7 @@ fn do_missing_format(missing: &DBResultTypes) -> String {
                 "".to_string()
             } else {
                 print_diff(&produce_diff(
-                    &normalize_input(&missing).unwrap(),
+                    &normalize_input(missing).unwrap(),
                     &normalize_input(&DBResultTypes::Empty).unwrap(),
                 ))
             }

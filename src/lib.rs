@@ -45,13 +45,13 @@ impl DBResultTypes {
 
     pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
         match self {
-            Self::Map(e) => e.into_iter(),
+            Self::Map(e) => e.iter(),
             _ => panic!("not a Map: {:?}", self),
         }
     }
     pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
         match self {
-            Self::String(e) => e.into_iter(),
+            Self::String(e) => e.iter(),
             _ => panic!("not a String: {:?}", self),
         }
     }
