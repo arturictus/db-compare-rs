@@ -135,6 +135,7 @@ impl TestRunner {
         Self {
             config: Config {
                 diff_io: RefCell::new(IOType::new_from_path(tmp_file.clone())),
+                diff_format: DiffFormat::Simple,
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
                 limit: config.limit,

@@ -11,6 +11,7 @@ fn default_args() -> Args {
     Args {
         db1: Some(DB::A.url()),
         db2: Some(DB::B.url()),
+        diff_format: None,
         limit: 1,
         no_tls: false,
         all_columns_sample_size: None,

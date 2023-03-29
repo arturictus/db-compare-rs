@@ -74,6 +74,8 @@ pub struct Args {
     pub no_tls: bool,
     #[arg(long = "diff-file")]
     pub diff_file: Option<String>,
+    #[arg(long = "diff-format", help = "simple or char")]
+    pub diff_format: Option<String>,
     #[arg(long = "tables-file")]
     pub tables_file: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
@@ -84,6 +86,22 @@ pub struct Args {
     )]
     pub rows_until: Option<i64>,
 }
+
+#[derive(Debug)]
+pub enum DiffFormat {
+    Simple,
+    Char,
+}
+impl DiffFormat {
+    pub fn new(format: &str) -> Self {
+        match format {
+            "simple" => Self::Simple,
+            "char" => Self::Char,
+            _ => panic!("invalid diff format: {}", format),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Config {
     pub db1: String,
@@ -91,6 +109,7 @@ pub struct Config {
     pub tls: bool,
     pub limit: u32,
     pub diff_io: RefCell<diff::IOType>,
+    pub diff_format: DiffFormat,
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
     pub all_columns_sample_size: Option<u32>,
@@ -150,6 +169,16 @@ impl Config {
                 _ => RefCell::new(diff::IOType::Stdout),
             }
         };
+
+        let diff_format = if let Some(format) = &args.diff_format {
+            DiffFormat::new(&format)
+        } else {
+            match config_file.diff_format {
+                Some(format) => DiffFormat::new(&format),
+                _ => DiffFormat::Simple,
+            }
+        };
+
         let limit = if args.limit != DEFAULT_LIMIT {
             args.limit
         } else {
@@ -175,6 +204,7 @@ impl Config {
             db1,
             db2,
             diff_io,
+            diff_format,
             white_listed_tables,
             limit,
             jobs: if let Some(jobs) = config_file.jobs {
@@ -198,6 +228,7 @@ struct ConfigFile {
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<Job>>,
     all_columns_sample_size: Option<u32>,
+    diff_format: Option<String>,
 }
 
 impl ConfigFile {
@@ -228,6 +259,10 @@ impl ConfigFile {
             data => Some(data.as_i64().unwrap().try_into().unwrap()),
         };
         let diff_file: Option<String> = match &yaml[0]["diff-file"] {
+            yaml_rust::Yaml::BadValue => None,
+            data => data.clone().into_string(),
+        };
+        let diff_format: Option<String> = match &yaml[0]["diff-format"] {
             yaml_rust::Yaml::BadValue => None,
             data => data.clone().into_string(),
         };
@@ -262,6 +297,7 @@ impl ConfigFile {
             db2,
             limit,
             diff_file,
+            diff_format,
             white_listed_tables,
             jobs,
             all_columns_sample_size,
@@ -281,6 +317,7 @@ mod test {
             no_tls: false,
             all_columns_sample_size: None,
             diff_file: None,
+            diff_format: None,
             tables_file: None,
             config: None,
             rows_until: None,

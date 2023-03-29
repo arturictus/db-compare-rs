@@ -1,10 +1,10 @@
-use crate::{DBResultTypes, DBsResults, JsonMap};
+use crate::{Config, DBResultTypes, DBsResults, JsonMap};
 use prettydiff::{diff_chars, diff_words};
 
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
-pub fn call(result: DBsResults) -> Vec<(String, String)> {
+pub fn call(config: &Config, result: DBsResults) -> Vec<(String, String)> {
     let (header, a, b) = result;
     let (rows, missing) = generate_diff(&a, &b);
     let mut out = vec![(header, rows)];
