@@ -3,11 +3,28 @@ use similar::{ChangeTag, TextDiff};
 
 pub fn call(result: DBsResults) -> (String, String) {
     let (header, a, b) = result;
-    let diff = print_diff(&produce_diff(
-        &normalize_input(&a).unwrap(),
-        &normalize_input(&b).unwrap(),
-    ));
-    (header, diff)
+    // let mut diff = String::new();
+    (header, generate_diff(&a, &b))
+}
+
+fn generate_diff(a: &DBResultTypes, b: &DBResultTypes) -> String {
+    let diff: String = match (a, b) {
+        (DBResultTypes::Map(data_a), DBResultTypes::Map(data_b)) => data_a
+            .into_iter()
+            .zip(data_b)
+            .map(|(a, b)| {
+                print_diff(&produce_diff(
+                    &serde_json::to_string(&a).unwrap(),
+                    &serde_json::to_string(&b).unwrap(),
+                ))
+            })
+            .collect(),
+        _ => print_diff(&produce_diff(
+            &normalize_input(&a).unwrap(),
+            &normalize_input(&b).unwrap(),
+        )),
+    };
+    diff
 }
 
 fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_json::Error> {

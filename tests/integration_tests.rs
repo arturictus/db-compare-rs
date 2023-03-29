@@ -146,11 +146,7 @@ fn test_updated_ats_until_with_differences() {
                 .unwrap();
             }
         }
-        // (1..=users.len()).fold(User::new(), |prev, _i| {
-        //     let u = prev.next();
-        //     u.insert(DB::A).unwrap();
-        //     u
-        // });
+        users.last().unwrap().next().insert(DB::B).unwrap();
         db_compare::run(c).unwrap();
     });
 
