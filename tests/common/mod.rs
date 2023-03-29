@@ -232,6 +232,7 @@ pub fn initial_datetime() -> chrono::NaiveDateTime {
 }
 
 impl User {
+    #[allow(dead_code)]
     pub fn all(db: DB) -> Vec<Self> {
         let mut client = db.connect().unwrap();
         let rows = client.query("SELECT * FROM users", &[]).unwrap();
@@ -286,6 +287,7 @@ impl Default for Msg {
     }
 }
 impl Msg {
+    #[allow(dead_code)]
     pub fn all(db: DB) -> Vec<Self> {
         let mut client = db.connect().unwrap();
         let rows = client.query("SELECT * FROM messages", &[]).unwrap();
