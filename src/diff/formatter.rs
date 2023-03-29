@@ -57,8 +57,8 @@ struct RowSelector {
 }
 fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
     if let (DBResultTypes::Map(tmp_a), DBResultTypes::Map(_tmp_b)) = (a, b) {
-        if let Some(first) = tmp_a.first() {
-            if first.contains_key("id") {
+        if let Some(first) = tmp_a.clone().first() {
+            if first.contains_key("id") && first.get("id").unwrap().as_u64().is_some() {
                 return group_by_id(a, b);
             }
         }

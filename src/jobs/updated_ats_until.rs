@@ -2,8 +2,7 @@ use chrono::NaiveDateTime;
 
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes, JsonMap};
-use std::collections::BTreeMap;
+use crate::{Config, DBResultTypes};
 
 use super::par_run;
 

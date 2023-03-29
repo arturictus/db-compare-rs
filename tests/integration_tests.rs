@@ -30,36 +30,34 @@ fn default_config(jobs: Vec<Job>) -> Config {
 #[test]
 fn test_counters() {
     let config = default_config(vec![Job::Counters]);
+    let (users, _) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
     TestRunner::new(&config).run("db1 has one record more than db2", |c| {
-        let first = User::new().insert(DB::A).unwrap();
-        assert_eq!(first.id, Some(1));
-        assert_eq!(User::all(DB::A).len(), 1);
-        assert_eq!(User::all(DB::B).len(), 0);
+        seed_test_data(Some(&users), Some(&msgs));
+
         db_compare::run(c).unwrap();
     });
 }
 #[test]
 fn test_updated_ats() {
     let config = default_config(vec![Job::UpdatedAts]);
+    let (users, _) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
     TestRunner::new(&config).run("db1 has one record more than db2", |c| {
-        let first = User::new().insert(DB::A).unwrap();
-        assert_eq!(first.id, Some(1));
-        assert_eq!(User::all(DB::A).len(), 1);
-        assert_eq!(User::all(DB::B).len(), 0);
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
 }
 #[test]
 fn test_created_ats() {
     let config = default_config(vec![Job::CreatedAts]);
+    let (users, _) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
     TestRunner::new(&config).run("db1 has one record more than db2", |c| {
-        User::new().insert(DB::A).unwrap();
-        let first = Msg::new().insert(DB::A).unwrap();
-        assert_eq!(first.id, Some(1));
-        assert_eq!(Msg::all(DB::A).len(), 1);
-        assert_eq!(Msg::all(DB::B).len(), 0);
-        assert_eq!(User::all(DB::A).len(), 1);
-        assert_eq!(User::all(DB::B).len(), 0);
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
 }
@@ -67,22 +65,21 @@ fn test_created_ats() {
 #[test]
 fn test_all_columns() {
     let config = default_config(vec![Job::AllColumns]);
-    TestRunner::new(&config).run("db1 has one record more than db2", |c| {
-        let first = User::new().insert(DB::A).unwrap();
-        assert_eq!(first.id, Some(1));
-        assert_eq!(User::all(DB::A).len(), 1);
-        assert_eq!(User::all(DB::B).len(), 0);
+    let (users, _) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
+    TestRunner::new(&config).run("db1 has one record more than db2", move |c| {
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
 }
 #[test]
 fn test_sequences() {
     let config = default_config(vec![Job::Sequences]);
-    TestRunner::new(&config).run("db1 has one record more than db2", |c| {
-        let first = User::new().insert(DB::A).unwrap();
-        assert_eq!(first.id, Some(1));
-        assert_eq!(User::all(DB::A).len(), 1);
-        assert_eq!(User::all(DB::B).len(), 0);
+    let (users, _) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+    TestRunner::new(&config).run("db1 has one record more than db2", move |c| {
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
 }
@@ -91,77 +88,44 @@ fn test_updated_ats_until() {
     let mut config = default_config(vec![Job::UpdatedAtsUntil]);
 
     let (users, updated_at) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
 
     config.rows_until = updated_at.add(Days::new(10));
     config.limit = 2;
 
-    TestRunner::new(&config).run("db1 has more records than db2", |c| {
-        (1..=10).fold(User::new(), |prev, _i| {
-            let u = prev.next();
-            u.insert(DB::A).unwrap();
-            u
-        });
-        assert_eq!(User::all(DB::A).len(), 10);
-        assert_eq!(User::all(DB::B).len(), 0);
+    TestRunner::new(&config).run("db1 has more records than db2", move |c| {
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
+}
 
+#[test]
+fn test_updated_ats_until_limit_1() {
+    let mut config = default_config(vec![Job::UpdatedAtsUntil]);
+
+    let (users, updated_at) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
+
+    config.rows_until = updated_at.add(Days::new(10));
     config.limit = 1;
-
-    TestRunner::new(&config).run("db1 has more records than db2 limit 1", |c| {
-        (1..=10).fold(User::new(), |prev, _i| {
-            let u = prev.next();
-            u.insert(DB::A).unwrap();
-            u
-        });
-        assert_eq!(User::all(DB::A).len(), 10);
-        assert_eq!(User::all(DB::B).len(), 0);
+    TestRunner::new(&config).run("db1 has more records than db2 limit 1", move |c| {
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
 }
 #[test]
-fn test_updated_ats_until_with_differences() {
+fn test_updated_ats_until_limit_2() {
     let mut config = default_config(vec![Job::UpdatedAtsUntil]);
     let (users, updated_at) = generate_users(20);
+    let (msgs, _) = generate_msgs(20);
 
     config.rows_until = updated_at.add(Days::new(10));
     config.limit = 2;
-    println!("config: {:#?}", config);
 
-    TestRunner::new(&config).run("with differences db1 has more records than db2", |c| {
-        for (i, u) in users.iter().enumerate() {
-            u.insert(DB::A).unwrap();
-            if i % 2 == 0 {
-                u.insert(DB::B).unwrap();
-            }
-            if i % 3 == 0 {
-                User {
-                    name: format!("{} changed", u.name.clone()),
-                    ..u.clone()
-                }
-                .insert(DB::B)
-                .unwrap();
-            }
-        }
-        users.last().unwrap().next().insert(DB::B).unwrap();
+    TestRunner::new(&config).run("db1 has more records than db2 limit 2", |c| {
+        seed_test_data(Some(&users), Some(&msgs));
         db_compare::run(c).unwrap();
     });
-
-    config.limit = 1;
-
-    // TestRunner::new(&config).run(
-    //     "with differences db1 has more records than db2 limit 1",
-    //     |c| {
-    //         (1..=10).fold(User::new(), |prev, _i| {
-    //             let u = prev.next();
-    //             u.insert(DB::A).unwrap();
-    //             u
-    //         });
-    //         assert_eq!(User::all(DB::A).len(), 10);
-    //         assert_eq!(User::all(DB::B).len(), 0);
-    //         db_compare::run(c).unwrap();
-    //     },
-    // );
 }
 
 fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
@@ -192,35 +156,39 @@ fn generate_msgs(amount: u32) -> (Vec<Msg>, NaiveDateTime) {
 
     (acc, t.clone())
 }
-fn databse_test_data(users: &Vec<User>, msgs: &Vec<Msg>) {
-    for (i, u) in users.iter().enumerate() {
-        u.insert(DB::A).unwrap();
-        if i % 2 == 0 {
-            u.insert(DB::B).unwrap();
-        }
-        if i % 3 == 0 {
-            User {
-                name: format!("{} changed", u.name.clone()),
-                ..u.clone()
+fn seed_test_data(users: Option<&Vec<User>>, msgs: Option<&Vec<Msg>>) {
+    if let Some(users) = users {
+        for (i, u) in users.iter().enumerate() {
+            let u = u.insert(DB::A).unwrap();
+            if i % 2 == 0 {
+                u.insert(DB::B).unwrap();
             }
-            .insert(DB::B)
-            .unwrap();
-        }
-    }
-    users.last().unwrap().next().insert(DB::B).unwrap();
-    for (i, msg) in msgs.iter().enumerate() {
-        msg.insert(DB::A).unwrap();
-        if i % 2 == 0 {
-            msg.insert(DB::B).unwrap();
-        }
-        if i % 3 == 0 {
-            Msg {
-                txt: format!("{} changed", msg.txt.clone()),
-                ..msg.clone()
+            if i % 3 == 0 {
+                User {
+                    name: format!("{} changed", u.name.clone()),
+                    ..u.clone()
+                }
+                .insert(DB::B)
+                .unwrap();
             }
-            .insert(DB::B)
-            .unwrap();
         }
+        users.last().unwrap().next().insert(DB::B).unwrap();
     }
-    msgs.last().unwrap().next().insert(DB::B).unwrap();
+    if let Some(msgs) = msgs {
+        for (i, msg) in msgs.iter().enumerate() {
+            let msg = msg.insert(DB::A).unwrap();
+            if i % 2 == 0 {
+                msg.insert(DB::B).unwrap();
+            }
+            if i % 3 == 0 {
+                Msg {
+                    txt: format!("{} changed", msg.txt.clone()),
+                    ..msg.clone()
+                }
+                .insert(DB::B)
+                .unwrap();
+            }
+        }
+        msgs.last().unwrap().next().insert(DB::B).unwrap();
+    }
 }
