@@ -52,7 +52,7 @@ fn do_missing_format(missing: &DBResultTypes) -> String {
     match missing {
         DBResultTypes::Map(s) => s
             .iter()
-            .map(|e| format!("{}\n", serde_json::to_string(&e).unwrap()))
+            .map(|e| format!("- {}\n", serde_json::to_string(&e).unwrap()))
             .collect(),
         DBResultTypes::Empty => "".to_string(),
         DBResultTypes::String(s) => {
@@ -133,8 +133,8 @@ fn produce_diff(json1: &str, json2: &str) -> String {
             continue;
         }
         let sign = match change.tag() {
-            ChangeTag::Delete => "-",
-            ChangeTag::Insert => "+",
+            ChangeTag::Delete => "- ",
+            ChangeTag::Insert => "+ ",
             ChangeTag::Equal => " ",
         };
         output.push(format!("{sign}{change}"));
@@ -161,7 +161,7 @@ mod test {
                 "2 : 2023-02-01 11:28:44.453989",
                 "2 : 2023-02-01 11:28:45.453989",
             ),
-            "-2 : 2023-02-01 11:28:44.453989\n+2 : 2023-02-01 11:28:45.453989\n"
+            "- 2 : 2023-02-01 11:28:44.453989\n+ 2 : 2023-02-01 11:28:45.453989\n"
         );
         assert_eq!(
             produce_diff(
