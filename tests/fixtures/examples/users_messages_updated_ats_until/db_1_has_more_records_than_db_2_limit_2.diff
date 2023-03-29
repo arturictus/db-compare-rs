@@ -12,6 +12,7 @@
 
 ====== `users` compare rows where `updated_at` is < '2020-05-06T00:52:24' ======
 {"created_at":"2020-05-05T20:52:24","id":16,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-05T20:52:24"}
+
 ====== `users` compare rows where `updated_at` is < '2020-05-05T20:52:24' ======
 
 |- missing rows
@@ -26,6 +27,7 @@
 
 ====== `users` compare rows where `updated_at` is < '2020-05-05T12:52:24' ======
 {"created_at":"2020-05-05T08:52:24","id":10,"name":"John-I-I-I-I-I-I-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-05T08:52:24"}
+
 ====== `users` compare rows where `updated_at` is < '2020-05-05T08:52:24' ======
 
 |- missing rows
@@ -40,6 +42,7 @@
 
 ====== `users` compare rows where `updated_at` is < '2020-05-05T00:52:24' ======
 {"created_at":"2020-05-04T20:52:24","id":4,"name":"John-I-I-I[42;37m [0m[32mchanged[0m","updated_at":"2020-05-04T20:52:24"}
+
 ====== `users` compare rows where `updated_at` is < '2020-05-04T20:52:24' ======
 
 |- missing rows
@@ -48,3 +51,4 @@
 
 ====== `users` compare rows where `updated_at` is < '2020-05-04T16:52:24' ======
 {"created_at":"2020-05-04T14:52:24","id":1,"name":"John[42;37m [0m[32mchanged[0m","updated_at":"2020-05-04T14:52:24"}
+

@@ -134,7 +134,7 @@ fn produce_diff(old: &str, new: &str) -> String {
             return "".to_string();
         }
     }
-    diff.to_string()
+    format!("{diff}\n")
 }
 fn old_produce_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
