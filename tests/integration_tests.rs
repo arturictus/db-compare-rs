@@ -131,30 +131,30 @@ fn test_updated_ats_until_limit_2() {
 fn generate_users(amount: u32) -> (Vec<User>, NaiveDateTime) {
     let first = User::new();
     let (_u, t, acc) = (1..=amount).fold(
-        (first.clone(), first.updated_at.clone(), vec![first]),
+        (first.clone(), first.updated_at, vec![first]),
         |(u, _t, mut acc), _i| {
             let u = u.next();
-            let t = u.updated_at.clone();
+            let t = u.updated_at;
             acc.push(u.clone());
             (u, t, acc)
         },
     );
 
-    (acc, t.clone())
+    (acc, t)
 }
 fn generate_msgs(amount: u32) -> (Vec<Msg>, NaiveDateTime) {
     let first = Msg::new();
     let (_u, t, acc) = (1..=amount).fold(
-        (first.clone(), first.created_at.clone(), vec![first]),
+        (first.clone(), first.created_at, vec![first]),
         |(u, _t, mut acc), _i| {
             let u = u.next();
-            let t = u.created_at.clone();
+            let t = u.created_at;
             acc.push(u.clone());
             (u, t, acc)
         },
     );
 
-    (acc, t.clone())
+    (acc, t)
 }
 fn seed_test_data(users: Option<&Vec<User>>, msgs: Option<&Vec<Msg>>) {
     if let Some(users) = users {

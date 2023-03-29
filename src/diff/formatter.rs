@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 pub fn call(result: DBsResults) -> Vec<(String, String)> {
     let (header, a, b) = result;
     let (rows, missing) = generate_diff(&a, &b);
-    let mut out = vec![(header.clone(), rows)];
+    let mut out = vec![(header, rows)];
 
     if !missing.is_empty() {
         out.push(("|- missing rows".to_string(), missing));
@@ -18,8 +18,8 @@ fn generate_diff(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
         (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(a, b),
         _ => (
             print_diff(&produce_diff(
-                &normalize_input(&a).unwrap(),
-                &normalize_input(&b).unwrap(),
+                &normalize_input(a).unwrap(),
+                &normalize_input(b).unwrap(),
             )),
             "".to_string(),
         ),
@@ -50,6 +50,44 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
     (rows, missing)
 }
 
+fn do_missing_format(missing: &DBResultTypes) -> String {
+    match missing {
+        DBResultTypes::Map(_) => missing
+            .m_into_iter()
+            .map(|m| {
+                print_diff(&produce_diff(
+                    &serde_json::to_string(&m).unwrap(),
+                    &serde_json::to_string(&m).unwrap(),
+                ))
+            })
+            .collect(),
+        DBResultTypes::Empty => "".to_string(),
+        DBResultTypes::String(_) => {
+            if missing.is_empty() {
+                "".to_string()
+            } else {
+                print_diff(&produce_diff(
+                    &normalize_input(&missing).unwrap(),
+                    &normalize_input(&DBResultTypes::Empty).unwrap(),
+                ))
+            }
+        }
+    }
+}
+// match missing {
+//     DBResultTypes::Map(_) => missing.m_into_iter(),
+//     DBResultTypes::String(_) => missing
+//         .s_into_iter()
+//         .map(|m| {
+//             let val = serde_json::from_str(&m).unwrap();
+//             let mut m = serde_json::Map::new();
+//             m.append(val);
+//             m
+//         })
+//         .collect()
+//         .into_iter(),
+//     DBResultTypes::Empty => vec![].into_iter(),
+// }
 #[derive(Debug)]
 struct RowSelector {
     matches: (DBResultTypes, DBResultTypes),
@@ -105,7 +143,7 @@ fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_js
     let list: Vec<String> = match list {
         DBResultTypes::String(l) => l.clone(),
         DBResultTypes::Map(e) => e
-            .into_iter()
+            .iter()
             .map(|e| serde_json::to_string(&e).unwrap())
             .collect(),
         DBResultTypes::Empty => vec![],
@@ -173,11 +211,11 @@ mod test {
             missing,
         } = only_matching_ids(
             &DBResultTypes::Map(vec![a.clone(), b.clone(), c.clone()]),
-            &DBResultTypes::Map(vec![a.clone(), b.clone(), d.clone()]),
+            &DBResultTypes::Map(vec![a.clone(), b.clone(), d]),
         );
         assert_eq!(result_a.to_h(), vec![a.clone(), b.clone()]);
-        assert_eq!(result_b.to_h(), vec![a.clone(), b.clone()]);
-        assert_eq!(missing.to_h(), vec![c.clone()]);
+        assert_eq!(result_b.to_h(), vec![a, b]);
+        assert_eq!(missing.to_h(), vec![c]);
     }
 
     fn gen_data(id: u64) -> Map<String, Value> {

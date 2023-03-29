@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use clap::Parser;
 use database::RequestBuilder;
 pub use diff::{IOType, IO};
-use serde_json::json;
+
 use std::{cell::RefCell, error, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
@@ -38,7 +38,21 @@ impl DBResultTypes {
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Empty => true,
-            _ => false,
+            Self::Map(e) => e.is_empty(),
+            Self::String(e) => e.is_empty(),
+        }
+    }
+
+    pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
+        match self {
+            Self::Map(e) => e.into_iter(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
+        match self {
+            Self::String(e) => e.into_iter(),
+            _ => panic!("not a String: {:?}", self),
         }
     }
 }

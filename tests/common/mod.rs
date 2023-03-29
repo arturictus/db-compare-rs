@@ -239,7 +239,7 @@ impl User {
         let mut users = Vec::new();
         for row in rows {
             users.push(User {
-                id: row.get::<&str, i32>("id").into(),
+                id: row.get::<&str, i32>("id"),
                 name: row.get("name"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
@@ -250,7 +250,7 @@ impl User {
     pub fn insert(&self, db: DB) -> anyhow::Result<User> {
         println!("inserting: {:?}", self);
         let mut client = db.connect()?;
-        let id = client.execute(
+        let _id = client.execute(
             "INSERT INTO users (id, name, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id",
             &[&self.id, &self.name, &self.created_at, &self.updated_at],
         )?;
@@ -294,7 +294,7 @@ impl Msg {
         let mut msgs = Vec::new();
         for row in rows {
             msgs.push(Self {
-                id: row.get::<&str, i32>("id").into(),
+                id: row.get::<&str, i32>("id"),
                 txt: row.get("txt"),
                 created_at: row.get("created_at"),
             })

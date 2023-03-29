@@ -78,7 +78,3 @@
 
 |- missing rows
 ✓
-====== `users` compare rows where `updated_at` is < '2020-05-04T14:52:24' ======
-
-|- missing rows
-✓

@@ -36,7 +36,9 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
             last_date_time.unwrap()
         );
         last_date_time = get_last_date_time(&records1, last_date_time);
-        diff_io.write((header, records1, records2));
+        if !records1.is_empty() && !records2.is_empty() {
+            diff_io.write((header, records1, records2));
+        }
     }
     Ok(())
 }

@@ -3,14 +3,11 @@ mod repo;
 mod request;
 use chrono::prelude::*;
 pub use repo::{ping_db, AResult};
-use serde_json::Value;
 
 pub use request::{Request, RequestBuilder};
 use std::time::Instant;
 
 use crate::DBResultTypes;
-
-use self::request::DB;
 
 pub fn get_sequences(r: Request) -> Result<Vec<(std::string::String, u32)>, PgError> {
     duration::<Vec<(String, u32)>>(
@@ -71,7 +68,7 @@ pub fn tables_with_column(r: Request) -> AResult {
         repo::tables_with_column,
     )
 }
-
+#[allow(dead_code)]
 pub fn id_and_column_value(r: Request) -> AResult {
     let column = r.column.as_ref().unwrap();
     let table = r.table.as_ref().unwrap();

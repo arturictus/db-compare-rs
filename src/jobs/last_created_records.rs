@@ -20,6 +20,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     for table in db1_tables {
@@ -61,6 +62,7 @@ fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error
     Ok(difference)
 }
 
+#[allow(dead_code)]
 fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = par_run(builder, database::id_and_column_value)?;

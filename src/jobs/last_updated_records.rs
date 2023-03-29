@@ -1,6 +1,6 @@
 use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes};
+use crate::Config;
 
 use super::par_run;
 
@@ -16,6 +16,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn only_updated_ats(config: &Config) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
@@ -38,6 +39,7 @@ fn column() -> String {
     "updated_at".to_string()
 }
 
+#[allow(dead_code)]
 fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = par_run(builder, database::id_and_column_value)?;
