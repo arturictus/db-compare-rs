@@ -7,3 +7,8 @@ clippy = "cargo clippy -- -D warnings"
 run = "cargo run -- -c local_configs/local.yml"
 fix = "cargo clippy --fix"
 check = { cmd = "cargo check && cargo fmt -- --check && cargo clippy && cargo test -- --test-threads 1", desc = "validates the code (same checks as on CI)" }
+squash = [
+  "git reset $(git merge-base main $(git branch --show-current))",
+  "git add -A",
+  "git commit -m $(git rev-parse --abbrev-ref HEAD)",
+]

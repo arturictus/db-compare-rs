@@ -1,0 +1,56 @@
+====== `users` compare rows where `updated_at` is < '2020-05-05T10:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-05T08:52:24\",\"id\":9,\"name\":\"John-I-I-I-I-I-I-I-I-I\",\"updated_at\":\"2020-05-05T08:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-05T08:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-05T06:52:24\",\"id\":8,\"name\":\"John-I-I-I-I-I-I-I-I\",\"updated_at\":\"2020-05-05T06:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-05T06:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-05T04:52:24\",\"id\":7,\"name\":\"John-I-I-I-I-I-I-I\",\"updated_at\":\"2020-05-05T04:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-05T04:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-05T02:52:24\",\"id\":6,\"name\":\"John-I-I-I-I-I-I\",\"updated_at\":\"2020-05-05T02:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-05T02:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-05T00:52:24\",\"id\":5,\"name\":\"John-I-I-I-I-I\",\"updated_at\":\"2020-05-05T00:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-05T00:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-04T22:52:24\",\"id\":4,\"name\":\"John-I-I-I-I\",\"updated_at\":\"2020-05-04T22:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-04T22:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-04T20:52:24\",\"id\":3,\"name\":\"John-I-I-I\",\"updated_at\":\"2020-05-04T20:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-04T20:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-04T18:52:24\",\"id\":2,\"name\":\"John-I-I\",\"updated_at\":\"2020-05-04T18:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-04T18:52:24' ======
+-[
+-  "{\"created_at\":\"2020-05-04T16:52:24\",\"id\":1,\"name\":\"John-I\",\"updated_at\":\"2020-05-04T16:52:24\"}"
+-]
++[]
+
+====== `users` compare rows where `updated_at` is < '2020-05-04T16:52:24' ======
+✓

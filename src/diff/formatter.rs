@@ -1,4 +1,6 @@
 use crate::{DBResultTypes, DBsResults, JsonMap};
+use prettydiff::{diff_chars, diff_words};
+
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
@@ -124,6 +126,9 @@ fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_js
     serde_json::to_string_pretty(&list)
 }
 
+fn new_produce_diff(old: &str, new: &str) -> String {
+    diff_chars(old, new).to_string()
+}
 fn produce_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
     let mut output = Vec::new();
