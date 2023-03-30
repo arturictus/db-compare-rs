@@ -31,13 +31,13 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
 
         let mut diff_io = config.diff_io.borrow_mut();
         let header = format!(
-            "====== `{table}` compare rows where `{}` is < '{:?}' ======",
+            "`{table}` compare rows where `{}` is < '{:?}'",
             column(),
             last_date_time.unwrap()
         );
         last_date_time = get_last_date_time(&records1, last_date_time);
         if !records1.is_empty() && !records2.is_empty() {
-            diff_io.write((header, records1, records2));
+            diff_io.write(config, (header, records1, records2));
         }
     }
     Ok(())

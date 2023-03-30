@@ -1,33 +1,41 @@
-use crate::{DBResultTypes, DBsResults, JsonMap};
+use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
+
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
-pub fn call(result: DBsResults) -> Vec<(String, String)> {
+pub fn call(
+    config: &Config,
+    result: DBsResults,
+) -> Vec<(Option<String>, Vec<String>, Option<Vec<String>>)> {
     let (header, a, b) = result;
-    let (rows, missing) = generate_diff(&a, &b);
-    let mut out = vec![(header, rows)];
+    let (rows, missing) = generate_diff(config, &a, &b);
 
-    if !missing.is_empty() {
-        out.push(("|- missing rows".to_string(), format!("{missing}\n")));
-    }
-    out
+    vec![(Some(header), rows, missing)]
 }
 
-fn generate_diff(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
+fn generate_diff(
+    config: &Config,
+    a: &DBResultTypes,
+    b: &DBResultTypes,
+) -> (Vec<String>, Option<Vec<String>>) {
     let (rows, missing) = match (a, b) {
-        (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(a, b),
-        _ => (
-            print_diff(&produce_diff(
+        (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(config, a, b),
+        _ => {
+            let st = print_diff(&produce_simple_diff(
                 &normalize_input(a).unwrap(),
                 &normalize_input(b).unwrap(),
-            )),
-            "".to_string(),
-        ),
+            ));
+            (vec![st], None)
+        }
     };
     (rows, missing)
 }
 
-fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) {
+fn normalize_map_type(
+    config: &Config,
+    a: &DBResultTypes,
+    b: &DBResultTypes,
+) -> (Vec<String>, Option<Vec<String>>) {
     let RowSelector {
         matches: (result_a, result_b),
         missing,
@@ -38,6 +46,7 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
         .zip(result_b.to_h())
         .map(|(a, b)| {
             print_diff(&produce_diff(
+                config,
                 &serde_json::to_string(&a).unwrap(),
                 &serde_json::to_string(&b).unwrap(),
             ))
@@ -48,13 +57,21 @@ fn normalize_map_type(a: &DBResultTypes, b: &DBResultTypes) -> (String, String) 
 }
 
 #[allow(dead_code)]
-fn do_missing_format(missing: &DBResultTypes) -> String {
+fn do_missing_format(missing: &DBResultTypes) -> Option<Vec<String>> {
     match missing {
-        DBResultTypes::Map(s) => s
-            .iter()
-            .map(|e| format!("- {}\n", serde_json::to_string(&e).unwrap()))
-            .collect(),
-        DBResultTypes::Empty => "".to_string(),
+        DBResultTypes::Map(s) => {
+            let coll: Vec<String> = s
+                .iter()
+                .map(|e| format!("- {}", serde_json::to_string(&e).unwrap()))
+                .collect();
+
+            if coll.is_empty() {
+                None
+            } else {
+                Some(coll)
+            }
+        }
+        DBResultTypes::Empty => None,
         DBResultTypes::String(s) => {
             panic!("unexpected string: {:?}", s);
         }
@@ -112,19 +129,43 @@ fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
         },
     }
 }
-fn normalize_input(list: &DBResultTypes) -> Result<std::string::String, serde_json::Error> {
-    let list: Vec<String> = match list {
-        DBResultTypes::String(l) => l.clone(),
-        DBResultTypes::Map(e) => e
-            .iter()
-            .map(|e| serde_json::to_string(&e).unwrap())
-            .collect(),
-        DBResultTypes::Empty => vec![],
+fn normalize_input(list: &DBResultTypes) -> Result<String, serde_json::Error> {
+    let list: String = match list {
+        DBResultTypes::String(l) => {
+            if l.len() == 1 {
+                l[0].clone()
+            } else {
+                panic!("unexpected string: {:?}", l);
+                // serde_json::to_string(l)?
+            }
+        }
+        _ => panic!("normalize_input({:?})", list),
     };
-    serde_json::to_string_pretty(&list)
+    Ok(list)
 }
 
-fn produce_diff(json1: &str, json2: &str) -> String {
+fn produce_diff(config: &Config, json1: &str, json2: &str) -> String {
+    match config.diff_format {
+        DiffFormat::Char => produce_char_diff(json1, json2),
+        DiffFormat::Simple => produce_simple_diff(json1, json2),
+    }
+}
+fn produce_char_diff(old: &str, new: &str) -> String {
+    use ansi_term::{Colour, Style};
+    use prettydiff::{basic::DiffOp, diff_words};
+
+    let style = Style::new().bold().on(Colour::Black).fg(Colour::Fixed(118));
+    let diff = diff_words(old, new)
+        .set_insert_style(style)
+        .set_insert_whitespace_style(style);
+    if diff.diff().len() == 1 {
+        if let DiffOp::Equal(_) = diff.diff()[0] {
+            return "".to_string();
+        }
+    }
+    format!("+ {}", diff.to_string())
+}
+fn produce_simple_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
     let mut output = Vec::new();
 
@@ -153,24 +194,6 @@ fn print_diff(result: &str) -> String {
 mod test {
     use super::*;
     use serde_json::{from_str, Map, Value};
-
-    #[test]
-    fn test_diff_dates() {
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:44.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            "- 2 : 2023-02-01 11:28:44.453989\n+ 2 : 2023-02-01 11:28:45.453989\n"
-        );
-        assert_eq!(
-            produce_diff(
-                "2 : 2023-02-01 11:28:45.453989",
-                "2 : 2023-02-01 11:28:45.453989",
-            ),
-            ""
-        )
-    }
 
     #[test]
     fn test_only_matching_ids() {

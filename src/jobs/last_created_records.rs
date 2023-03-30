@@ -11,12 +11,15 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     println!("{db1_tables:?}");
     println!("# ---------------");
     let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write((
-        "========  Tables with `created_at` column but not `updated_at` difference between DBs"
-            .to_string(),
-        DBResultTypes::String(db1_tables),
-        DBResultTypes::String(db2_tables),
-    ));
+    diff_io.write(
+        config,
+        (
+            "========  Tables with `created_at` column but not `updated_at` difference between DBs"
+                .to_string(),
+            DBResultTypes::String(db1_tables),
+            DBResultTypes::String(db2_tables),
+        ),
+    );
     Ok(())
 }
 
@@ -68,11 +71,14 @@ fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgre
     let (records1, records2) = par_run(builder, database::id_and_column_value)?;
 
     let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write((
-        format!("====== `{table}` created_at values"),
-        records1,
-        records2,
-    ));
+    diff_io.write(
+        config,
+        (
+            format!("====== `{table}` created_at values"),
+            records1,
+            records2,
+        ),
+    );
     Ok(())
 }
 
@@ -80,6 +86,9 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = par_run(builder, database::full_row_ordered_by)?;
     let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write((format!("====== `{table}` all columns"), records1, records2));
+    diff_io.write(
+        config,
+        (format!("====== `{table}` all columns"), records1, records2),
+    );
     Ok(())
 }

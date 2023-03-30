@@ -15,11 +15,14 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             .iter()
             .find(|(t, _)| t == &table)
             .map(|data| data.1.to_string());
-        diff_io.write((
-            format!("== `{table}` sequence:"),
-            DBResultTypes::String(vec![num.to_string()]),
-            DBResultTypes::String(vec![found.unwrap_or_else(|| "Not set".to_string())]),
-        ));
+        diff_io.write(
+            config,
+            (
+                format!("== `{table}` sequence:"),
+                DBResultTypes::String(vec![num.to_string()]),
+                DBResultTypes::String(vec![found.unwrap_or_else(|| "Not set".to_string())]),
+            ),
+        );
     }
 
     Ok(())
