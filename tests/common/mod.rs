@@ -174,6 +174,7 @@ impl TestRunner {
         seed_test_data(Some(&users), Some(&msgs));
 
         self.config.rows_until = updated_at.add(Days::new(10));
+        self.config.diff_format = DiffFormat::Char;
 
         db_compare::run(&self.config).unwrap();
 
@@ -201,6 +202,9 @@ impl TestRunner {
         self.runned = true;
         self
     }
+
+    fn run_simple_format() {}
+    fn run_simple_chart() {}
 }
 
 pub fn before_each() -> anyhow::Result<()> {
@@ -258,7 +262,6 @@ impl User {
         users
     }
     pub fn insert(&self, db: DB) -> anyhow::Result<User> {
-        println!("inserting: {:?}", self);
         let mut client = db.connect()?;
         let _id = client.execute(
             "INSERT INTO users (id, name, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id",

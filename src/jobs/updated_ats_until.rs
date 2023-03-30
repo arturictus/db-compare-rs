@@ -31,7 +31,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
 
         let mut diff_io = config.diff_io.borrow_mut();
         let header = format!(
-            "====== `{table}` compare rows where `{}` is < '{:?}' ======",
+            "`{table}` compare rows where `{}` is < '{:?}'",
             column(),
             last_date_time.unwrap()
         );

@@ -13,6 +13,7 @@ pub enum IOType {
 
 pub trait IO {
     fn write(&mut self, config: &Config, result: DBsResults);
+    fn echo(&mut self, msg: &str);
     fn close(&mut self);
     fn new(config: &Args) -> Self;
     fn new_from_path(file_path: String) -> Self;
@@ -22,7 +23,10 @@ pub trait IO {
 impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(file_path) => Self::File(new_file(file_path)),
+            Some(file_path) => {
+                let f = Self::File(new_file(file_path));
+                f
+            }
             _ => Self::Stdout,
         }
     }
@@ -31,17 +35,27 @@ impl IO for IOType {
     }
     fn write(&mut self, config: &Config, result: DBsResults) {
         let list = formatter::call(config, result);
-        for (header, diff) in list {
+
+        for fmt in list {
+            let lines = generate_output(fmt);
             match self {
                 Self::File(file) => {
-                    write_to_file(file, &header);
-                    write_to_file(file, &diff);
+                    for line in lines {
+                        write_to_file(file, &line);
+                    }
                 }
                 _ => {
-                    println!("{header}");
-                    println!("{diff}");
+                    for line in lines {
+                        println!("{line}");
+                    }
                 }
             }
+        }
+    }
+    fn echo(&mut self, msg: &str) {
+        match self {
+            Self::File(file) => write_to_file(file, msg),
+            _ => println!("{}", msg),
         }
     }
 
@@ -55,6 +69,26 @@ impl IO for IOType {
     }
 }
 
+fn generate_output(fomatter: (Option<String>, Vec<String>, Option<Vec<String>>)) -> Vec<String> {
+    let (header, diff, missing) = fomatter;
+    let mut acc = Vec::new();
+    if let Some(header) = header {
+        acc.push(format!("@@ {header} @@"));
+    }
+    if diff.is_empty() && missing.is_none() {
+        acc.push(format!("@@ No diff @@"));
+    } else {
+        for line in diff {
+            acc.push(line);
+        }
+    }
+    if let Some(missing) = missing {
+        for line in missing {
+            acc.push(line);
+        }
+    }
+    acc
+}
 fn write_to_file(file: &mut LineWriter<File>, msg: &str) {
     file.write_all(msg.as_bytes()).unwrap();
     file.write_all(b"\n").unwrap();
