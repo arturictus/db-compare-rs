@@ -137,15 +137,14 @@ impl TestRunner {
         Self {
             config: Config {
                 diff_io: RefCell::new(IOType::new_from_path(tmp_file.clone())),
-                diff_format: DiffFormat::Simple,
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
                 limit: config.limit,
-                tls: false,
                 white_listed_tables: config.white_listed_tables.clone(),
                 jobs: config.jobs.clone(),
                 all_columns_sample_size: config.all_columns_sample_size,
                 rows_until: config.rows_until,
+                ..Config::default()
             },
             regenerate_fixture: false,
             tmp_file,
@@ -174,7 +173,6 @@ impl TestRunner {
         seed_test_data(Some(&users), Some(&msgs));
 
         self.config.rows_until = updated_at.add(Days::new(10));
-        self.config.diff_format = DiffFormat::Char;
 
         db_compare::run(&self.config).unwrap();
 

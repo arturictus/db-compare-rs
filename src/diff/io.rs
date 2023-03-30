@@ -5,8 +5,9 @@ use std::io::prelude::*;
 use std::io::LineWriter;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum IOType {
+    #[default]
     Stdout,
     File(LineWriter<File>),
 }

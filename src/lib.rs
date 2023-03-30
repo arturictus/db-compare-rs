@@ -74,7 +74,7 @@ pub struct Args {
     pub no_tls: bool,
     #[arg(long = "diff-file")]
     pub diff_file: Option<String>,
-    #[arg(long = "diff-format", help = "simple or char")]
+    #[arg(long = "diff-format", help = "`simple` or `char`")]
     pub diff_format: Option<String>,
     #[arg(long = "tables-file")]
     pub tables_file: Option<String>,
@@ -87,9 +87,10 @@ pub struct Args {
     pub rows_until: Option<i64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum DiffFormat {
     Simple,
+    #[default]
     Char,
 }
 impl DiffFormat {
@@ -102,7 +103,7 @@ impl DiffFormat {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Config {
     pub db1: String,
     pub db2: String,
@@ -180,7 +181,7 @@ impl Config {
         } else {
             match config_file.diff_format {
                 Some(format) => DiffFormat::new(&format),
-                _ => DiffFormat::Simple,
+                _ => DiffFormat::Char,
             }
         };
 
