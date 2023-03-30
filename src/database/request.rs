@@ -127,9 +127,10 @@ mod test {
             all_columns_sample_size: None,
             diff_file: None,
             diff_format: None,
-            tables_file: None,
+            tables: None,
             config: None,
             rows_until: None,
+            jobs: None,
         }
     }
     fn config() -> Config {

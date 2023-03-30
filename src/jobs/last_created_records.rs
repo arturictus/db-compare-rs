@@ -7,14 +7,14 @@ use super::par_run;
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     let db2_tables = non_updated_at_tables(config)?;
-    println!("# -----  List of tables without `updated_at`");
+    println!("@@ List of tables without `updated_at` @@");
     println!("{db1_tables:?}");
-    println!("# ---------------");
+    println!("@@ ----------- @@");
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
         (
-            "========  Tables with `created_at` column but not `updated_at` difference between DBs"
+            "Tables with `created_at` column but not `updated_at` difference between DBs"
                 .to_string(),
             DBResultTypes::String(db1_tables),
             DBResultTypes::String(db2_tables),
@@ -73,11 +73,7 @@ fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgre
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (
-            format!("====== `{table}` created_at values"),
-            records1,
-            records2,
-        ),
+        (format!("`{table}` created_at values"), records1, records2),
     );
     Ok(())
 }
@@ -88,7 +84,7 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (format!("====== `{table}` all columns"), records1, records2),
+        (format!("`{table}` all columns"), records1, records2),
     );
     Ok(())
 }

@@ -68,12 +68,12 @@ impl IO for IOType {
 }
 
 fn generate_output(fomatter: FmtOutput) -> Vec<String> {
-    let (header, diff, missing) = fomatter;
+    let (header, diff, missing, extra) = fomatter;
     let mut acc = Vec::new();
     if let Some(header) = header {
         acc.push(format!("@@ {header} @@"));
     }
-    if diff.is_empty() && missing.is_none() {
+    if diff.is_empty() && missing.is_none() && extra.is_none() {
         acc.push("@@ No diff @@".to_string());
     } else {
         for line in diff {
@@ -82,6 +82,11 @@ fn generate_output(fomatter: FmtOutput) -> Vec<String> {
     }
     if let Some(missing) = missing {
         for line in missing {
+            acc.push(line);
+        }
+    }
+    if let Some(extra) = extra {
+        for line in extra {
             acc.push(line);
         }
     }
