@@ -88,8 +88,10 @@ fn generate_output(fomatter: FmtOutput) -> Vec<String> {
     acc
 }
 fn write_to_file(file: &mut LineWriter<File>, msg: &str) {
-    file.write_all(msg.as_bytes()).unwrap();
-    file.write_all(b"\n").unwrap();
+    if !msg.is_empty() {
+        file.write_all(msg.as_bytes()).unwrap();
+        file.write_all(b"\n").unwrap();
+    }
 }
 
 fn flush_file(file: &mut LineWriter<File>) {
