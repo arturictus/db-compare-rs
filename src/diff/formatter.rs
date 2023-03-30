@@ -2,20 +2,25 @@ use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
 
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
-pub type FmtOutput = (Option<String>, Vec<String>, Option<Vec<String>>);
+pub type FmtOutput = (
+    Option<String>,
+    Vec<String>,
+    Option<Vec<String>>,
+    Option<Vec<String>>,
+);
 pub fn call(config: &Config, result: DBsResults) -> Vec<FmtOutput> {
     let (header, a, b) = result;
-    let (rows, missing) = generate_diff(config, &a, &b);
+    let (rows, missing, extra) = generate_diff(config, &a, &b);
 
-    vec![(Some(header), rows, missing)]
+    vec![(Some(header), rows, missing, extra)]
 }
 
 fn generate_diff(
     config: &Config,
     a: &DBResultTypes,
     b: &DBResultTypes,
-) -> (Vec<String>, Option<Vec<String>>) {
-    let (rows, missing) = match (a, b) {
+) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
+    let (rows, missing, extra) = match (a, b) {
         (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(config, a, b),
 
         _ => {
@@ -23,21 +28,21 @@ fn generate_diff(
                 &normalize_input(a).unwrap(),
                 &normalize_input(b).unwrap(),
             ));
-            (vec![st], None)
+            (vec![st], None, None)
         }
     };
-    (rows, missing)
+    (rows, missing, extra)
 }
 
 fn normalize_map_type(
     config: &Config,
     a: &DBResultTypes,
     b: &DBResultTypes,
-) -> (Vec<String>, Option<Vec<String>>) {
+) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
     let RowSelector {
         matches: (result_a, result_b),
         missing,
-        extra: _,
+        extra,
     } = only_matching_ids(a, b);
 
     let rows = match result_a {
@@ -66,17 +71,17 @@ fn normalize_map_type(
         _ => panic!("unexpected type: {:?}", result_a),
     };
 
-    let missing = do_missing_format(&missing);
-    (rows, missing)
+    let missing = do_unmached_rows_format(&missing, "-");
+    let extra = do_unmached_rows_format(&extra, "+");
+    (rows, missing, extra)
 }
 
-#[allow(dead_code)]
-fn do_missing_format(missing: &DBResultTypes) -> Option<Vec<String>> {
+fn do_unmached_rows_format(missing: &DBResultTypes, operator: &str) -> Option<Vec<String>> {
     match missing {
         DBResultTypes::Map(s) => {
             let coll: Vec<String> = s
                 .iter()
-                .map(|e| format!("- {}", serde_json::to_string(&e).unwrap()))
+                .map(|e| format!("{operator} {}", serde_json::to_string(&e).unwrap()))
                 .collect();
 
             if coll.is_empty() {
@@ -115,7 +120,7 @@ fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
 }
 
 fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
-    let btree: BTreeMap<u64, JsonMap> =
+    let mut btree: BTreeMap<u64, JsonMap> =
         b.to_h().into_iter().fold(BTreeMap::new(), |mut acc, data| {
             acc.insert(data.get("id").unwrap().as_u64().unwrap(), data);
             acc
@@ -123,13 +128,16 @@ fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
     let mut missing: Vec<JsonMap> = Vec::new();
     let acc: Vec<(JsonMap, JsonMap)> = a.to_h().into_iter().fold(Vec::new(), |mut acc, data| {
         let id = data.get("id").unwrap().as_u64().unwrap();
-        if let Some(value) = btree.get(&id) {
+
+        if let Some(value) = btree.remove(&id) {
             acc.push((data, value.clone()));
         } else {
             missing.push(data);
         }
         acc
     });
+
+    let extra = btree.into_iter().map(|(_, v)| v).collect::<Vec<JsonMap>>();
 
     RowSelector {
         matches: (DBResultTypes::GroupedRows(acc), DBResultTypes::Empty),
@@ -138,7 +146,11 @@ fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
         } else {
             DBResultTypes::Map(missing)
         },
-        extra: DBResultTypes::Empty,
+        extra: if extra.is_empty() {
+            DBResultTypes::Empty
+        } else {
+            DBResultTypes::Map(extra)
+        },
     }
 }
 fn normalize_input(list: &DBResultTypes) -> Result<String, serde_json::Error> {
@@ -174,7 +186,7 @@ fn produce_char_diff(old: &str, new: &str) -> String {
             return "".to_string();
         }
     }
-    format!("+ {}", diff.to_string())
+    format!("> {}", diff.to_string())
 }
 fn produce_simple_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
