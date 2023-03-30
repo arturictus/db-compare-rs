@@ -3,10 +3,8 @@ use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
-pub fn call(
-    config: &Config,
-    result: DBsResults,
-) -> Vec<(Option<String>, Vec<String>, Option<Vec<String>>)> {
+pub type FmtOutput = (Option<String>, Vec<String>, Option<Vec<String>>);
+pub fn call(config: &Config, result: DBsResults) -> Vec<FmtOutput> {
     let (header, a, b) = result;
     let (rows, missing) = generate_diff(config, &a, &b);
 
@@ -163,7 +161,7 @@ fn produce_char_diff(old: &str, new: &str) -> String {
             return "".to_string();
         }
     }
-    format!("+ {}", diff.to_string())
+    format!("+ {}", diff)
 }
 fn produce_simple_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);

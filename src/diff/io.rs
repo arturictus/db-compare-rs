@@ -1,12 +1,13 @@
-use crate::diff::formatter;
+use crate::diff::formatter::{self, FmtOutput};
 use crate::{Args, Config, DBsResults};
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::LineWriter;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum IOType {
+    #[default]
     Stdout,
     File(LineWriter<File>),
 }
@@ -23,10 +24,7 @@ pub trait IO {
 impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(file_path) => {
-                let f = Self::File(new_file(file_path));
-                f
-            }
+            Some(file_path) => Self::File(new_file(file_path)),
             _ => Self::Stdout,
         }
     }
@@ -69,14 +67,14 @@ impl IO for IOType {
     }
 }
 
-fn generate_output(fomatter: (Option<String>, Vec<String>, Option<Vec<String>>)) -> Vec<String> {
+fn generate_output(fomatter: FmtOutput) -> Vec<String> {
     let (header, diff, missing) = fomatter;
     let mut acc = Vec::new();
     if let Some(header) = header {
         acc.push(format!("@@ {header} @@"));
     }
     if diff.is_empty() && missing.is_none() {
-        acc.push(format!("@@ No diff @@"));
+        acc.push("@@ No diff @@".to_string());
     } else {
         for line in diff {
             acc.push(line);
@@ -90,8 +88,10 @@ fn generate_output(fomatter: (Option<String>, Vec<String>, Option<Vec<String>>))
     acc
 }
 fn write_to_file(file: &mut LineWriter<File>, msg: &str) {
-    file.write_all(msg.as_bytes()).unwrap();
-    file.write_all(b"\n").unwrap();
+    if !msg.is_empty() {
+        file.write_all(msg.as_bytes()).unwrap();
+        file.write_all(b"\n").unwrap();
+    }
 }
 
 fn flush_file(file: &mut LineWriter<File>) {
