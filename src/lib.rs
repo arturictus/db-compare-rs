@@ -17,6 +17,7 @@ type JsonMap = serde_json::Map<String, serde_json::Value>;
 pub enum DBResultTypes {
     String(Vec<String>),
     Map(Vec<JsonMap>),
+    GroupedRows(Vec<(JsonMap, JsonMap)>),
     Empty,
 }
 
@@ -25,6 +26,7 @@ impl DBResultTypes {
         match self {
             Self::String(v) => v.clone(),
             Self::Empty => vec![],
+            Self::GroupedRows(_) => panic!("not a string: {:?}", self),
             _ => panic!("not a string: {:?}", self),
         }
     }
@@ -32,6 +34,13 @@ impl DBResultTypes {
         match self {
             Self::Map(v) => v.clone(),
             Self::Empty => vec![],
+            Self::GroupedRows(_) => panic!("not a hash: {:?}", self),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn to_gr(&self) -> Vec<(JsonMap, JsonMap)> {
+        match self {
+            Self::GroupedRows(v) => v.clone(),
             _ => panic!("not a Map: {:?}", self),
         }
     }
@@ -40,12 +49,19 @@ impl DBResultTypes {
             Self::Empty => true,
             Self::Map(e) => e.is_empty(),
             Self::String(e) => e.is_empty(),
+            Self::GroupedRows(e) => e.is_empty(),
         }
     }
 
     pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
         match self {
             Self::Map(e) => e.iter(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn gr_into_iter(&self) -> impl Iterator<Item = &(JsonMap, JsonMap)> {
+        match self {
+            Self::GroupedRows(e) => e.iter(),
             _ => panic!("not a Map: {:?}", self),
         }
     }
@@ -76,8 +92,10 @@ pub struct Args {
     pub diff_file: Option<String>,
     #[arg(long = "diff-format", help = "`simple` or `char`")]
     pub diff_format: Option<String>,
-    #[arg(long = "tables-file")]
-    pub tables_file: Option<String>,
+    #[arg(long = "tables", help = "comma separated list of tables to check")]
+    pub tables: Option<String>,
+    #[arg(long = "jobs", help = "comma separated list jobs to run")]
+    pub jobs: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
     pub config: Option<String>,
     #[arg(
@@ -149,14 +167,13 @@ impl Config {
                 .unwrap_or_else(|| panic!("Missing `db2` argument or attribute in config file"))
         };
 
-        let white_listed_tables = if let Some(file_path) = &args.tables_file {
+        let white_listed_tables = if let Some(tables) = &args.tables {
             let value = {
-                let text = std::fs::read_to_string(file_path)
-                    .unwrap_or_else(|_| panic!("unable to read file at: {file_path}"));
-
-                serde_json::from_str::<Vec<String>>(&text).unwrap_or_else(|_| {
-                    panic!("malformed json file at: {file_path}, expected list with strings ex: [\"users\"]")
-                })
+                let mut v = vec![];
+                for table in tables.split(',') {
+                    v.push(table.trim().to_string());
+                }
+                v
             };
             Some(value)
         } else {
@@ -205,6 +222,19 @@ impl Config {
         } else {
             NaiveDateTime::from_timestamp_opt(chrono::offset::Utc::now().timestamp(), 0).unwrap()
         };
+        let jobs = if let Some(jobs) = &args.jobs {
+            let mut value = vec![];
+            for job in jobs.split(',') {
+                value.push(Job::from_str(job.trim()).unwrap());
+            }
+            value
+        } else {
+            if let Some(jobs) = config_file.jobs {
+                jobs
+            } else {
+                Job::all()
+            }
+        };
 
         Self {
             db1,
@@ -213,11 +243,7 @@ impl Config {
             diff_format,
             white_listed_tables,
             limit,
-            jobs: if let Some(jobs) = config_file.jobs {
-                jobs
-            } else {
-                Job::all()
-            },
+            jobs,
             all_columns_sample_size,
             rows_until,
             tls: !args.no_tls,
@@ -324,7 +350,8 @@ mod test {
             all_columns_sample_size: None,
             diff_file: None,
             diff_format: None,
-            tables_file: None,
+            jobs: None,
+            tables: None,
             config: None,
             rows_until: None,
         }
@@ -333,13 +360,13 @@ mod test {
     #[test]
     fn test_config_new() {
         let args_with_listed_file = Args {
-            tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
+            tables: Some("users, collections".to_string()),
             ..default_args()
         };
         let config = Config::new(&args_with_listed_file);
         assert_eq!(
             config.white_listed_tables,
-            Some(vec!["table_from_tables_file".to_string()])
+            Some(vec!["users".to_string(), "collections".to_string()])
         );
     }
     #[test]
@@ -362,14 +389,14 @@ mod test {
     fn test_config_from_config_file_with_args() {
         let args = Args {
             limit: 22,
-            tables_file: Some("./tests/fixtures/whitelisted_table_example.json".to_string()),
+            tables: Some("table_from_args".to_string()),
             config: Some("./tests/fixtures/testing_config.yml".to_string()),
             ..default_args()
         };
         let config = Config::new(&args);
         assert_eq!(
             config.white_listed_tables,
-            Some(vec!["table_from_tables_file".to_string()])
+            Some(vec!["table_from_args".to_string()])
         );
         assert_eq!(config.limit, 22);
         assert!(!config.diff_io.borrow().is_stdout());

@@ -14,8 +14,9 @@ fn default_args() -> Args {
         no_tls: false,
         all_columns_sample_size: None,
         diff_file: None,
-        tables_file: None,
+        tables: None,
         config: None,
+        jobs: None,
         rows_until: None,
     }
 }
