@@ -40,9 +40,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         diff_io.write(
             config,
             (
-                format!(
-                    "====== `{table}` compare rows with ids from {lower_bound} to {upper_bound}"
-                ),
+                format!("`{table}` compare rows with ids from {lower_bound} to {upper_bound}"),
                 records1,
                 records2,
             ),
