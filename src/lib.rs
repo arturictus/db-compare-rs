@@ -228,12 +228,10 @@ impl Config {
                 value.push(Job::from_str(job.trim()).unwrap());
             }
             value
+        } else if let Some(jobs) = config_file.jobs {
+            jobs
         } else {
-            if let Some(jobs) = config_file.jobs {
-                jobs
-            } else {
-                Job::all()
-            }
+            Job::all()
         };
 
         Self {

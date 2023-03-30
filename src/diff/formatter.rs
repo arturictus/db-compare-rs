@@ -130,14 +130,14 @@ fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
         let id = data.get("id").unwrap().as_u64().unwrap();
 
         if let Some(value) = btree.remove(&id) {
-            acc.push((data, value.clone()));
+            acc.push((data, value));
         } else {
             missing.push(data);
         }
         acc
     });
 
-    let extra = btree.into_iter().map(|(_, v)| v).collect::<Vec<JsonMap>>();
+    let extra = btree.into_values().collect::<Vec<JsonMap>>();
 
     RowSelector {
         matches: (DBResultTypes::GroupedRows(acc), DBResultTypes::Empty),
@@ -186,7 +186,7 @@ fn produce_char_diff(old: &str, new: &str) -> String {
             return "".to_string();
         }
     }
-    format!("> {}", diff.to_string())
+    format!("> {}", diff)
 }
 fn produce_simple_diff(json1: &str, json2: &str) -> String {
     let diff = TextDiff::from_lines(json1, json2);
@@ -239,9 +239,9 @@ mod test {
             extra: _,
         } = only_matching_ids(
             &DBResultTypes::Map(vec![a.clone(), b.clone(), c.clone()]),
-            &DBResultTypes::Map(vec![a.clone(), b.clone(), d]),
+            &DBResultTypes::Map(vec![a.clone(), b, d]),
         );
-        assert_eq!(result_a.to_gr()[0], (a.clone(), a.clone()));
+        assert_eq!(result_a.to_gr()[0], (a.clone(), a));
         assert_eq!(result_b.to_h(), vec![]);
         assert_eq!(missing.to_h(), vec![c]);
     }
