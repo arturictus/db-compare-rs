@@ -1,7 +1,5 @@
 mod common;
 
-
-
 use common::{TestRunner, DB};
 use db_compare::Job;
 

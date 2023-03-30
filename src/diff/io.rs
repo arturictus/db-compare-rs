@@ -1,4 +1,4 @@
-use crate::diff::formatter;
+use crate::diff::formatter::{self, FmtOutput};
 use crate::{Args, Config, DBsResults};
 use std::fs::{self, File};
 use std::io::prelude::*;
@@ -23,10 +23,7 @@ pub trait IO {
 impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(file_path) => {
-                
-                Self::File(new_file(file_path))
-            }
+            Some(file_path) => Self::File(new_file(file_path)),
             _ => Self::Stdout,
         }
     }
@@ -69,7 +66,7 @@ impl IO for IOType {
     }
 }
 
-fn generate_output(fomatter: (Option<String>, Vec<String>, Option<Vec<String>>)) -> Vec<String> {
+fn generate_output(fomatter: FmtOutput) -> Vec<String> {
     let (header, diff, missing) = fomatter;
     let mut acc = Vec::new();
     if let Some(header) = header {

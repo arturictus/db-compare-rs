@@ -3,10 +3,8 @@ use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 
-pub fn call(
-    config: &Config,
-    result: DBsResults,
-) -> Vec<(Option<String>, Vec<String>, Option<Vec<String>>)> {
+pub type FmtOutput = (Option<String>, Vec<String>, Option<Vec<String>>);
+pub fn call(config: &Config, result: DBsResults) -> Vec<FmtOutput> {
     let (header, a, b) = result;
     let (rows, missing) = generate_diff(config, &a, &b);
 
