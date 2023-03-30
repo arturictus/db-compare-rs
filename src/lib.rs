@@ -176,7 +176,7 @@ impl Config {
         };
 
         let diff_format = if let Some(format) = &args.diff_format {
-            DiffFormat::new(&format)
+            DiffFormat::new(format)
         } else {
             match config_file.diff_format {
                 Some(format) => DiffFormat::new(&format),

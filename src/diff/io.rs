@@ -23,10 +23,7 @@ pub trait IO {
 impl IO for IOType {
     fn new(config: &Args) -> Self {
         match &config.diff_file {
-            Some(file_path) => {
-                let f = Self::File(new_file(file_path));
-                f
-            }
+            Some(file_path) => Self::File(new_file(file_path)),
             _ => Self::Stdout,
         }
     }
@@ -76,7 +73,7 @@ fn generate_output(fomatter: (Option<String>, Vec<String>, Option<Vec<String>>))
         acc.push(format!("@@ {header} @@"));
     }
     if diff.is_empty() && missing.is_none() {
-        acc.push(format!("@@ No diff @@"));
+        acc.push("@@ No diff @@".to_string());
     } else {
         for line in diff {
             acc.push(line);

@@ -202,9 +202,6 @@ impl TestRunner {
         self.runned = true;
         self
     }
-
-    fn run_simple_format() {}
-    fn run_simple_chart() {}
 }
 
 pub fn before_each() -> anyhow::Result<()> {
