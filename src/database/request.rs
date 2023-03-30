@@ -33,6 +33,8 @@ pub struct Request {
     pub column: Option<String>,
     pub bounds: Option<(u32, u32)>,
     pub until: chrono::NaiveDateTime,
+    pub tm_from: chrono::NaiveDateTime,
+    pub excluded_ids: Option<Vec<u32>>,
 }
 
 #[derive(Default, Clone)]
@@ -42,6 +44,8 @@ pub struct RequestBuilder {
     column: Option<String>,
     bounds: Option<(u32, u32)>,
     until: chrono::NaiveDateTime,
+    tm_from: chrono::NaiveDateTime,
+    excluded_ids: Option<Vec<u32>>,
 }
 
 #[derive(Clone, Debug)]
@@ -95,6 +99,16 @@ impl RequestBuilder {
         self
     }
 
+    pub fn tm_from(mut self, tm: chrono::NaiveDateTime) -> Self {
+        self.tm_from = tm;
+        self
+    }
+
+    pub fn excluded_ids(mut self, ids: Vec<u32>) -> Self {
+        self.excluded_ids = Some(ids);
+        self
+    }
+
     pub fn build_master(&self) -> Request {
         Request {
             config: self.config.clone(),
@@ -103,6 +117,8 @@ impl RequestBuilder {
             column: self.column.clone(),
             bounds: self.bounds,
             until: self.until,
+            tm_from: self.tm_from,
+            excluded_ids: self.excluded_ids.clone(),
         }
     }
     pub fn build_replica(&self) -> Request {

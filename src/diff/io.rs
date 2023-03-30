@@ -88,6 +88,7 @@ fn generate_output(fomatter: FmtOutput) -> Vec<String> {
     acc
 }
 fn write_to_file(file: &mut LineWriter<File>, msg: &str) {
+    // TODO: we should never receive empty strings
     if !msg.is_empty() {
         file.write_all(msg.as_bytes()).unwrap();
         file.write_all(b"\n").unwrap();

@@ -2,6 +2,7 @@ mod all_columns;
 mod counter;
 mod last_created_records;
 mod last_updated_records;
+mod missing_recently_updated;
 mod sequences;
 mod updated_ats_until;
 mod utils;
@@ -19,6 +20,7 @@ pub enum Job {
     AllColumns,
     Sequences,
     UpdatedAtsUntil,
+    MissingRecentlyUpdatedsFromReplica,
 }
 
 impl fmt::Display for Job {
@@ -39,6 +41,7 @@ impl FromStr for Job {
             "all_columns" => Ok(Job::AllColumns),
             "sequences" => Ok(Job::Sequences),
             "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
+            "missing_recently_updateds_from_replica" => Ok(Job::MissingRecentlyUpdatedsFromReplica),
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -71,6 +74,10 @@ impl Job {
             }
             Job::UpdatedAtsUntil => {
                 updated_ats_until::run(config)?;
+                Ok(())
+            }
+            Job::MissingRecentlyUpdatedsFromReplica => {
+                missing_recently_updated::run(config)?;
                 Ok(())
             }
         }

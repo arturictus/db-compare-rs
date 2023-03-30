@@ -88,8 +88,15 @@ pub fn full_row_ordered_by(r: Request) -> Result<DBResultTypes, PgError> {
         repo::full_row_ordered_by,
     )
 }
+pub fn full_updated_rows_from_tm(r: Request) -> AResult {
+    let table = r.table.as_ref().unwrap();
+    duration::<DBResultTypes>(
+        format!("Getting rows from table {table} in {}", r.db.name()),
+        r,
+        repo::full_updated_rows_from_tm,
+    )
+}
 
-// Result<Vec<serde_json::Map<String, Value>>, PgError>
 pub fn full_row_ordered_by_until(r: Request) -> Result<DBResultTypes, PgError> {
     let table = r.table.as_ref().unwrap();
     duration::<DBResultTypes>(

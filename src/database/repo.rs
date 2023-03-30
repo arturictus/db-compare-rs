@@ -210,6 +210,35 @@ pub fn full_row_ordered_by_until(q: Request) -> AResult {
     Ok(DBResultTypes::Map(records))
 }
 
+pub fn full_updated_rows_from_tm(q: Request) -> AResult {
+    let mut client = connect(&q)?;
+    let column = q.column.unwrap();
+
+    let table = q.table.unwrap();
+    let limit = q.config.limit;
+    let from = q.tm_from;
+    let from = from.format("%Y-%m-%d %H:%M:%S").to_string();
+    let q = format!(
+        "WITH
+        cte AS
+        (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (ORDER BY {column} DESC) AS db_compare_row_number
+            FROM
+                {table}
+            WHERE
+                {column} > '{from}'
+        )
+    SELECT
+        JSON_AGG(cte.* ORDER BY {column} ASC) FILTER (WHERE db_compare_row_number <= {limit}) AS data
+    FROM
+        cte;"
+    );
+    let records = collect_records_with_rn(&q, &mut client)?;
+    Ok(DBResultTypes::Map(records))
+}
+
 pub fn ping_db(q: Request) -> Result<(), PgError> {
     let mut client = connect(&q)?;
     println!("Ping 10 -> {}", q.db.name());
