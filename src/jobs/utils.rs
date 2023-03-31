@@ -60,3 +60,7 @@ pub fn compare_table_for_all_columns(
     }
     Ok(())
 }
+
+pub fn echo(config: &Config, msg: &str) {
+    config.diff_io.borrow_mut().echo(&format!("@@ {msg} @@"));
+}

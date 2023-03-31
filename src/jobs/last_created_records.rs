@@ -1,3 +1,4 @@
+use super::utils::echo;
 use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
@@ -7,9 +8,9 @@ use super::par_run;
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     let db2_tables = non_updated_at_tables(config)?;
-    println!("@@ List of tables without `updated_at` @@");
+    println!("## List of tables without `updated_at` ##");
     println!("{db1_tables:?}");
-    println!("@@ ----------- @@");
+    println!("## ----------- ##");
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
@@ -35,7 +36,15 @@ pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     for table in db1_tables {
+        echo(
+            config,
+            &format!("#start# Job: last_created_ats Table: `{table}`"),
+        );
         compare_rows(config, &table)?;
+        echo(
+            config,
+            &format!("Job: last_created_ats Table: `{table}` #end#"),
+        );
     }
     Ok(())
 }

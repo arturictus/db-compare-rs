@@ -4,13 +4,21 @@ use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
-use super::par_run;
+use super::{par_run, utils::echo};
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {
+        echo(
+            config,
+            &format!("#start# Job: updated_ats_until Table: `{table}`"),
+        );
         compare_table(config, &table)?;
+        echo(
+            config,
+            &format!("Job: updated_ats_until Table: `{table}` #end#"),
+        );
     }
     Ok(())
 }

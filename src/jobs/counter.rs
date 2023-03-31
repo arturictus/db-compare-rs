@@ -13,7 +13,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
         diff_io.write(
             config,
             (
-                format!("== `{table}` count"),
+                format!("`{table}` count"),
                 DBResultType::Strings(vec![format!("{}", result1)]),
                 DBResultType::Strings(vec![format!("{}", result2)]),
             ),

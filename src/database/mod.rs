@@ -50,6 +50,17 @@ impl DBResultType {
         }
     }
 
+    // TODO: Work in progress
+    // pub fn unwrap<T>(self) -> Vec<T> {
+    //     match self {
+    //         Self::JsonMaps(e) => e,
+    //         Self::Strings(e) => e,
+    //         Self::GroupedRows(e) => e,
+    //         Self::Ids(e) => e,
+    //         Self::Empty => panic!("Empty"),
+    //     }
+    // }
+
     pub fn exclude_ids(self, ids: &[u32]) -> Self {
         match self {
             Self::JsonMaps(e) => {
@@ -208,8 +219,40 @@ fn duration<T>(
 mod test {
     use super::*;
 
+    use serde_json::{from_str, Map, Value};
     #[test]
     fn test_db_result_types_exclude_ids() {
-        todo!()
+        let data = vec![gen_json_map(1), gen_json_map(2), gen_json_map(3)];
+        let db_result = DBResultType::JsonMaps(data.clone());
+        let ids = vec![1, 2];
+        let result = if let DBResultType::JsonMaps(result) = db_result.exclude_ids(&ids) {
+            result
+        } else {
+            todo!()
+        };
+        let expected = vec![gen_json_map(3)];
+        assert_eq!(result, expected);
+        let db_result = DBResultType::GroupedRows(vec![
+            (data.clone()[0].clone(), data.clone()[0].clone()),
+            (data.clone()[1].clone(), data.clone()[1].clone()),
+            (data.clone()[2].clone(), data.clone()[2].clone()),
+        ]);
+        let ids = vec![1, 2];
+        let result = if let DBResultType::GroupedRows(result) = db_result.exclude_ids(&ids) {
+            result
+        } else {
+            todo!()
+        };
+        let expected = vec![(gen_json_map(3), gen_json_map(3))];
+        assert_eq!(result, expected);
+    }
+
+    fn gen_json_map(id: u64) -> JsonMap {
+        let data = format!(r#"{{"id": {id},"name": "John_{id}"}}"#);
+        let mut v: Value = from_str(&data).unwrap();
+        let val = v.as_object_mut().unwrap();
+        let mut m = Map::new();
+        m.append(val);
+        m
     }
 }
