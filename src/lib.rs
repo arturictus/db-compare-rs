@@ -55,7 +55,7 @@ impl DBResultTypes {
         }
     }
 
-    pub fn exclude_ids(self, ids: &Vec<u32>) -> Self {
+    pub fn exclude_ids(self, ids: &[u32]) -> Self {
         match self {
             Self::Map(e) => {
                 let new_data = e
