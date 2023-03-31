@@ -70,6 +70,15 @@ impl DBResultType {
         }
     }
 
+    // TODO: Work in progress
+    // pub fn into_iter(&self) -> impl Iterator<Item = impl Sized + '_> {
+    //     match self {
+    //         Self::JsonMaps(e) => e.iter(),
+    //         Self::GroupedRows(e) => e.iter(),
+    //         _ => panic!("not a Map: {:?}", self),
+    //     }
+    // }
+
     pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
         match self {
             Self::JsonMaps(e) => e.iter(),
@@ -193,4 +202,14 @@ fn duration<T>(
 
     println!("=> {message} took: {duration:?}");
     output
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_db_result_types_exclude_ids() {
+        todo!()
+    }
 }
