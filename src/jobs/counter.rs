@@ -1,5 +1,5 @@
 use super::par_run;
-use crate::database::{self, DBResultTypes, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -14,8 +14,8 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             config,
             (
                 format!("== `{table}` count"),
-                DBResultTypes::String(vec![format!("{}", result1)]),
-                DBResultTypes::String(vec![format!("{}", result2)]),
+                DBResultType::Strings(vec![format!("{}", result1)]),
+                DBResultType::Strings(vec![format!("{}", result2)]),
             ),
         );
     }

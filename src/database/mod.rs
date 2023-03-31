@@ -2,25 +2,25 @@ use postgres::Error as PgError;
 mod repo;
 mod request;
 use chrono::prelude::*;
-pub use repo::{ping_db, updated_ids_after_cutoff, AResult};
+pub use repo::{ping_db, updated_ids_after_cutoff, RepoResult};
 
 pub use request::{Request, RequestBuilder};
 use std::time::Instant;
 
 pub type JsonMap = serde_json::Map<String, serde_json::Value>;
 #[derive(Debug, Clone)]
-pub enum DBResultTypes {
-    String(Vec<String>),
-    Map(Vec<JsonMap>),
+pub enum DBResultType {
+    Strings(Vec<String>),
+    JsonMaps(Vec<JsonMap>),
     GroupedRows(Vec<(JsonMap, JsonMap)>),
     Ids(Vec<u32>),
     Empty,
 }
 
-impl DBResultTypes {
+impl DBResultType {
     pub fn to_s(&self) -> Vec<String> {
         match self {
-            Self::String(v) => v.clone(),
+            Self::Strings(v) => v.clone(),
             Self::Empty => vec![],
             Self::GroupedRows(_) => panic!("not a string: {:?}", self),
             _ => panic!("not a string: {:?}", self),
@@ -28,7 +28,7 @@ impl DBResultTypes {
     }
     pub fn to_h(&self) -> Vec<JsonMap> {
         match self {
-            Self::Map(v) => v.clone(),
+            Self::JsonMaps(v) => v.clone(),
             Self::Empty => vec![],
             Self::GroupedRows(_) => panic!("not a hash: {:?}", self),
             _ => panic!("not a Map: {:?}", self),
@@ -43,8 +43,8 @@ impl DBResultTypes {
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Empty => true,
-            Self::Map(e) => e.is_empty(),
-            Self::String(e) => e.is_empty(),
+            Self::JsonMaps(e) => e.is_empty(),
+            Self::Strings(e) => e.is_empty(),
             Self::GroupedRows(e) => e.is_empty(),
             Self::Ids(e) => e.is_empty(),
         }
@@ -52,12 +52,12 @@ impl DBResultTypes {
 
     pub fn exclude_ids(self, ids: &[u32]) -> Self {
         match self {
-            Self::Map(e) => {
+            Self::JsonMaps(e) => {
                 let new_data = e
                     .into_iter()
                     .filter(|e| !ids.contains(&e["id"].as_u64().unwrap().try_into().unwrap()))
                     .collect();
-                Self::Map(new_data)
+                Self::JsonMaps(new_data)
             }
             Self::GroupedRows(e) => {
                 let new_data = e
@@ -72,7 +72,7 @@ impl DBResultTypes {
 
     pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
         match self {
-            Self::Map(e) => e.iter(),
+            Self::JsonMaps(e) => e.iter(),
             _ => panic!("not a Map: {:?}", self),
         }
     }
@@ -84,12 +84,12 @@ impl DBResultTypes {
     }
     pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
         match self {
-            Self::String(e) => e.iter(),
+            Self::Strings(e) => e.iter(),
             _ => panic!("not a String: {:?}", self),
         }
     }
 }
-pub type DBsResults = (String, DBResultTypes, DBResultTypes);
+pub type DBsResults = (String, DBResultType, DBResultType);
 
 pub fn get_sequences(r: Request) -> Result<Vec<(std::string::String, u32)>, PgError> {
     duration::<Vec<(String, u32)>>(
@@ -107,12 +107,12 @@ pub fn get_greatest_id_from(r: Request) -> Result<u32, PgError> {
     )
 }
 
-pub fn get_row_by_id_range(r: Request) -> AResult {
+pub fn get_row_by_id_range(r: Request) -> RepoResult {
     let table = r.table.clone().unwrap();
     let lower_bound = r.bounds.unwrap().0;
     let upper_bound = r.bounds.unwrap().1;
     let db = r.db.name();
-    duration::<DBResultTypes>(
+    duration::<DBResultType>(
         format!("`{table}` rows with ids from `{lower_bound}` to `{upper_bound}` in {db}"),
         r,
         repo::get_row_by_id_range,
@@ -130,17 +130,17 @@ pub fn count_for(r: Request) -> Result<u32, PgError> {
     )
 }
 
-pub fn all_tables(r: Request) -> AResult {
-    duration::<DBResultTypes>(
+pub fn all_tables(r: Request) -> RepoResult {
+    duration::<DBResultType>(
         format!("Getting all tables for {}", r.db.name()),
         r,
         repo::all_tables,
     )
 }
 
-pub fn tables_with_column(r: Request) -> AResult {
+pub fn tables_with_column(r: Request) -> RepoResult {
     let column = r.column.as_ref().unwrap();
-    duration::<DBResultTypes>(
+    duration::<DBResultType>(
         format!(
             "Getting all tables with column {} in {}",
             column,
@@ -151,20 +151,20 @@ pub fn tables_with_column(r: Request) -> AResult {
     )
 }
 #[allow(dead_code)]
-pub fn id_and_column_value(r: Request) -> AResult {
+pub fn id_and_column_value(r: Request) -> RepoResult {
     let column = r.column.as_ref().unwrap();
     let table = r.table.as_ref().unwrap();
     let db = r.db.name();
-    duration::<DBResultTypes>(
+    duration::<DBResultType>(
         format!("Getting `id` and values from column `{column}` from table {table} in {db}"),
         r,
         repo::id_and_column_value,
     )
 }
 
-pub fn full_row_ordered_by(r: Request) -> Result<DBResultTypes, PgError> {
+pub fn full_row_ordered_by(r: Request) -> Result<DBResultType, PgError> {
     let table = r.table.as_ref().unwrap();
-    duration::<DBResultTypes>(
+    duration::<DBResultType>(
         format!("Getting rows from table {table} in {}", r.db.name()),
         r,
         repo::full_row_ordered_by,
@@ -172,9 +172,9 @@ pub fn full_row_ordered_by(r: Request) -> Result<DBResultTypes, PgError> {
 }
 
 // Result<Vec<serde_json::Map<String, Value>>, PgError>
-pub fn full_row_ordered_by_until(r: Request) -> Result<DBResultTypes, PgError> {
+pub fn full_row_ordered_by_until(r: Request) -> Result<DBResultType, PgError> {
     let table = r.table.as_ref().unwrap();
-    duration::<DBResultTypes>(
+    duration::<DBResultType>(
         format!("Getting rows from table {table} in {}", r.db.name()),
         r,
         repo::full_row_ordered_by_until,

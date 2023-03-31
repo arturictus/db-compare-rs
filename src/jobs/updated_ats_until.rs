@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use crate::database::{self, DBResultTypes, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -44,7 +44,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
 }
 
 fn get_last_date_time(
-    records: &DBResultTypes,
+    records: &DBResultType,
     prev: Option<NaiveDateTime>,
 ) -> Option<NaiveDateTime> {
     let records = records.to_h();

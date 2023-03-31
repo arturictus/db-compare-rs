@@ -1,5 +1,5 @@
 use super::utils::compare_table_for_all_columns;
-use crate::database::{self, DBResultTypes, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
@@ -29,9 +29,9 @@ fn updated_ids_after_cutoff(config: &Config, table: &str) -> Result<Vec<u32>, po
         .table(table)
         .tm_cutoff(config.tm_cutoff);
 
-    if let DBResultTypes::Ids(ids) = database::updated_ids_after_cutoff(q.build_replica())? {
+    if let DBResultType::Ids(ids) = database::updated_ids_after_cutoff(q.build_replica())? {
         Ok(ids)
     } else {
-        panic!("Expected DBResultTypes::Ids");
+        panic!("Expected DBResultType::Ids");
     }
 }

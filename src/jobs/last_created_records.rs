@@ -1,4 +1,4 @@
-use crate::database::{self, DBResultTypes, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -16,8 +16,8 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
         (
             "Tables with `created_at` column but not `updated_at` difference between DBs"
                 .to_string(),
-            DBResultTypes::String(db1_tables),
-            DBResultTypes::String(db2_tables),
+            DBResultType::Strings(db1_tables),
+            DBResultType::Strings(db2_tables),
         ),
     );
     Ok(())

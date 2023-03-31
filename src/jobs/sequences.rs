@@ -1,5 +1,5 @@
 use super::par_run;
-use crate::database::{self, DBResultTypes, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
@@ -19,8 +19,8 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             config,
             (
                 format!("== `{table}` sequence:"),
-                DBResultTypes::String(vec![num.to_string()]),
-                DBResultTypes::String(vec![found.unwrap_or_else(|| "Not set".to_string())]),
+                DBResultType::Strings(vec![num.to_string()]),
+                DBResultType::Strings(vec![found.unwrap_or_else(|| "Not set".to_string())]),
             ),
         );
     }

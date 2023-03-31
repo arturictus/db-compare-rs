@@ -1,6 +1,6 @@
 use crate::{Config, DiffFormat};
 
-use crate::database::{DBResultTypes, DBsResults, JsonMap};
+use crate::database::{DBResultType, DBsResults, JsonMap};
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 pub type FmtOutput = (
@@ -18,11 +18,13 @@ pub fn call(config: &Config, result: DBsResults) -> Vec<FmtOutput> {
 
 fn generate_diff(
     config: &Config,
-    a: &DBResultTypes,
-    b: &DBResultTypes,
+    a: &DBResultType,
+    b: &DBResultType,
 ) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
     let (rows, missing, extra) = match (a, b) {
-        (DBResultTypes::Map(_a), DBResultTypes::Map(_b)) => normalize_map_type(config, a, b),
+        (DBResultType::JsonMaps(_a), DBResultType::JsonMaps(_b)) => {
+            normalize_map_type(config, a, b)
+        }
 
         _ => {
             let st = print_diff(&produce_simple_diff(
@@ -37,8 +39,8 @@ fn generate_diff(
 
 fn normalize_map_type(
     config: &Config,
-    a: &DBResultTypes,
-    b: &DBResultTypes,
+    a: &DBResultType,
+    b: &DBResultType,
 ) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
     let RowSelector {
         matches: (result_a, result_b),
@@ -47,7 +49,7 @@ fn normalize_map_type(
     } = only_matching_ids(a, b);
 
     let rows = match result_a {
-        DBResultTypes::Map(a) => a
+        DBResultType::JsonMaps(a) => a
             .into_iter()
             .zip(result_b.to_h())
             .map(|(a, b)| {
@@ -58,7 +60,7 @@ fn normalize_map_type(
                 ))
             })
             .collect(),
-        DBResultTypes::GroupedRows(a) => a
+        DBResultType::GroupedRows(a) => a
             .into_iter()
             // TODO: remove duplication
             .map(|(a, b)| {
@@ -77,9 +79,9 @@ fn normalize_map_type(
     (rows, missing, extra)
 }
 
-fn do_unmached_rows_format(missing: &DBResultTypes, operator: &str) -> Option<Vec<String>> {
+fn do_unmached_rows_format(missing: &DBResultType, operator: &str) -> Option<Vec<String>> {
     match missing {
-        DBResultTypes::Map(s) => {
+        DBResultType::JsonMaps(s) => {
             let coll: Vec<String> = s
                 .iter()
                 .map(|e| format!("{operator} {}", serde_json::to_string(&e).unwrap()))
@@ -91,8 +93,8 @@ fn do_unmached_rows_format(missing: &DBResultTypes, operator: &str) -> Option<Ve
                 Some(coll)
             }
         }
-        DBResultTypes::Empty => None,
-        DBResultTypes::String(s) => {
+        DBResultType::Empty => None,
+        DBResultType::Strings(s) => {
             panic!("unexpected string: {:?}", s);
         }
         _ => panic!("unexpected type: {:?}", missing),
@@ -101,12 +103,12 @@ fn do_unmached_rows_format(missing: &DBResultTypes, operator: &str) -> Option<Ve
 
 #[derive(Debug)]
 struct RowSelector {
-    matches: (DBResultTypes, DBResultTypes),
-    missing: DBResultTypes,
-    extra: DBResultTypes,
+    matches: (DBResultType, DBResultType),
+    missing: DBResultType,
+    extra: DBResultType,
 }
-fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
-    if let (DBResultTypes::Map(tmp_a), DBResultTypes::Map(_tmp_b)) = (a, b) {
+fn only_matching_ids(a: &DBResultType, b: &DBResultType) -> RowSelector {
+    if let (DBResultType::JsonMaps(tmp_a), DBResultType::JsonMaps(_tmp_b)) = (a, b) {
         if let Some(first) = tmp_a.clone().first() {
             if first.contains_key("id") && first.get("id").unwrap().as_u64().is_some() {
                 return group_by_id(a, b);
@@ -115,12 +117,12 @@ fn only_matching_ids(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
     };
     RowSelector {
         matches: (a.clone(), b.clone()),
-        missing: DBResultTypes::Empty,
-        extra: DBResultTypes::Empty,
+        missing: DBResultType::Empty,
+        extra: DBResultType::Empty,
     }
 }
 
-fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
+fn group_by_id(a: &DBResultType, b: &DBResultType) -> RowSelector {
     let mut btree: BTreeMap<u64, JsonMap> =
         b.to_h().into_iter().fold(BTreeMap::new(), |mut acc, data| {
             acc.insert(data.get("id").unwrap().as_u64().unwrap(), data);
@@ -141,22 +143,22 @@ fn group_by_id(a: &DBResultTypes, b: &DBResultTypes) -> RowSelector {
     let extra = btree.into_values().collect::<Vec<JsonMap>>();
 
     RowSelector {
-        matches: (DBResultTypes::GroupedRows(acc), DBResultTypes::Empty),
+        matches: (DBResultType::GroupedRows(acc), DBResultType::Empty),
         missing: if missing.is_empty() {
-            DBResultTypes::Empty
+            DBResultType::Empty
         } else {
-            DBResultTypes::Map(missing)
+            DBResultType::JsonMaps(missing)
         },
         extra: if extra.is_empty() {
-            DBResultTypes::Empty
+            DBResultType::Empty
         } else {
-            DBResultTypes::Map(extra)
+            DBResultType::JsonMaps(extra)
         },
     }
 }
-fn normalize_input(list: &DBResultTypes) -> Result<String, serde_json::Error> {
+fn normalize_input(list: &DBResultType) -> Result<String, serde_json::Error> {
     let list: String = match list {
-        DBResultTypes::String(l) => {
+        DBResultType::Strings(l) => {
             if l.len() == 1 {
                 l[0].clone()
             } else {
@@ -239,8 +241,8 @@ mod test {
             missing,
             extra: _,
         } = only_matching_ids(
-            &DBResultTypes::Map(vec![a.clone(), b.clone(), c.clone()]),
-            &DBResultTypes::Map(vec![a.clone(), b, d]),
+            &DBResultType::JsonMaps(vec![a.clone(), b.clone(), c.clone()]),
+            &DBResultType::JsonMaps(vec![a.clone(), b, d]),
         );
         assert_eq!(result_a.to_gr()[0], (a.clone(), a));
         assert_eq!(result_b.to_h(), vec![]);
