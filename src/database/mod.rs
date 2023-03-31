@@ -2,7 +2,7 @@ use postgres::Error as PgError;
 mod repo;
 mod request;
 use chrono::prelude::*;
-pub use repo::{ping_db, AResult};
+pub use repo::{ping_db, updated_ids_after_cutoff, AResult};
 
 pub use request::{Request, RequestBuilder};
 use std::time::Instant;

@@ -32,7 +32,7 @@ pub struct Request {
     pub table: Option<String>,
     pub column: Option<String>,
     pub bounds: Option<(u32, u32)>,
-    pub until: chrono::NaiveDateTime,
+    pub tm_cutoff: chrono::NaiveDateTime,
 }
 
 #[derive(Default, Clone)]
@@ -41,7 +41,7 @@ pub struct RequestBuilder {
     table: Option<String>,
     column: Option<String>,
     bounds: Option<(u32, u32)>,
-    until: chrono::NaiveDateTime,
+    tm_cutoff: chrono::NaiveDateTime,
 }
 
 #[derive(Clone, Debug)]
@@ -90,8 +90,8 @@ impl RequestBuilder {
         self
     }
 
-    pub fn until(mut self, until: chrono::NaiveDateTime) -> Self {
-        self.until = until;
+    pub fn tm_cutoff(mut self, cutoff: chrono::NaiveDateTime) -> Self {
+        self.tm_cutoff = cutoff;
         self
     }
 
@@ -102,7 +102,7 @@ impl RequestBuilder {
             table: self.table.clone(),
             column: self.column.clone(),
             bounds: self.bounds,
-            until: self.until,
+            tm_cutoff: self.tm_cutoff,
         }
     }
     pub fn build_replica(&self) -> Request {
@@ -129,7 +129,7 @@ mod test {
             diff_format: None,
             tables: None,
             config: None,
-            rows_until: None,
+            tm_cutoff: None,
             jobs: None,
         }
     }
@@ -144,7 +144,7 @@ mod test {
             .table("table")
             .bounds((1, 2))
             .column("column")
-            .until(config.rows_until);
+            .tm_cutoff(config.tm_cutoff);
 
         assert_eq!(builder.bounds, Some((1, 2)));
         assert_eq!(builder.column, Some("column".to_string()));

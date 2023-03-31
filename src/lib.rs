@@ -100,9 +100,9 @@ pub struct Args {
     pub config: Option<String>,
     #[arg(
         long,
-        help = "check rows until this timestamp: example: `--rows_until $(date +%s)` defaults to now"
+        help = "check rows until this timestamp: example: `--tm_cutoff $(date +%s)` defaults to now"
     )]
-    pub rows_until: Option<i64>,
+    pub tm_cutoff: Option<i64>,
 }
 
 #[derive(Debug, Default)]
@@ -132,7 +132,7 @@ pub struct Config {
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
     pub all_columns_sample_size: Option<u32>,
-    pub rows_until: NaiveDateTime,
+    pub tm_cutoff: NaiveDateTime,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
@@ -217,7 +217,7 @@ impl Config {
             config_file.all_columns_sample_size
         };
 
-        let rows_until = if let Some(tm) = args.rows_until {
+        let tm_cutoff = if let Some(tm) = args.tm_cutoff {
             NaiveDateTime::from_timestamp_opt(tm, 0).unwrap()
         } else {
             NaiveDateTime::from_timestamp_opt(chrono::offset::Utc::now().timestamp(), 0).unwrap()
@@ -243,7 +243,7 @@ impl Config {
             limit,
             jobs,
             all_columns_sample_size,
-            rows_until,
+            tm_cutoff,
             tls: !args.no_tls,
         }
     }
@@ -351,7 +351,7 @@ mod test {
             jobs: None,
             tables: None,
             config: None,
-            rows_until: None,
+            tm_cutoff: None,
         }
     }
 

@@ -187,7 +187,7 @@ pub fn full_row_ordered_by_until(q: Request) -> AResult {
 
     let table = q.table.unwrap();
     let limit = q.config.limit;
-    let until = q.until;
+    let until = q.tm_cutoff;
     let until = until.format("%Y-%m-%d %H:%M:%S").to_string();
     let q = format!(
         "WITH
@@ -240,4 +240,15 @@ fn collect_records_with_rn(
         }
     }
     Ok(records)
+}
+
+pub fn updated_ids_after_cutoff(q: Request) -> AResult {
+    let mut client = connect(&q)?;
+    // let column = q.column.unwrap();
+    let table = q.table.unwrap();
+    let cutoff = q.tm_cutoff;
+    let cutoff = cutoff.format("%Y-%m-%d %H:%M:%S").to_string();
+    let query = format!("SELECT json_agg(id) FROM {table} WHERE updated_at > 'cutoff';");
+    let records = collect_records_with_rn(&query, &mut client)?;
+    Ok(DBResultTypes::Map(records))
 }

@@ -17,7 +17,7 @@ fn default_args() -> Args {
         tables: None,
         config: None,
         jobs: None,
-        rows_until: None,
+        tm_cutoff: None,
     }
 }
 fn default_config(jobs: Vec<Job>) -> Config {
