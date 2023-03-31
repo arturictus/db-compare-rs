@@ -1,7 +1,7 @@
 use super::par_run;
-use crate::database::{self, RequestBuilder};
+use crate::database::{self, DBResultTypes, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes};
+use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config);

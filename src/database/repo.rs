@@ -1,4 +1,4 @@
-use crate::{database::Request, DBResultTypes};
+use crate::database::{DBResultTypes, Request};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;

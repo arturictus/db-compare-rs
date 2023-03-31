@@ -1,5 +1,6 @@
-use crate::{Config, DBResultTypes, DBsResults, DiffFormat, JsonMap};
+use crate::{Config, DiffFormat};
 
+use crate::database::{DBResultTypes, DBsResults, JsonMap};
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
 pub type FmtOutput = (

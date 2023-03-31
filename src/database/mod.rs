@@ -7,7 +7,89 @@ pub use repo::{ping_db, updated_ids_after_cutoff, AResult};
 pub use request::{Request, RequestBuilder};
 use std::time::Instant;
 
-use crate::DBResultTypes;
+pub type JsonMap = serde_json::Map<String, serde_json::Value>;
+#[derive(Debug, Clone)]
+pub enum DBResultTypes {
+    String(Vec<String>),
+    Map(Vec<JsonMap>),
+    GroupedRows(Vec<(JsonMap, JsonMap)>),
+    Ids(Vec<u32>),
+    Empty,
+}
+
+impl DBResultTypes {
+    pub fn to_s(&self) -> Vec<String> {
+        match self {
+            Self::String(v) => v.clone(),
+            Self::Empty => vec![],
+            Self::GroupedRows(_) => panic!("not a string: {:?}", self),
+            _ => panic!("not a string: {:?}", self),
+        }
+    }
+    pub fn to_h(&self) -> Vec<JsonMap> {
+        match self {
+            Self::Map(v) => v.clone(),
+            Self::Empty => vec![],
+            Self::GroupedRows(_) => panic!("not a hash: {:?}", self),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn to_gr(&self) -> Vec<(JsonMap, JsonMap)> {
+        match self {
+            Self::GroupedRows(v) => v.clone(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Self::Empty => true,
+            Self::Map(e) => e.is_empty(),
+            Self::String(e) => e.is_empty(),
+            Self::GroupedRows(e) => e.is_empty(),
+            Self::Ids(e) => e.is_empty(),
+        }
+    }
+
+    pub fn exclude_ids(self, ids: &[u32]) -> Self {
+        match self {
+            Self::Map(e) => {
+                let new_data = e
+                    .into_iter()
+                    .filter(|e| !ids.contains(&e["id"].as_u64().unwrap().try_into().unwrap()))
+                    .collect();
+                Self::Map(new_data)
+            }
+            Self::GroupedRows(e) => {
+                let new_data = e
+                    .into_iter()
+                    .filter(|(a, _b)| !ids.contains(&a["id"].as_u64().unwrap().try_into().unwrap()))
+                    .collect();
+                Self::GroupedRows(new_data)
+            }
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+
+    pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
+        match self {
+            Self::Map(e) => e.iter(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn gr_into_iter(&self) -> impl Iterator<Item = &(JsonMap, JsonMap)> {
+        match self {
+            Self::GroupedRows(e) => e.iter(),
+            _ => panic!("not a Map: {:?}", self),
+        }
+    }
+    pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
+        match self {
+            Self::String(e) => e.iter(),
+            _ => panic!("not a String: {:?}", self),
+        }
+    }
+}
+pub type DBsResults = (String, DBResultTypes, DBResultTypes);
 
 pub fn get_sequences(r: Request) -> Result<Vec<(std::string::String, u32)>, PgError> {
     duration::<Vec<(String, u32)>>(

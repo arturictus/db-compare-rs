@@ -1,6 +1,6 @@
-use crate::database::{self, RequestBuilder};
+use crate::database::{self, DBResultTypes, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes};
+use crate::Config;
 
 use super::par_run;
 
