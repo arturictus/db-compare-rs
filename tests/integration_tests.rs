@@ -90,3 +90,9 @@ fn test_updated_ats_until_limit_5() {
 
     TestRunner::new(&config).run("updated_ats_until_limit_5");
 }
+#[test]
+fn test_all_columns_excluding_replica_updated_ats() {
+    let mut config = default_config(vec![Job::AllColumnsExcludingReplicaUpdatedAts]);
+
+    TestRunner::new(&config).run("all_columns_excluding_replica_updated_ats");
+}

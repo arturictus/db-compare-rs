@@ -36,6 +36,15 @@ pub fn compare_table_for_all_columns(
             .bounds((lower_bound, upper_bound));
 
         let (records1, records2) = par_run(builder, database::get_row_by_id_range)?;
+        let (records1, records2) = if excluding_ids.is_some() {
+            let excluding_ids = excluding_ids.as_ref().unwrap();
+            (
+                records1.exclude_ids(excluding_ids),
+                records2.exclude_ids(excluding_ids),
+            )
+        } else {
+            (records1, records2)
+        };
 
         let mut diff_io = config.diff_io.borrow_mut();
         diff_io.write(

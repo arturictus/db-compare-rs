@@ -18,6 +18,7 @@ pub enum DBResultTypes {
     String(Vec<String>),
     Map(Vec<JsonMap>),
     GroupedRows(Vec<(JsonMap, JsonMap)>),
+    Ids(Vec<u32>),
     Empty,
 }
 
@@ -50,6 +51,27 @@ impl DBResultTypes {
             Self::Map(e) => e.is_empty(),
             Self::String(e) => e.is_empty(),
             Self::GroupedRows(e) => e.is_empty(),
+            Self::Ids(e) => e.is_empty(),
+        }
+    }
+
+    pub fn exclude_ids(self, ids: &Vec<u32>) -> Self {
+        match self {
+            Self::Map(e) => {
+                let new_data = e
+                    .into_iter()
+                    .filter(|e| !ids.contains(&e["id"].as_u64().unwrap().try_into().unwrap()))
+                    .collect();
+                Self::Map(new_data)
+            }
+            Self::GroupedRows(e) => {
+                let new_data = e
+                    .into_iter()
+                    .filter(|(a, _b)| !ids.contains(&a["id"].as_u64().unwrap().try_into().unwrap()))
+                    .collect();
+                Self::GroupedRows(new_data)
+            }
+            _ => panic!("not a Map: {:?}", self),
         }
     }
 

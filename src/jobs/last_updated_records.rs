@@ -11,7 +11,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     diff_io.write(
         config,
         (
-            "========  Tables with `updated_at` column".to_string(),
+            "Tables with `updated_at` column".to_string(),
             db1_tables,
             db2_tables,
         ),
@@ -50,11 +50,7 @@ fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgre
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (
-            format!("====== `{table}` updated_at values"),
-            records1,
-            records2,
-        ),
+        (format!("`{table}` updated_at values"), records1, records2),
     );
     Ok(())
 }
@@ -65,7 +61,7 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (format!("====== `{table}` all columns"), records1, records2),
+        (format!("`{table}` all columns"), records1, records2),
     );
     Ok(())
 }

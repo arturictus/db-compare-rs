@@ -20,6 +20,7 @@ pub enum Job {
     AllColumns,
     Sequences,
     UpdatedAtsUntil,
+    AllColumnsExcludingReplicaUpdatedAts,
 }
 
 impl fmt::Display for Job {
@@ -40,6 +41,9 @@ impl FromStr for Job {
             "all_columns" => Ok(Job::AllColumns),
             "sequences" => Ok(Job::Sequences),
             "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
+            "all_columns_excluding_replica_updated_ats" => {
+                Ok(Job::AllColumnsExcludingReplicaUpdatedAts)
+            }
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -48,30 +52,34 @@ impl FromStr for Job {
 impl Job {
     fn run(&self, config: &Config) -> Result<(), Box<dyn error::Error>> {
         match self {
-            Job::Counters => {
+            Self::Counters => {
                 counter::run(config)?;
                 Ok(())
             }
-            Job::UpdatedAts => {
+            Self::UpdatedAts => {
                 last_updated_records::tables(config)?;
                 last_updated_records::all_columns(config)?;
                 Ok(())
             }
-            Job::CreatedAts => {
+            Self::CreatedAts => {
                 last_created_records::tables(config)?;
                 last_created_records::all_columns(config)?;
                 Ok(())
             }
-            Job::AllColumns => {
+            Self::AllColumns => {
                 all_columns::run(config)?;
                 Ok(())
             }
-            Job::Sequences => {
+            Self::Sequences => {
                 sequences::run(config)?;
                 Ok(())
             }
-            Job::UpdatedAtsUntil => {
+            Self::UpdatedAtsUntil => {
                 updated_ats_until::run(config)?;
+                Ok(())
+            }
+            Self::AllColumnsExcludingReplicaUpdatedAts => {
+                all_columns_excluding_ids::run(config)?;
                 Ok(())
             }
         }

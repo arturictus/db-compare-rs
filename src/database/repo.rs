@@ -244,11 +244,19 @@ fn collect_records_with_rn(
 
 pub fn updated_ids_after_cutoff(q: Request) -> AResult {
     let mut client = connect(&q)?;
-    // let column = q.column.unwrap();
     let table = q.table.unwrap();
     let cutoff = q.tm_cutoff;
     let cutoff = cutoff.format("%Y-%m-%d %H:%M:%S").to_string();
-    let query = format!("SELECT json_agg(id) FROM {table} WHERE updated_at > 'cutoff';");
-    let records = collect_records_with_rn(&query, &mut client)?;
-    Ok(DBResultTypes::Map(records))
+    let query = format!("SELECT json_agg(id) FROM {table} WHERE updated_at > '{cutoff}';");
+    let rows = client.simple_query(&query)?;
+
+    let mut records = Vec::new();
+
+    for data in rows {
+        if let SimpleQueryMessage::Row(result) = data {
+            records.push(result.get(0).unwrap_or("0").parse::<u32>().unwrap());
+        }
+    }
+
+    Ok(DBResultTypes::Ids(records))
 }
