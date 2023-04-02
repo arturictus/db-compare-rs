@@ -2,20 +2,12 @@
 
 Command line tool to compare two postgres databases.
 
-Usefull to verify when migrating databases.
+Useful to verify when migrating databases.
 
 ## Installation
 
-- install [eget](https://github.com/zyedidia/eget)
-
-**run:**
-
-```sh
-
-eget --sha256 arturictus/db-compare-rs
-=> sha256output
-
-eget --verify-sha256=sha256output arturictus/db-compare-rs
+```shell
+cargo install --git "https://github.com/arturictus/db-compare-rs"
 ```
 
 ## Usage
@@ -29,6 +21,50 @@ Run `--help` for more information
 ```sh
 db-compare --help
 ```
+
+### Jobs
+
+- **by_id_excluding_replica_updated_ats** [default Job]
+
+  1. Gets replica `updated_at` `id` after cutoff.
+  2. Gets max number `id` from the master.
+  3. Compares rows by id excluding ids in the cutoff updated at the list.
+  4. Stops if `by-id-sample-size` arg is reached.
+
+- **by_id**
+
+  1. Gets max number `id` from the master.
+  2. Compares rows by id excluding ids in the cutoff updated at the list.
+  3. Stops if `by-id-sample-size` arg is reached.
+
+- **counters**
+
+  Compares the `count` of each table between databases.
+
+- **sequences**
+
+  Compares the `sequences` of each table between databases.
+
+- **last_updated_ats:**
+
+  Compares last updated ats rows until the `limit` arg is reached
+
+  _it tries to compare grouping by id if the table has the id column_
+
+- **last_created_ats:**
+
+  Compares last created ats rows until the `limit` arg is reached
+
+  _it tries to compare grouping by id if the table has the id column._
+
+### Output
+
+Markers:
+
+- `-`: Exists in Master but not in Replica.
+- `+`: Exists in Replica but not in Master.
+- `>`: Exists in both but with differences.
+- `@@ ... @@`: Comments, helpful to split into different files or the see context of the query.
 
 ### Config File
 
@@ -49,15 +85,16 @@ jobs:
   - counters
   - last_updated_ats
   - last_created_ats
-  - all_columns
+  - by_id
   - sequences
   - updated_ats_until
+  - by_id_excluding_replica_updated_ats # default: no need to pass jobs if only running this job
 limit: 100
 diff-file: ./diff_from_testing.diff
-by-id-sample-size: 10000
+by-id-sample-size: 10000 # If wanting to test all rows, remove this config
 ```
 
-Most of the configs can be overriden by command params.
+Most of the configs can be overridden by command parameters.
 
 ```sh
 db-compare --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100 --diff-file ./tmp/another_replica.diff
