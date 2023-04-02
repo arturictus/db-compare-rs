@@ -24,7 +24,9 @@ db-compare --help
 
 ### Jobs
 
-- **by_id_excluding_replica_updated_ats** [default Job]
+- **by_id_excluding_replica_updated_ats** [default if no job list is supplied]
+
+  _it tries to compare grouping by id if the table has the id column_
 
   1. Gets replica `updated_at` `id` after cutoff.
   2. Gets max number `id` from the master.
@@ -32,6 +34,8 @@ db-compare --help
   4. Stops if `by-id-sample-size` arg is reached.
 
 - **by_id**
+
+  _it tries to compare grouping by id if the table has the id column_
 
   1. Gets max number `id` from the master.
   2. Compares rows by id excluding ids in the cutoff updated at the list.
@@ -47,15 +51,15 @@ db-compare --help
 
 - **last_updated_ats:**
 
-  Compares last updated ats rows until the `limit` arg is reached
-
   _it tries to compare grouping by id if the table has the id column_
+
+  Compares last updated ats rows until the `limit` arg is reached
 
 - **last_created_ats:**
 
-  Compares last created ats rows until the `limit` arg is reached
-
   _it tries to compare grouping by id if the table has the id column._
+
+  Compares last created ats rows until the `limit` arg is reached
 
 ### Output
 
@@ -68,27 +72,28 @@ Markers:
 
 ### Config File
 
-You can pass all the arguments in a yaml file for convenience.
+You can pass all the arguments in a `yaml` file for convenience.
+
+**IMPORTANT:** Command params take precedence over this configuration.
 
 ```sh
 db-compare --config ./config.yml
 ```
 
-_./config.yml_
-
 ```yaml
+# ./config.yml
 db1: "postgresql://postgres:postgres@127.0.0.1/db1"
 db2: "postgresql://postgres:postgres@127.0.0.1/db2"
 tables:
   - testing_tables
 jobs:
+  - by_id_excluding_replica_updated_ats # default: no need to pass jobs list if only running this job
   - counters
   - last_updated_ats
   - last_created_ats
   - by_id
   - sequences
   - updated_ats_until
-  - by_id_excluding_replica_updated_ats # default: no need to pass jobs if only running this job
 limit: 100
 diff-file: ./diff_from_testing.diff
 by-id-sample-size: 10000 # If wanting to test all rows, remove this config
