@@ -1,5 +1,5 @@
-mod all_columns;
-mod all_columns_excluding_ids;
+mod by_id;
+mod by_id_excluding_replica_updated_ats;
 mod counter;
 mod last_created_records;
 mod last_updated_records;
@@ -41,7 +41,7 @@ impl FromStr for Job {
             "by_id" => Ok(Job::ByID),
             "sequences" => Ok(Job::Sequences),
             "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
-            "all_columns_excluding_replica_updated_ats" => Ok(Job::ByIDExcludingReplicaUpdatedAts),
+            "by_id_excluding_replica_updated_ats" => Ok(Job::ByIDExcludingReplicaUpdatedAts),
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -65,7 +65,7 @@ impl Job {
                 Ok(())
             }
             Self::ByID => {
-                all_columns::run(config)?;
+                by_id::run(config)?;
                 Ok(())
             }
             Self::Sequences => {
@@ -77,7 +77,7 @@ impl Job {
                 Ok(())
             }
             Self::ByIDExcludingReplicaUpdatedAts => {
-                all_columns_excluding_ids::run(config)?;
+                by_id_excluding_replica_updated_ats::run(config)?;
                 Ok(())
             }
         }
