@@ -1,5 +1,6 @@
+use crate::database::DBsResults;
 use crate::diff::formatter::{self, FmtOutput};
-use crate::{Args, Config, DBsResults};
+use crate::{Args, Config};
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::LineWriter;

@@ -142,8 +142,8 @@ impl TestRunner {
                 limit: config.limit,
                 white_listed_tables: config.white_listed_tables.clone(),
                 jobs: config.jobs.clone(),
-                all_columns_sample_size: config.all_columns_sample_size,
-                rows_until: config.rows_until,
+                by_id_sample_size: config.by_id_sample_size,
+                tm_cutoff: config.tm_cutoff,
                 ..Config::default()
             },
             regenerate_fixture: false,
@@ -172,7 +172,7 @@ impl TestRunner {
         let (msgs, _) = generate_msgs(20);
         seed_test_data(Some(&users), Some(&msgs));
 
-        self.config.rows_until = updated_at.add(Days::new(10));
+        self.config.tm_cutoff = updated_at.add(Days::new(10));
 
         db_compare::run(&self.config).unwrap();
 

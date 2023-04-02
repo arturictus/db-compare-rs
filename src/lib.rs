@@ -12,67 +12,6 @@ mod jobs;
 use itertools::Itertools;
 pub use jobs::Job;
 
-type JsonMap = serde_json::Map<String, serde_json::Value>;
-#[derive(Debug, Clone)]
-pub enum DBResultTypes {
-    String(Vec<String>),
-    Map(Vec<JsonMap>),
-    GroupedRows(Vec<(JsonMap, JsonMap)>),
-    Empty,
-}
-
-impl DBResultTypes {
-    pub fn to_s(&self) -> Vec<String> {
-        match self {
-            Self::String(v) => v.clone(),
-            Self::Empty => vec![],
-            Self::GroupedRows(_) => panic!("not a string: {:?}", self),
-            _ => panic!("not a string: {:?}", self),
-        }
-    }
-    pub fn to_h(&self) -> Vec<JsonMap> {
-        match self {
-            Self::Map(v) => v.clone(),
-            Self::Empty => vec![],
-            Self::GroupedRows(_) => panic!("not a hash: {:?}", self),
-            _ => panic!("not a Map: {:?}", self),
-        }
-    }
-    pub fn to_gr(&self) -> Vec<(JsonMap, JsonMap)> {
-        match self {
-            Self::GroupedRows(v) => v.clone(),
-            _ => panic!("not a Map: {:?}", self),
-        }
-    }
-    pub fn is_empty(&self) -> bool {
-        match self {
-            Self::Empty => true,
-            Self::Map(e) => e.is_empty(),
-            Self::String(e) => e.is_empty(),
-            Self::GroupedRows(e) => e.is_empty(),
-        }
-    }
-
-    pub fn m_into_iter(&self) -> impl Iterator<Item = &JsonMap> {
-        match self {
-            Self::Map(e) => e.iter(),
-            _ => panic!("not a Map: {:?}", self),
-        }
-    }
-    pub fn gr_into_iter(&self) -> impl Iterator<Item = &(JsonMap, JsonMap)> {
-        match self {
-            Self::GroupedRows(e) => e.iter(),
-            _ => panic!("not a Map: {:?}", self),
-        }
-    }
-    pub fn s_into_iter(&self) -> impl Iterator<Item = &String> {
-        match self {
-            Self::String(e) => e.iter(),
-            _ => panic!("not a String: {:?}", self),
-        }
-    }
-}
-type DBsResults = (String, DBResultTypes, DBResultTypes);
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Parser, Debug, PartialEq)]
@@ -82,27 +21,33 @@ pub struct Args {
     pub db1: Option<String>,
     #[arg(long)]
     pub db2: Option<String>,
-    #[arg(long, default_value_t = DEFAULT_LIMIT)]
+    #[arg(long, default_value_t = DEFAULT_LIMIT, help = "Queries limit, default: 100")]
     pub limit: u32,
-    #[arg(long = "all-columns-sample-size")]
-    pub all_columns_sample_size: Option<u32>,
+    #[arg(
+        long = "by-id-sample-size",
+        help = "Max rows to compare for `by_id` and `by_id_excluding_replica_updated_ats` job"
+    )]
+    pub by_id_sample_size: Option<u32>,
     #[arg(long = "no-tls")]
     pub no_tls: bool,
     #[arg(long = "diff-file")]
     pub diff_file: Option<String>,
-    #[arg(long = "diff-format", help = "`simple` or `char`")]
+    #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
     pub diff_format: Option<String>,
-    #[arg(long = "tables", help = "comma separated list of tables to check")]
+    #[arg(long = "tables", help = "Comma separated list of tables to check")]
     pub tables: Option<String>,
-    #[arg(long = "jobs", help = "comma separated list jobs to run")]
+    #[arg(
+        long = "jobs",
+        help = "Comma separated job list to run, default: `by_id_excluding_replica_updated_ats`, options: `counters, updated_ats, created_ats, by_id, by_id_excluding_replica_updated_ats`"
+    )]
     pub jobs: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
     pub config: Option<String>,
     #[arg(
         long,
-        help = "check rows until this timestamp: example: `--rows_until $(date +%s)` defaults to now"
+        help = "Check rows until this timestamp: example: `--tm_cutoff $(date +%s)`, defaults to now. Affects jobs: `updated_ats`, 'created_ats' and `by_id_excluding_replica_updated_ats`"
     )]
-    pub rows_until: Option<i64>,
+    pub tm_cutoff: Option<i64>,
 }
 
 #[derive(Debug, Default)]
@@ -131,8 +76,8 @@ pub struct Config {
     pub diff_format: DiffFormat,
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
-    pub all_columns_sample_size: Option<u32>,
-    pub rows_until: NaiveDateTime,
+    pub by_id_sample_size: Option<u32>,
+    pub tm_cutoff: NaiveDateTime,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
@@ -211,13 +156,13 @@ impl Config {
             }
         };
 
-        let all_columns_sample_size = if args.all_columns_sample_size.is_some() {
-            args.all_columns_sample_size
+        let by_id_sample_size = if args.by_id_sample_size.is_some() {
+            args.by_id_sample_size
         } else {
-            config_file.all_columns_sample_size
+            config_file.by_id_sample_size
         };
 
-        let rows_until = if let Some(tm) = args.rows_until {
+        let tm_cutoff = if let Some(tm) = args.tm_cutoff {
             NaiveDateTime::from_timestamp_opt(tm, 0).unwrap()
         } else {
             NaiveDateTime::from_timestamp_opt(chrono::offset::Utc::now().timestamp(), 0).unwrap()
@@ -231,7 +176,7 @@ impl Config {
         } else if let Some(jobs) = config_file.jobs {
             jobs
         } else {
-            Job::all()
+            Job::default_list()
         };
 
         Self {
@@ -242,8 +187,8 @@ impl Config {
             white_listed_tables,
             limit,
             jobs,
-            all_columns_sample_size,
-            rows_until,
+            by_id_sample_size,
+            tm_cutoff,
             tls: !args.no_tls,
         }
     }
@@ -257,7 +202,7 @@ struct ConfigFile {
     diff_file: Option<String>,
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<Job>>,
-    all_columns_sample_size: Option<u32>,
+    by_id_sample_size: Option<u32>,
     diff_format: Option<String>,
 }
 
@@ -309,7 +254,7 @@ impl ConfigFile {
                     .collect(), // .collect::<Job>(),
             ),
         };
-        let all_columns_sample_size: Option<u32> = match &yaml[0]["all-columns-sample-size"] {
+        let by_id_sample_size: Option<u32> = match &yaml[0]["by-id-sample-size"] {
             yaml_rust::Yaml::BadValue => None,
             data => Some(data.as_i64().unwrap().try_into().unwrap()),
         };
@@ -330,7 +275,7 @@ impl ConfigFile {
             diff_format,
             white_listed_tables,
             jobs,
-            all_columns_sample_size,
+            by_id_sample_size,
         }
     }
 }
@@ -345,13 +290,13 @@ mod test {
             db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
             limit: 1,
             no_tls: false,
-            all_columns_sample_size: None,
+            by_id_sample_size: None,
             diff_file: None,
             diff_format: None,
             jobs: None,
             tables: None,
             config: None,
-            rows_until: None,
+            tm_cutoff: None,
         }
     }
 

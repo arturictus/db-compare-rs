@@ -1,4 +1,5 @@
-mod all_columns;
+mod by_id;
+mod by_id_excluding_replica_updated_ats;
 mod counter;
 mod last_created_records;
 mod last_updated_records;
@@ -16,9 +17,10 @@ pub enum Job {
     Counters,
     UpdatedAts,
     CreatedAts,
-    AllColumns,
+    ByID,
     Sequences,
     UpdatedAtsUntil,
+    ByIDExcludingReplicaUpdatedAts,
 }
 
 impl fmt::Display for Job {
@@ -36,9 +38,10 @@ impl FromStr for Job {
             "last_updated_ats" => Ok(Job::UpdatedAts),
             "created_ats" => Ok(Job::CreatedAts),
             "last_created_ats" => Ok(Job::CreatedAts),
-            "all_columns" => Ok(Job::AllColumns),
+            "by_id" => Ok(Job::ByID),
             "sequences" => Ok(Job::Sequences),
             "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
+            "by_id_excluding_replica_updated_ats" => Ok(Job::ByIDExcludingReplicaUpdatedAts),
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -47,42 +50,50 @@ impl FromStr for Job {
 impl Job {
     fn run(&self, config: &Config) -> Result<(), Box<dyn error::Error>> {
         match self {
-            Job::Counters => {
+            Self::Counters => {
                 counter::run(config)?;
                 Ok(())
             }
-            Job::UpdatedAts => {
+            Self::UpdatedAts => {
                 last_updated_records::tables(config)?;
                 last_updated_records::all_columns(config)?;
                 Ok(())
             }
-            Job::CreatedAts => {
+            Self::CreatedAts => {
                 last_created_records::tables(config)?;
                 last_created_records::all_columns(config)?;
                 Ok(())
             }
-            Job::AllColumns => {
-                all_columns::run(config)?;
+            Self::ByID => {
+                by_id::run(config)?;
                 Ok(())
             }
-            Job::Sequences => {
+            Self::Sequences => {
                 sequences::run(config)?;
                 Ok(())
             }
-            Job::UpdatedAtsUntil => {
+            Self::UpdatedAtsUntil => {
                 updated_ats_until::run(config)?;
+                Ok(())
+            }
+            Self::ByIDExcludingReplicaUpdatedAts => {
+                by_id_excluding_replica_updated_ats::run(config)?;
                 Ok(())
             }
         }
     }
 
-    pub fn all() -> Vec<Job> {
+    pub fn default_list() -> Vec<Self> {
+        vec![Self::ByIDExcludingReplicaUpdatedAts]
+    }
+
+    pub fn all() -> Vec<Self> {
         vec![
-            Job::Counters,
-            Job::UpdatedAts,
-            Job::CreatedAts,
-            Job::AllColumns,
-            Job::Sequences,
+            Self::Counters,
+            Self::UpdatedAts,
+            Self::CreatedAts,
+            Self::ByID,
+            Self::Sequences,
         ]
     }
 }

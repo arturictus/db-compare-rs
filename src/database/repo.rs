@@ -1,10 +1,10 @@
-use crate::{database::Request, DBResultTypes};
+use crate::database::{DBResultType, Request};
 use openssl::ssl::{SslConnector, SslMethod, SslVerifyMode};
 use postgres::{Client, Error as PgError, NoTls, SimpleQueryMessage};
 use postgres_openssl::MakeTlsConnector;
 use serde_json::Value;
 
-pub type AResult = Result<DBResultTypes, PgError>;
+pub type RepoResult = Result<DBResultType, PgError>;
 pub fn get_sequences(q: Request) -> Result<Vec<(String, u32)>, PgError> {
     let mut client = connect(&q)?;
     let mut records: Vec<(String, u32)> = Vec::new();
@@ -36,7 +36,7 @@ pub fn get_greatest_id_from(q: Request) -> Result<u32, PgError> {
     }
     Ok(output)
 }
-pub fn get_row_by_id_range(q: Request) -> AResult {
+pub fn get_row_by_id_range(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let column = "id".to_string();
     let limit = q.config.limit;
@@ -61,7 +61,7 @@ pub fn get_row_by_id_range(q: Request) -> AResult {
     );
 
     let records = collect_records_with_rn(&query, &mut client)?;
-    Ok(DBResultTypes::Map(records))
+    Ok(DBResultType::JsonMaps(records))
 }
 
 pub fn count_for(query: Request) -> Result<u32, PgError> {
@@ -91,7 +91,7 @@ fn connect(query: &Request) -> Result<Client, PgError> {
     }
 }
 
-pub fn all_tables(q: Request) -> AResult {
+pub fn all_tables(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let mut tables = Vec::new();
     for row in client.query("SELECT table_name FROM information_schema.tables;", &[])? {
@@ -100,10 +100,10 @@ pub fn all_tables(q: Request) -> AResult {
     }
     tables = white_listed_tables(q, tables);
     tables.sort();
-    Ok(DBResultTypes::String(tables))
+    Ok(DBResultType::Strings(tables))
 }
 
-pub fn tables_with_column(q: Request) -> AResult {
+pub fn tables_with_column(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let mut tables: Vec<String> = Vec::new();
     let column = q.column.as_ref().unwrap();
@@ -121,10 +121,10 @@ pub fn tables_with_column(q: Request) -> AResult {
         let data: Option<String> = row.get(0);
         tables.push(data.unwrap())
     }
-    Ok(DBResultTypes::String(white_listed_tables(q, tables)))
+    Ok(DBResultType::Strings(white_listed_tables(q, tables)))
 }
 
-pub fn id_and_column_value(q: Request) -> AResult {
+pub fn id_and_column_value(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
@@ -143,7 +143,7 @@ pub fn id_and_column_value(q: Request) -> AResult {
             }
         }
     }
-    Ok(DBResultTypes::String(records))
+    Ok(DBResultType::Strings(records))
 }
 
 fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
@@ -157,7 +157,7 @@ fn white_listed_tables(q: Request, tables: Vec<String>) -> Vec<String> {
     }
 }
 
-pub fn full_row_ordered_by(q: Request) -> AResult {
+pub fn full_row_ordered_by(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
     let table = q.table.unwrap();
@@ -179,15 +179,15 @@ pub fn full_row_ordered_by(q: Request) -> AResult {
     );
     let records = collect_records_with_rn(&query, &mut client)?;
 
-    Ok(DBResultTypes::Map(records))
+    Ok(DBResultType::JsonMaps(records))
 }
-pub fn full_row_ordered_by_until(q: Request) -> AResult {
+pub fn full_row_ordered_by_until(q: Request) -> RepoResult {
     let mut client = connect(&q)?;
     let column = q.column.unwrap();
 
     let table = q.table.unwrap();
     let limit = q.config.limit;
-    let until = q.until;
+    let until = q.tm_cutoff;
     let until = until.format("%Y-%m-%d %H:%M:%S").to_string();
     let q = format!(
         "WITH
@@ -207,7 +207,7 @@ pub fn full_row_ordered_by_until(q: Request) -> AResult {
         cte;"
     );
     let records = collect_records_with_rn(&q, &mut client)?;
-    Ok(DBResultTypes::Map(records))
+    Ok(DBResultType::JsonMaps(records))
 }
 
 pub fn ping_db(q: Request) -> Result<(), PgError> {
@@ -240,4 +240,23 @@ fn collect_records_with_rn(
         }
     }
     Ok(records)
+}
+
+pub fn updated_ids_after_cutoff(q: Request) -> RepoResult {
+    let mut client = connect(&q)?;
+    let table = q.table.unwrap();
+    let cutoff = q.tm_cutoff;
+    let cutoff = cutoff.format("%Y-%m-%d %H:%M:%S").to_string();
+    let query = format!("SELECT json_agg(id) FROM {table} WHERE updated_at > '{cutoff}';");
+    let rows = client.simple_query(&query)?;
+
+    let mut records = Vec::new();
+
+    for data in rows {
+        if let SimpleQueryMessage::Row(result) = data {
+            records.push(result.get(0).unwrap_or("0").parse::<u32>().unwrap());
+        }
+    }
+
+    Ok(DBResultType::Ids(records))
 }

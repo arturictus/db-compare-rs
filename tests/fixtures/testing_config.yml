@@ -6,8 +6,8 @@ jobs:
   - counters
   - last_updated_ats
   - last_created_ats
-  - all_columns
+  - by_id
   - sequences
 limit: 999
 diff-file: ./tmp/diff_from_testing.diff
-all-columns-sample-size: 10000
+by-id-sample-size: 10000

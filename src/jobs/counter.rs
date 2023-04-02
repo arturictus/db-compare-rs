@@ -1,8 +1,7 @@
 use super::par_run;
-use crate::database::RequestBuilder;
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
-use crate::{database, DBResultTypes};
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let tables = database::all_tables(RequestBuilder::new(config).build_master())?.to_s();
@@ -14,9 +13,9 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
         diff_io.write(
             config,
             (
-                format!("== `{table}` count"),
-                DBResultTypes::String(vec![format!("{}", result1)]),
-                DBResultTypes::String(vec![format!("{}", result2)]),
+                format!("`{table}` count"),
+                DBResultType::Strings(vec![format!("{}", result1)]),
+                DBResultType::Strings(vec![format!("{}", result2)]),
             ),
         );
     }

@@ -2,7 +2,7 @@ use crate::database::{self, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
-use super::par_run;
+use super::{par_run, utils::echo};
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config).column(column());
@@ -11,7 +11,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     diff_io.write(
         config,
         (
-            "========  Tables with `updated_at` column".to_string(),
+            "Tables with `updated_at` column".to_string(),
             db1_tables,
             db2_tables,
         ),
@@ -33,7 +33,15 @@ pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {
+        echo(
+            config,
+            &format!("#start# Job: `last_updated_ats` Table: `{table}`"),
+        );
         compare_rows(config, &table)?;
+        echo(
+            config,
+            &format!("Job: `last_updated_ats` Table: `{table}` #end#"),
+        );
     }
     Ok(())
 }
@@ -50,11 +58,7 @@ fn compare_table_updated_ats(config: &Config, table: &str) -> Result<(), postgre
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (
-            format!("====== `{table}` updated_at values"),
-            records1,
-            records2,
-        ),
+        (format!("`{table}` updated_at values"), records1, records2),
     );
     Ok(())
 }
@@ -65,7 +69,7 @@ fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let mut diff_io = config.diff_io.borrow_mut();
     diff_io.write(
         config,
-        (format!("====== `{table}` all columns"), records1, records2),
+        (format!("`{table}` all columns"), records1, records2),
     );
     Ok(())
 }

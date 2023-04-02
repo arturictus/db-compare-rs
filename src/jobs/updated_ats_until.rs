@@ -1,16 +1,24 @@
 use chrono::NaiveDateTime;
 
-use crate::database::{self, RequestBuilder};
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
-use crate::{Config, DBResultTypes};
+use crate::Config;
 
-use super::par_run;
+use super::{par_run, utils::echo};
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {
+        echo(
+            config,
+            &format!("#start# Job: `updated_ats_until` Table: `{table}`"),
+        );
         compare_table(config, &table)?;
+        echo(
+            config,
+            &format!("Job: `updated_ats_until` Table: `{table}` #end#"),
+        );
     }
     Ok(())
 }
@@ -23,10 +31,10 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config)
         .table(table)
         .column(column())
-        .until(config.rows_until);
-    let mut last_date_time: Option<NaiveDateTime> = Some(config.rows_until);
+        .tm_cutoff(config.tm_cutoff);
+    let mut last_date_time: Option<NaiveDateTime> = Some(config.tm_cutoff);
     while last_date_time.is_some() {
-        let builder = builder.clone().until(last_date_time.unwrap());
+        let builder = builder.clone().tm_cutoff(last_date_time.unwrap());
         let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
 
         let mut diff_io = config.diff_io.borrow_mut();
@@ -44,7 +52,7 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
 }
 
 fn get_last_date_time(
-    records: &DBResultTypes,
+    records: &DBResultType,
     prev: Option<NaiveDateTime>,
 ) -> Option<NaiveDateTime> {
     let records = records.to_h();
