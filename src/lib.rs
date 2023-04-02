@@ -29,17 +29,20 @@ pub struct Args {
     pub no_tls: bool,
     #[arg(long = "diff-file")]
     pub diff_file: Option<String>,
-    #[arg(long = "diff-format", help = "`simple` or `char`")]
+    #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
     pub diff_format: Option<String>,
-    #[arg(long = "tables", help = "comma separated list of tables to check")]
+    #[arg(long = "tables", help = "Comma separated list of tables to check")]
     pub tables: Option<String>,
-    #[arg(long = "jobs", help = "comma separated list jobs to run")]
+    #[arg(
+        long = "jobs",
+        help = "Comma separated jobs list to run, default: `by_id_excluding_replica_updated_ats`, options: `counters, updated_ats, created_ats, by_id, by_id_excluding_replica_updated_ats`"
+    )]
     pub jobs: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
     pub config: Option<String>,
     #[arg(
         long,
-        help = "check rows until this timestamp: example: `--tm_cutoff $(date +%s)` defaults to now"
+        help = "check rows until this timestamp: example: `--tm_cutoff $(date +%s)`, defaults to now"
     )]
     pub tm_cutoff: Option<i64>,
 }
@@ -170,7 +173,7 @@ impl Config {
         } else if let Some(jobs) = config_file.jobs {
             jobs
         } else {
-            Job::all()
+            Job::default()
         };
 
         Self {

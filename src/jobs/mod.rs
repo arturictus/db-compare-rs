@@ -83,13 +83,17 @@ impl Job {
         }
     }
 
-    pub fn all() -> Vec<Job> {
+    pub fn default() -> Vec<Self> {
+        vec![Self::ByIDExcludingReplicaUpdatedAts]
+    }
+
+    pub fn all() -> Vec<Self> {
         vec![
-            Job::Counters,
-            Job::UpdatedAts,
-            Job::CreatedAts,
-            Job::ByID,
-            Job::Sequences,
+            Self::Counters,
+            Self::UpdatedAts,
+            Self::CreatedAts,
+            Self::ByID,
+            Self::Sequences,
         ]
     }
 }
