@@ -38,7 +38,7 @@ db-compare --help
   _it tries to compare grouping by id if the table has the id column_
 
   1. Gets max number `id` from the master.
-  2. Compares rows by id excluding ids in the cutoff updated at the list.
+  2. Compares rows grouped by id.
   3. Stops if `by-id-sample-size` arg is reached.
 
 - **counters**
