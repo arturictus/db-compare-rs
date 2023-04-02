@@ -48,14 +48,14 @@ fn test_created_ats() {
 
 #[test]
 fn test_all_columns() {
-    let config = default_config(vec![Job::AllColumns]);
+    let config = default_config(vec![Job::ByID]);
 
     TestRunner::new(&config).run("all columns");
 }
 
 #[test]
 fn test_all_columns_limit_5() {
-    let mut config = default_config(vec![Job::AllColumns]);
+    let mut config = default_config(vec![Job::ByID]);
     config.limit = 5;
     TestRunner::new(&config).run("all columns limit 5");
 }
@@ -92,7 +92,7 @@ fn test_updated_ats_until_limit_5() {
 }
 #[test]
 fn test_all_columns_excluding_replica_updated_ats() {
-    let config = default_config(vec![Job::AllColumnsExcludingReplicaUpdatedAts]);
+    let config = default_config(vec![Job::ByIDExcludingReplicaUpdatedAts]);
 
     TestRunner::new(&config).run("all_columns_excluding_replica_updated_ats");
 }

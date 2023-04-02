@@ -17,10 +17,10 @@ pub enum Job {
     Counters,
     UpdatedAts,
     CreatedAts,
-    AllColumns,
+    ByID,
     Sequences,
     UpdatedAtsUntil,
-    AllColumnsExcludingReplicaUpdatedAts,
+    ByIDExcludingReplicaUpdatedAts,
 }
 
 impl fmt::Display for Job {
@@ -38,12 +38,10 @@ impl FromStr for Job {
             "last_updated_ats" => Ok(Job::UpdatedAts),
             "created_ats" => Ok(Job::CreatedAts),
             "last_created_ats" => Ok(Job::CreatedAts),
-            "all_columns" => Ok(Job::AllColumns),
+            "by_id" => Ok(Job::ByID),
             "sequences" => Ok(Job::Sequences),
             "updated_ats_until" => Ok(Job::UpdatedAtsUntil),
-            "all_columns_excluding_replica_updated_ats" => {
-                Ok(Job::AllColumnsExcludingReplicaUpdatedAts)
-            }
+            "all_columns_excluding_replica_updated_ats" => Ok(Job::ByIDExcludingReplicaUpdatedAts),
             _ => Err(anyhow::anyhow!("Unknown job: {}", s)),
         }
     }
@@ -66,7 +64,7 @@ impl Job {
                 last_created_records::all_columns(config)?;
                 Ok(())
             }
-            Self::AllColumns => {
+            Self::ByID => {
                 all_columns::run(config)?;
                 Ok(())
             }
@@ -78,7 +76,7 @@ impl Job {
                 updated_ats_until::run(config)?;
                 Ok(())
             }
-            Self::AllColumnsExcludingReplicaUpdatedAts => {
+            Self::ByIDExcludingReplicaUpdatedAts => {
                 all_columns_excluding_ids::run(config)?;
                 Ok(())
             }
@@ -90,7 +88,7 @@ impl Job {
             Job::Counters,
             Job::UpdatedAts,
             Job::CreatedAts,
-            Job::AllColumns,
+            Job::ByID,
             Job::Sequences,
         ]
     }
