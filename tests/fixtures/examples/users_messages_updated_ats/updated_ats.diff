@@ -1,8 +1,8 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
 @@ Tables with `updated_at` column @@
-@@ #start# Job: last_updated_ats Table: `users` @@
+@@ #start# Job: `last_updated_ats` Table: `users` @@
 @@ `users` all columns @@
 - {"created_at":"2020-05-06T06:52:24","id":21,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T06:52:24"}
 + {"created_at":"2020-05-06T08:52:24","id":22,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T08:52:24"}
-@@ Job: last_updated_ats Table: `users` #end# @@
+@@ Job: `last_updated_ats` Table: `users` #end# @@

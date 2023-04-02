@@ -16,13 +16,13 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
     for table in tables {
         echo(
             config,
-            &format!("#start# Job: all_columns_excluding_replica_updated_ats Table: `{table}`"),
+            &format!("#start# Job: `by_id_excluding_replica_updated_ats` Table: `{table}`"),
         );
         let ids = updated_ids_after_cutoff(config, &table)?;
         compare_table_for_all_columns(config, &table, Some(ids))?;
         echo(
             config,
-            &format!("Job: all_columns_excluding_replica_updated_ats Table: `{table}` #end#"),
+            &format!("Job: `by_id_excluding_replica_updated_ats` Table: `{table}` #end#"),
         );
     }
     Ok(())

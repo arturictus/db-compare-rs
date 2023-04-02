@@ -176,7 +176,7 @@ impl Config {
         } else if let Some(jobs) = config_file.jobs {
             jobs
         } else {
-            Job::default()
+            Job::default_list()
         };
 
         Self {

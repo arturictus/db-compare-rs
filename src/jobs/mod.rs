@@ -83,7 +83,7 @@ impl Job {
         }
     }
 
-    pub fn default() -> Vec<Self> {
+    pub fn default_list() -> Vec<Self> {
         vec![Self::ByIDExcludingReplicaUpdatedAts]
     }
 

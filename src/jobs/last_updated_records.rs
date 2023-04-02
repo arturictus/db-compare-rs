@@ -35,12 +35,12 @@ pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     for table in db1_tables {
         echo(
             config,
-            &format!("#start# Job: last_updated_ats Table: `{table}`"),
+            &format!("#start# Job: `last_updated_ats` Table: `{table}`"),
         );
         compare_rows(config, &table)?;
         echo(
             config,
-            &format!("Job: last_updated_ats Table: `{table}` #end#"),
+            &format!("Job: `last_updated_ats` Table: `{table}` #end#"),
         );
     }
     Ok(())

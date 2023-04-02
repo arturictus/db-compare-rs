@@ -1,6 +1,6 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
-@@ #start# Job: updated_ats_until Table: `users` @@
+@@ #start# Job: `updated_ats_until` Table: `users` @@
 @@ `users` compare rows where `updated_at` is < '2020-05-16T06:52:24' @@
 - {"created_at":"2020-05-06T06:52:24","id":21,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T06:52:24"}
 + {"created_at":"2020-05-06T08:52:24","id":22,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T08:52:24"}
@@ -44,4 +44,4 @@
 - {"created_at":"2020-05-04T16:52:24","id":2,"name":"John-I","updated_at":"2020-05-04T16:52:24"}
 + {"created_at":"2020-05-04T14:52:24","id":1,"name":"John","updated_at":"2020-05-04T14:52:24"}
 @@ `users` compare rows where `updated_at` is < '2020-05-04T16:52:24' @@
-@@ Job: updated_ats_until Table: `users` #end# @@
+@@ Job: `updated_ats_until` Table: `users` #end# @@

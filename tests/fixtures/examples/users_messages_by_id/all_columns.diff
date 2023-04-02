@@ -1,6 +1,6 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
-@@ #start# Job: all_columns Table: `users` @@
+@@ #start# Job: `by_id` Table: `users` @@
 @@ `users` compare rows with ids from 20 to 21 @@
 @@ `users` compare rows with ids from 19 to 20 @@
 - {"created_at":"2020-05-06T04:52:24","id":20,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T04:52:24"}
@@ -32,8 +32,8 @@
 @@ `users` compare rows with ids from 1 to 2 @@
 - {"created_at":"2020-05-04T16:52:24","id":2,"name":"John-I","updated_at":"2020-05-04T16:52:24"}
 @@ `users` compare rows with ids from 0 to 1 @@
-@@ Job: all_columns Table: `users` #end# @@
-@@ #start# Job: all_columns Table: `messages` @@
+@@ Job: `by_id` Table: `users` #end# @@
+@@ #start# Job: `by_id` Table: `messages` @@
 @@ `messages` compare rows with ids from 20 to 21 @@
 @@ `messages` compare rows with ids from 19 to 20 @@
 - {"created_at":"2020-05-06T04:52:24","id":20,"txt":"Important-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I"}
@@ -65,4 +65,4 @@
 @@ `messages` compare rows with ids from 1 to 2 @@
 - {"created_at":"2020-05-04T16:52:24","id":2,"txt":"Important-I"}
 @@ `messages` compare rows with ids from 0 to 1 @@
-@@ Job: all_columns Table: `messages` #end# @@
+@@ Job: `by_id` Table: `messages` #end# @@

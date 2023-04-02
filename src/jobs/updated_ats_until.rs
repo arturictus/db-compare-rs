@@ -12,12 +12,12 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
     for table in db1_tables {
         echo(
             config,
-            &format!("#start# Job: updated_ats_until Table: `{table}`"),
+            &format!("#start# Job: `updated_ats_until` Table: `{table}`"),
         );
         compare_table(config, &table)?;
         echo(
             config,
-            &format!("Job: updated_ats_until Table: `{table}` #end#"),
+            &format!("Job: `updated_ats_until` Table: `{table}` #end#"),
         );
     }
     Ok(())
