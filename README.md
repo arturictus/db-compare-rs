@@ -30,7 +30,7 @@ db-compare --help
 
   1. Gets replica `updated_at` `id` after cutoff.
   2. Gets max number `id` from the master.
-  3. Compares rows by id excluding ids in the cutoff updated at the list.
+  3. Compares rows by id excluding ids in the step 1 list.
   4. Stops if `by-id-sample-size` arg is reached.
 
 - **by_id**
@@ -65,10 +65,10 @@ db-compare --help
 
 Markers:
 
-- `-`: Exists in Master but not in Replica.
-- `+`: Exists in Replica but not in Master.
-- `>`: Exists in both but with differences.
-- `@@ ... @@`: Comments, helpful to split into different files or the see context of the query.
+- `-`: Deleted in Replica.
+- `+`: Deleted in Master.
+- `>`: In both but with differences.
+- `@@ ... @@`: Comments and markers. Helpful to split diff into different files or the see context of the query, table or job beeing run.
 
 ### Config File
 
