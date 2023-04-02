@@ -32,4 +32,4 @@
 @@ `users` compare rows with ids from 1 to 2 @@
 - {"created_at":"2020-05-04T16:52:24","id":2,"name":"John-I","updated_at":"2020-05-04T16:52:24"}
 @@ `users` compare rows with ids from 0 to 1 @@
-@@  Job: all_columns_excluding_replica_updated_ats Table: `users` #end# @@
+@@ Job: all_columns_excluding_replica_updated_ats Table: `users` #end# @@

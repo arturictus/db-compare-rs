@@ -22,7 +22,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
         compare_table_for_all_columns(config, &table, Some(ids))?;
         echo(
             config,
-            &format!(" Job: all_columns_excluding_replica_updated_ats Table: `{table}` #end#"),
+            &format!("Job: all_columns_excluding_replica_updated_ats Table: `{table}` #end#"),
         );
     }
     Ok(())
