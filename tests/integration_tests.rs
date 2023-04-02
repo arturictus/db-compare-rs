@@ -12,7 +12,7 @@ fn default_args() -> Args {
         diff_format: None,
         limit: 1,
         no_tls: false,
-        all_columns_sample_size: None,
+        by_id_sample_size: None,
         diff_file: None,
         tables: None,
         config: None,

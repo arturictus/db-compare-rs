@@ -21,10 +21,13 @@ pub struct Args {
     pub db1: Option<String>,
     #[arg(long)]
     pub db2: Option<String>,
-    #[arg(long, default_value_t = DEFAULT_LIMIT)]
+    #[arg(long, default_value_t = DEFAULT_LIMIT, help = "Queries limit, default: 100")]
     pub limit: u32,
-    #[arg(long = "all-columns-sample-size")]
-    pub all_columns_sample_size: Option<u32>,
+    #[arg(
+        long = "by-id-sample-size",
+        help = "Max rows to compare for `by_id` and `by_id_excluding_replica_updated_ats` job"
+    )]
+    pub by_id_sample_size: Option<u32>,
     #[arg(long = "no-tls")]
     pub no_tls: bool,
     #[arg(long = "diff-file")]
@@ -35,14 +38,14 @@ pub struct Args {
     pub tables: Option<String>,
     #[arg(
         long = "jobs",
-        help = "Comma separated jobs list to run, default: `by_id_excluding_replica_updated_ats`, options: `counters, updated_ats, created_ats, by_id, by_id_excluding_replica_updated_ats`"
+        help = "Comma separated job list to run, default: `by_id_excluding_replica_updated_ats`, options: `counters, updated_ats, created_ats, by_id, by_id_excluding_replica_updated_ats`"
     )]
     pub jobs: Option<String>,
     #[arg(long, short, help = "Yaml config file")]
     pub config: Option<String>,
     #[arg(
         long,
-        help = "check rows until this timestamp: example: `--tm_cutoff $(date +%s)`, defaults to now"
+        help = "Check rows until this timestamp: example: `--tm_cutoff $(date +%s)`, defaults to now. Affects jobs: `updated_ats`, 'created_ats' and `by_id_excluding_replica_updated_ats`"
     )]
     pub tm_cutoff: Option<i64>,
 }
@@ -73,7 +76,7 @@ pub struct Config {
     pub diff_format: DiffFormat,
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
-    pub all_columns_sample_size: Option<u32>,
+    pub by_id_sample_size: Option<u32>,
     pub tm_cutoff: NaiveDateTime,
 }
 
@@ -153,10 +156,10 @@ impl Config {
             }
         };
 
-        let all_columns_sample_size = if args.all_columns_sample_size.is_some() {
-            args.all_columns_sample_size
+        let by_id_sample_size = if args.by_id_sample_size.is_some() {
+            args.by_id_sample_size
         } else {
-            config_file.all_columns_sample_size
+            config_file.by_id_sample_size
         };
 
         let tm_cutoff = if let Some(tm) = args.tm_cutoff {
@@ -184,7 +187,7 @@ impl Config {
             white_listed_tables,
             limit,
             jobs,
-            all_columns_sample_size,
+            by_id_sample_size,
             tm_cutoff,
             tls: !args.no_tls,
         }
@@ -199,7 +202,7 @@ struct ConfigFile {
     diff_file: Option<String>,
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<Job>>,
-    all_columns_sample_size: Option<u32>,
+    by_id_sample_size: Option<u32>,
     diff_format: Option<String>,
 }
 
@@ -251,7 +254,7 @@ impl ConfigFile {
                     .collect(), // .collect::<Job>(),
             ),
         };
-        let all_columns_sample_size: Option<u32> = match &yaml[0]["all-columns-sample-size"] {
+        let by_id_sample_size: Option<u32> = match &yaml[0]["by-id-sample-size"] {
             yaml_rust::Yaml::BadValue => None,
             data => Some(data.as_i64().unwrap().try_into().unwrap()),
         };
@@ -272,7 +275,7 @@ impl ConfigFile {
             diff_format,
             white_listed_tables,
             jobs,
-            all_columns_sample_size,
+            by_id_sample_size,
         }
     }
 }
@@ -287,7 +290,7 @@ mod test {
             db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
             limit: 1,
             no_tls: false,
-            all_columns_sample_size: None,
+            by_id_sample_size: None,
             diff_file: None,
             diff_format: None,
             jobs: None,

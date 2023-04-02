@@ -142,7 +142,7 @@ impl TestRunner {
                 limit: config.limit,
                 white_listed_tables: config.white_listed_tables.clone(),
                 jobs: config.jobs.clone(),
-                all_columns_sample_size: config.all_columns_sample_size,
+                by_id_sample_size: config.by_id_sample_size,
                 tm_cutoff: config.tm_cutoff,
                 ..Config::default()
             },

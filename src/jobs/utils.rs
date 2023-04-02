@@ -20,9 +20,7 @@ pub fn compare_table_for_all_columns(
     let mut upper_bound = database::get_greatest_id_from(q.build_master())?;
     let mut counter = 0u32;
     while upper_bound != 0 {
-        if config.all_columns_sample_size.is_some()
-            && counter >= config.all_columns_sample_size.unwrap()
-        {
+        if config.by_id_sample_size.is_some() && counter >= config.by_id_sample_size.unwrap() {
             break;
         }
         let lower_bound = if upper_bound > config.limit {

@@ -54,7 +54,7 @@ jobs:
   - updated_ats_until
 limit: 100
 diff-file: ./diff_from_testing.diff
-all-columns-sample-size: 10000
+by-id-sample-size: 10000
 ```
 
 Most of the configs can be overriden by command params.

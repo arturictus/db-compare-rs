@@ -124,7 +124,7 @@ mod test {
             db2: Some("db2".to_string()),
             limit: 1,
             no_tls: false,
-            all_columns_sample_size: None,
+            by_id_sample_size: None,
             diff_file: None,
             diff_format: None,
             tables: None,
