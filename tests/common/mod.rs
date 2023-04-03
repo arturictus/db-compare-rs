@@ -11,6 +11,7 @@ use std::cell::RefCell;
 use std::fs;
 use std::ops::Add;
 use std::path::Path;
+use std::time::Duration;
 use uuid::Uuid;
 
 pub enum DB {
@@ -168,8 +169,8 @@ impl TestRunner {
     pub fn run(mut self, name: &str) -> Self {
         // setup databases
         before_each().unwrap();
-        let (users, updated_at) = generate_users(20);
-        let (msgs, _) = generate_msgs(20);
+        let (users, updated_at) = generate_users(40);
+        let (msgs, _) = generate_msgs(40);
         seed_test_data(Some(&users), Some(&msgs));
 
         self.config.tm_cutoff = updated_at.add(Days::new(10));
@@ -367,8 +368,15 @@ fn seed_test_data(users: Option<&Vec<User>>, msgs: Option<&Vec<Msg>>) {
                 u.insert(DB::B).unwrap();
             }
             if i % 3 == 0 {
+                let updated_at = if i > 20 {
+                    u.updated_at.add(Days::new(30))
+                } else {
+                    u.updated_at
+                };
+
                 User {
                     name: format!("{} changed", u.name.clone()),
+                    updated_at,
                     ..u.clone()
                 }
                 .insert(DB::B)

@@ -1,9 +1,49 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
 @@ #start# Job: `updated_ats_until` Table: `users` @@
-@@ `users` compare rows where `updated_at` is < '2020-05-16T06:52:24' @@
-- {"created_at":"2020-05-06T06:52:24","id":21,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T06:52:24"}
-+ {"created_at":"2020-05-06T08:52:24","id":22,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T08:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-17T22:52:24' @@
+- {"created_at":"2020-05-07T22:52:24","id":41,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T22:52:24"}
++ {"created_at":"2020-05-08T00:52:24","id":42,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-08T00:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T22:52:24' @@
+- {"created_at":"2020-05-07T20:52:24","id":40,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T20:52:24"}
++ {"created_at":"2020-05-07T18:52:24","id":39,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T18:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T20:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-07T18:52:24' @@
+- {"created_at":"2020-05-07T16:52:24","id":38,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T16:52:24"}
++ {"created_at":"2020-05-07T14:52:24","id":37,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T14:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T16:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-07T14:52:24' @@
+- {"created_at":"2020-05-07T12:52:24","id":36,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T12:52:24"}
++ {"created_at":"2020-05-07T10:52:24","id":35,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T10:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T12:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-07T10:52:24' @@
+- {"created_at":"2020-05-07T08:52:24","id":34,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T08:52:24"}
++ {"created_at":"2020-05-07T06:52:24","id":33,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T06:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T08:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-07T06:52:24' @@
+- {"created_at":"2020-05-07T04:52:24","id":32,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T04:52:24"}
++ {"created_at":"2020-05-07T02:52:24","id":31,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T02:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T04:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-07T02:52:24' @@
+- {"created_at":"2020-05-07T00:52:24","id":30,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T00:52:24"}
++ {"created_at":"2020-05-06T22:52:24","id":29,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T22:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-07T00:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-06T22:52:24' @@
+- {"created_at":"2020-05-06T20:52:24","id":28,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T20:52:24"}
++ {"created_at":"2020-05-06T18:52:24","id":27,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T18:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-06T20:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-06T18:52:24' @@
+- {"created_at":"2020-05-06T16:52:24","id":26,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T16:52:24"}
++ {"created_at":"2020-05-06T14:52:24","id":25,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T14:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-06T16:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-06T14:52:24' @@
+- {"created_at":"2020-05-06T12:52:24","id":24,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T12:52:24"}
++ {"created_at":"2020-05-06T10:52:24","id":23,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T10:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-06T12:52:24' @@
+@@ `users` compare rows where `updated_at` is < '2020-05-06T10:52:24' @@
+- {"created_at":"2020-05-06T08:52:24","id":22,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T08:52:24"}
++ {"created_at":"2020-05-06T06:52:24","id":21,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T06:52:24"}
+@@ `users` compare rows where `updated_at` is < '2020-05-06T08:52:24' @@
 @@ `users` compare rows where `updated_at` is < '2020-05-06T06:52:24' @@
 - {"created_at":"2020-05-06T04:52:24","id":20,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T04:52:24"}
 + {"created_at":"2020-05-06T02:52:24","id":19,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I changed","updated_at":"2020-05-06T02:52:24"}
