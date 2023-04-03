@@ -51,10 +51,6 @@ pub fn compare_table_for_all_columns(
             records2,
         );
         output.write(diff.clone());
-        // TODO: remove when solved files
-        let mut diff_io = config.diff_io.borrow_mut();
-        diff_io.write(config, diff);
-        // end TODO
         upper_bound = lower_bound;
         counter += config.limit;
     }

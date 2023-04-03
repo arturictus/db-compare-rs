@@ -7,7 +7,7 @@ mod sequences;
 mod updated_ats_until;
 mod utils;
 use crate::{database::DBsResults, diff, IO};
-use std::{error, fmt, str::FromStr};
+use std::{borrow::BorrowMut, error, fmt, str::FromStr};
 pub(crate) use utils::par_run;
 
 use crate::Config;
@@ -133,12 +133,12 @@ pub struct Output<'a> {
 impl<'a> Output<'a> {
     pub fn new(config: &'a Config, job: Job, table: Option<String>) -> Self {
         let mut me = if config.test_env {
-            return Self {
+            Self {
                 config,
                 job,
                 table,
                 io: diff::IOType::Phantom,
-            };
+            }
         } else {
             Self {
                 config,
@@ -152,18 +152,47 @@ impl<'a> Output<'a> {
     }
 
     pub fn write(&mut self, results: DBsResults) {
-        self.io.write(self.config, results);
+        if matches!(self.io, diff::IOType::Phantom) {
+            self.config.diff_io.borrow_mut().write(self.config, results);
+        } else {
+            self.io.write(self.config, results);
+        }
     }
 
     fn start(&mut self) {
-        self.io.echo(&format!("--- {} ---", self.config.db1));
-        self.io.echo(&format!("+++ {} +++", self.config.db2));
-        let table = format!(
-            "Table: `{}`",
-            self.table.as_ref().unwrap_or(&"all".to_string())
-        );
-        let msg = &format!("Job: `{}` {table}", self.job);
-        self.io.start_block(msg);
+        if matches!(self.io, diff::IOType::Phantom) {
+            self.config
+                .diff_io
+                .borrow_mut()
+                .echo(&format!("--- {} ---", self.config.db1));
+            self.config
+                .diff_io
+                .borrow_mut()
+                .echo(&format!("+++ {} +++", self.config.db2));
+            let table = format!(
+                "Table: `{}`",
+                self.table.as_ref().unwrap_or(&"all".to_string())
+            );
+            let msg = &format!("Job: `{}` {table}", self.job);
+            self.config.diff_io.borrow_mut().start_block(msg);
+        } else {
+            self.io.echo(&format!("--- {} ---", self.config.db1));
+            self.io.echo(&format!("+++ {} +++", self.config.db2));
+            let table = format!(
+                "Table: `{}`",
+                self.table.as_ref().unwrap_or(&"all".to_string())
+            );
+            let msg = &format!("Job: `{}` {table}", self.job);
+            self.io.start_block(msg);
+        }
+    }
+
+    pub fn comment(&mut self, msg: &str) {
+        if matches!(self.io, diff::IOType::Phantom) {
+            self.config.diff_io.borrow_mut().comment(msg);
+        } else {
+            self.io.comment(msg);
+        }
     }
 
     pub fn end(&mut self) {
@@ -172,8 +201,21 @@ impl<'a> Output<'a> {
             self.table.as_ref().unwrap_or(&"all".to_string())
         );
         let msg = &format!("Job: `{}` {table}", self.job);
-        self.io.end_block(msg);
-        self.io.close();
+        if matches!(self.io, diff::IOType::Phantom) {
+            self.config.diff_io.borrow_mut().end_block(msg);
+            self.config.diff_io.borrow_mut().close();
+        } else {
+            self.io.end_block(msg);
+            self.io.close();
+        };
+    }
+
+    fn echo(&mut self, msg: &str) {
+        if matches!(self.io, diff::IOType::Phantom) {
+            self.config.diff_io.borrow_mut().echo(msg);
+        } else {
+            self.io.echo(msg);
+        }
     }
 
     fn diff_file(config: &Config, job: Job, table: Option<String>) -> diff::IOType {

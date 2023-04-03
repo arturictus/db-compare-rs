@@ -140,6 +140,7 @@ impl TestRunner {
                 jobs: config.jobs.clone(),
                 by_id_sample_size: config.by_id_sample_size,
                 tm_cutoff: config.tm_cutoff,
+                test_env: true,
                 output_folder: "tmp/examples_per_file".to_string(),
                 ..Config::default()
             },
@@ -175,6 +176,7 @@ impl TestRunner {
         seed_test_data(Some(&users), Some(&msgs));
 
         self.config.tm_cutoff = updated_at.add(Days::new(10));
+        self.config.test_env = true;
 
         db_compare::run(&self.config).unwrap();
 

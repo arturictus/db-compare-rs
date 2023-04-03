@@ -1,9 +1,8 @@
 use super::{Job, Output};
 use crate::database::{self, RequestBuilder};
-use crate::diff::IO;
 use crate::Config;
 
-use super::{par_run, utils::echo};
+use super::par_run;
 
 pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config).column(column());
@@ -21,11 +20,6 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     );
     output.write(result.clone());
     output.end();
-
-    // TODO: remove when diff_io is removed
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(config, result);
-    // end TODO
     Ok(())
 }
 
@@ -34,15 +28,7 @@ pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {
         let mut output = Output::new(config, Job::UpdatedAts, Some(table.clone()));
-        echo(
-            config,
-            &format!("#start# Job: `last_updated_ats` Table: `{table}`"),
-        );
         compare_rows(&mut output, &table)?;
-        echo(
-            config,
-            &format!("Job: `last_updated_ats` Table: `{table}` #end#"),
-        );
         output.end();
     }
     Ok(())
@@ -60,9 +46,5 @@ fn compare_rows(output: &mut Output, table: &str) -> Result<(), postgres::Error>
 
     output.write(result.clone());
 
-    // TODO: remove when diff_io is removed
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(config, result);
-    // end TODO
     Ok(())
 }

@@ -86,11 +86,6 @@ pub struct Config {
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
-    {
-        let mut f = config.diff_io.borrow_mut();
-        f.echo(&format!("--- {} ---", config.db1));
-        f.echo(&format!("+++ {} +++", config.db2));
-    }
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
     jobs::run(config)?;

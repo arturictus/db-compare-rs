@@ -1,4 +1,3 @@
-use super::utils::echo;
 use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::jobs::Output;
@@ -24,10 +23,6 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     );
     output.write(result.clone());
     output.end();
-    // TODO: remove when diff_io is removed
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(config, result);
-    // end TODO
     Ok(())
 }
 
@@ -35,17 +30,8 @@ pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     for table in db1_tables {
         let mut output = Output::new(config, crate::Job::CreatedAts, None);
-        echo(
-            config,
-            &format!("#start# Job: `last_created_ats` Table: `{table}`"),
-        );
         compare_rows(&mut output, &table)?;
-
         output.end();
-        echo(
-            config,
-            &format!("Job: `last_created_ats` Table: `{table}` #end#"),
-        );
     }
     Ok(())
 }
@@ -82,10 +68,5 @@ fn compare_rows(output: &mut Output, table: &str) -> Result<(), postgres::Error>
 
     let result = (format!("`{table}` all columns"), records1, records2);
     output.write(result.clone());
-
-    // TODO: remove when diff_io is removed
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(config, result);
-    // end TODO
     Ok(())
 }

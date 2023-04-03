@@ -1,6 +1,5 @@
 use super::{par_run, Job, Output};
 use crate::database::{self, DBResultType, RequestBuilder};
-use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
@@ -11,7 +10,6 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
 
     let mut output = Output::new(config, Job::Sequences, Some("all_tables".to_string()));
 
-    let mut diff_io = config.diff_io.borrow_mut();
     for (table, num) in data1 {
         let found = data2
             .iter()
@@ -24,7 +22,6 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             DBResultType::Strings(vec![found.unwrap_or_else(|| "Not set".to_string())]),
         );
         output.write(result.clone());
-        diff_io.write(config, result);
     }
     output.end();
     Ok(())

@@ -15,11 +15,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let tables = database::tables_with_column(q.build_master())?.to_s();
     for table in tables {
         let mut output = Output::new(config, job(), Some(table.clone()));
-        echo(config, &format!("#start# Job: `by_id` Table: `{table}`"));
-
         compare_table_for_all_columns(&mut output, &table, None)?;
-
-        echo(config, &format!("Job: `by_id` Table: `{table}` #end#"));
         output.end();
     }
     Ok(())

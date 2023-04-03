@@ -1,7 +1,7 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
 @@ #start# Job: `by_id_excluding_replica_updated_ats` Table: `users` @@
-@@ Exlcuding replica updated_ats at cutoff: 2020-05-17 22:52:24 @@
+@@ Excluding replica updated_ats at cut-off: 2020-05-17 22:52:24 @@
 @@ `users` compare rows with ids from 40 to 41 @@
 @@ `users` compare rows with ids from 39 to 40 @@
 @@ No diff @@

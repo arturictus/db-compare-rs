@@ -1,7 +1,6 @@
 use super::{par_run, Job, Output};
 
 use crate::database::{self, DBResultType, RequestBuilder};
-use crate::diff::IO;
 use crate::Config;
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
@@ -17,10 +16,6 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             DBResultType::Strings(vec![format!("{}", result2)]),
         );
         output.write(diff_result.clone());
-        // TODO: remove when diff_io is removed
-        let mut diff_io = config.diff_io.borrow_mut();
-        diff_io.write(config, diff_result);
-        // end TODO
     }
     output.end();
     Ok(())

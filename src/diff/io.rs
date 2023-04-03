@@ -33,10 +33,6 @@ impl IO for IOType {
         Self::File(new_file(&file_path))
     }
     fn write(&mut self, config: &Config, result: DBsResults) {
-        if matches!(self, Self::Phantom) {
-            config.diff_io.borrow_mut().write(config, result);
-            return;
-        }
         let list = formatter::call(config, result);
 
         for fmt in list {
