@@ -15,7 +15,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             DBResultType::Strings(vec![format!("{}", result1)]),
             DBResultType::Strings(vec![format!("{}", result2)]),
         );
-        output.write(diff_result.clone());
+        output.write(diff_result);
     }
     output.end();
     Ok(())

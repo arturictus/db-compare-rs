@@ -7,7 +7,7 @@ mod sequences;
 mod updated_ats_until;
 mod utils;
 use crate::{database::DBsResults, diff, IO};
-use std::{borrow::BorrowMut, error, fmt, str::FromStr};
+use std::{error, fmt, str::FromStr};
 pub(crate) use utils::par_run;
 
 use crate::Config;
@@ -210,6 +210,7 @@ impl<'a> Output<'a> {
         };
     }
 
+    #[allow(dead_code)]
     fn echo(&mut self, msg: &str) {
         if matches!(self.io, diff::IOType::Phantom) {
             self.config.diff_io.borrow_mut().echo(msg);

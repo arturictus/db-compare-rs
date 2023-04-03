@@ -1,7 +1,4 @@
-use super::{
-    utils::{compare_table_for_all_columns, echo},
-    Job, Output,
-};
+use super::{utils::compare_table_for_all_columns, Job, Output};
 use crate::database;
 use crate::database::RequestBuilder;
 use crate::Config;

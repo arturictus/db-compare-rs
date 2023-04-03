@@ -1,7 +1,5 @@
 use super::Output;
 use crate::database::{self, Request, RequestBuilder};
-use crate::diff::IO;
-use crate::Config;
 
 pub fn par_run<T: Send>(
     r: RequestBuilder,
@@ -55,8 +53,4 @@ pub fn compare_table_for_all_columns(
         counter += config.limit;
     }
     Ok(())
-}
-
-pub fn echo(config: &Config, msg: &str) {
-    config.diff_io.borrow_mut().echo(&format!("@@ {msg} @@"));
 }

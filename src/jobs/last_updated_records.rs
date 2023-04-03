@@ -18,7 +18,7 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
         db1_tables,
         db2_tables,
     );
-    output.write(result.clone());
+    output.write(result);
     output.end();
     Ok(())
 }
@@ -44,7 +44,7 @@ fn compare_rows(output: &mut Output, table: &str) -> Result<(), postgres::Error>
     let (records1, records2) = par_run(builder, database::full_row_ordered_by)?;
     let result = (format!("`{table}` all columns"), records1, records2);
 
-    output.write(result.clone());
+    output.write(result);
 
     Ok(())
 }
