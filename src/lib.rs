@@ -79,6 +79,7 @@ pub struct Config {
     pub by_id_sample_size: Option<u32>,
     pub tm_cutoff: NaiveDateTime,
     pub output_folder: String,
+    pub test_env: bool,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
@@ -192,6 +193,7 @@ impl Config {
             tm_cutoff,
             tls: !args.no_tls,
             output_folder: "tmp/example_diffs".to_string(),
+            test_env: false,
         }
     }
 }

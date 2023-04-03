@@ -11,6 +11,8 @@ pub enum IOType {
     #[default]
     Stdout,
     File(LineWriter<File>),
+    Test(Vec<String>),
+    Phantom,
 }
 
 pub trait IO {
@@ -23,6 +25,7 @@ pub trait IO {
     fn start_block(&mut self, msg: &str);
     fn end_block(&mut self, msg: &str);
     fn comment(&mut self, msg: &str);
+    fn read(&self) -> String;
 }
 
 impl IO for IOType {
@@ -36,6 +39,10 @@ impl IO for IOType {
         Self::File(new_file(&file_path))
     }
     fn write(&mut self, config: &Config, result: DBsResults) {
+        if matches!(self, Self::Phantom) {
+            config.diff_io.borrow_mut().write(config, result);
+            return;
+        }
         let list = formatter::call(config, result);
 
         for fmt in list {
@@ -44,6 +51,13 @@ impl IO for IOType {
                 Self::File(file) => {
                     for line in lines {
                         write_to_file(file, &line);
+                    }
+                }
+                Self::Test(_test) => {
+                    for line in lines {
+                        if !line.is_empty() {
+                            self.echo(&line);
+                        }
                     }
                 }
                 _ => {
@@ -56,21 +70,34 @@ impl IO for IOType {
     }
 
     fn start_block(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
         let msg = &format!("@@ #start# {msg} @@");
         self.echo(msg);
     }
     fn end_block(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
         let msg = &format!("@@ {msg} #end# @@");
         self.echo(msg);
     }
     fn comment(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
         let msg = &format!("@@ {msg} @@");
         self.echo(msg);
     }
 
     fn echo(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
         match self {
             Self::File(file) => write_to_file(file, msg),
+            Self::Test(test) => test.push(msg.to_string()),
             _ => println!("{}", msg),
         }
     }
@@ -82,6 +109,14 @@ impl IO for IOType {
     }
     fn is_stdout(&self) -> bool {
         matches!(self, Self::Stdout)
+    }
+
+    fn read(&self) -> String {
+        if let Self::Test(test) = self {
+            test.join("\n")
+        } else {
+            todo!()
+        }
     }
 }
 
