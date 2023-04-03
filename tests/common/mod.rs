@@ -12,8 +12,6 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 
-use uuid::Uuid;
-
 pub enum DB {
     A,
     B,
@@ -120,7 +118,6 @@ pub struct TestRunner {
 impl TestRunner {
     pub fn new(config: &Config) -> Self {
         fs::create_dir_all("tmp").unwrap();
-        let tmp_file = format!("tmp/{}.diff", Uuid::new_v4());
         let fixture_folder = format!(
             "tests/fixtures/examples/diffs/{}_{}",
             config.white_listed_tables.clone().unwrap().join("_"),

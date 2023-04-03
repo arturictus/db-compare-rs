@@ -2,11 +2,8 @@ use super::{
     utils::{compare_table_for_all_columns, echo},
     Job, Output,
 };
+use crate::database::{self, DBResultType, RequestBuilder};
 use crate::Config;
-use crate::{
-    database::{self, DBResultType, RequestBuilder},
-    IO,
-};
 
 fn job() -> Job {
     Job::ByIDExcludingReplicaUpdatedAts

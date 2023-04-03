@@ -1,6 +1,6 @@
 use crate::database::DBsResults;
 use crate::diff::formatter::{self, FmtOutput};
-use crate::{Args, Config};
+use crate::Config;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::LineWriter;
@@ -29,12 +29,6 @@ pub trait IO {
 }
 
 impl IO for IOType {
-    // fn new(config: &Args) -> Self {
-    //     match &config.diff_file {
-    //         Some(file_path) => Self::File(new_file(file_path)),
-    //         _ => Self::Stdout,
-    //     }
-    // }
     fn new_from_path(file_path: String) -> Self {
         Self::File(new_file(&file_path))
     }
