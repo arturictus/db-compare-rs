@@ -1,6 +1,6 @@
 # DB-Compare
 
-Command line tool to compare two postgres databases.
+Command line tool to compare two Postgres databases.
 
 Useful to verify when migrating databases.
 
@@ -81,7 +81,7 @@ db-compare --config ./config.yml
 db1: "postgresql://postgres:postgres@127.0.0.1/db1"
 db2: "postgresql://postgres:postgres@127.0.0.1/db2"
 tables:
-  - testing_tables
+  - users
 jobs:
   - by_id_excluding_replica_updated_ats # default: no need to pass jobs list if only running this job
   - counters
@@ -95,10 +95,10 @@ output-folder: ./my_diffs
 by-id-sample-size: 10000 # If wanting to test all rows, remove this config
 ```
 
-Most of the configs can be overridden by command parameters.
+All configs can be overridden by command parameters.
 
 ```sh
-db-compare --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100 --diff-file ./tmp/another_replica.diff
+db-compare --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100
 ```
 
 ## Development
