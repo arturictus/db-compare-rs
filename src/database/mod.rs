@@ -233,9 +233,9 @@ mod test {
         let expected = vec![gen_json_map(3)];
         assert_eq!(result, expected);
         let db_result = DBResultType::GroupedRows(vec![
-            (data.clone()[0].clone(), data.clone()[0].clone()),
-            (data.clone()[1].clone(), data.clone()[1].clone()),
-            (data.clone()[2].clone(), data.clone()[2].clone()),
+            (data[0].clone(), data[0].clone()),
+            (data[1].clone(), data[1].clone()),
+            (data[2].clone(), data[2].clone()),
         ]);
         let ids = vec![1, 2];
         let result = if let DBResultType::GroupedRows(result) = db_result.exclude_ids(&ids) {

@@ -22,7 +22,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             config,
             &format!(
                 "Exlcuding replica updated_ats at cutoff: {}",
-                config.tm_cutoff.format("%Y-%m-%d %H:%M:%S").to_string()
+                config.tm_cutoff.format("%Y-%m-%d %H:%M:%S")
             ),
         );
         let ids = updated_ids_after_cutoff(config, &table)?;
