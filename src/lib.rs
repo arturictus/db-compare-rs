@@ -70,12 +70,12 @@ impl DiffFormat {
 }
 
 #[derive(Debug, Default)]
-pub struct Config {
+pub struct Config<'a> {
     pub db1: String,
     pub db2: String,
     pub tls: bool,
     pub limit: u32,
-    pub diff_io: RefCell<diff::IOType>,
+    pub diff_io: RefCell<diff::IOType<'a>>,
     pub diff_format: DiffFormat,
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
@@ -98,8 +98,8 @@ pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
     Ok(())
 }
 
-impl Config {
-    pub fn new(args: &Args) -> Config {
+impl<'a, 'b> Config<'a> {
+    pub fn new(args: &'b Args) -> Config<'a> {
         let config_file = ConfigFile::build(args);
 
         let db1 = if let Some(db_url) = args.db1.clone() {

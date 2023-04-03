@@ -6,7 +6,7 @@ use crate::Config;
 
 use super::{par_run, utils::echo, Job, Output};
 
-pub fn run(config: &Config) -> Result<(), postgres::Error> {
+pub fn run<'a>(config: &'a Config<'a>) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {

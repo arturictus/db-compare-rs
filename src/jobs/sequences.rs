@@ -3,7 +3,7 @@ use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
 
-pub fn run(config: &Config) -> Result<(), postgres::Error> {
+pub fn run<'a>(config: &'a Config<'a>) -> Result<(), postgres::Error> {
     let builder = RequestBuilder::new(config);
     let (mut data1, data2) = par_run(builder, database::get_sequences)?;
 

@@ -60,7 +60,7 @@ impl FromStr for Job {
 }
 
 impl Job {
-    fn run(&self, config: &Config) -> Result<(), Box<dyn error::Error>> {
+    fn run<'a>(&self, config: &'a Config<'a>) -> Result<(), Box<dyn error::Error>> {
         match self {
             Self::Counters => {
                 counter::run(config)?;
@@ -124,20 +124,20 @@ impl Job {
 }
 
 pub struct Output<'a> {
-    config: &'a Config,
+    config: &'a Config<'a>,
     job: Job,
     table: Option<String>,
-    io: diff::IOType,
+    io: diff::IOType<'a>,
 }
 
 impl<'a> Output<'a> {
-    pub fn new(config: &'a Config, job: Job, table: Option<String>) -> Self {
+    pub fn new(config: &'a Config<'a>, job: Job, table: Option<String>) -> Self {
         let mut me = if config.test_env {
             return Self {
                 config,
                 job,
                 table,
-                io: diff::IOType::Phantom,
+                io: diff::IOType::Phantom(config),
             };
         } else {
             Self {
@@ -153,6 +153,10 @@ impl<'a> Output<'a> {
 
     pub fn write(&mut self, results: DBsResults) {
         self.io.write(self.config, results);
+    }
+
+    fn comment(&mut self, msg: &str) {
+        self.io.comment(msg);
     }
 
     fn start(&mut self) {
@@ -176,12 +180,12 @@ impl<'a> Output<'a> {
         self.io.close();
     }
 
-    fn diff_file(config: &Config, job: Job, table: Option<String>) -> diff::IOType {
+    fn diff_file<'b>(config: &'a Config<'a>, job: Job, table: Option<String>) -> diff::IOType<'b> {
         job.diff_file(config, Some(&table.unwrap_or("all".to_string())))
     }
 }
 
-pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
+pub fn run<'a>(config: &'a Config<'a>) -> Result<(), Box<dyn error::Error>> {
     for job in &config.jobs {
         job.run(config)?;
     }

@@ -7,19 +7,18 @@ use std::io::LineWriter;
 use std::path::Path;
 
 #[derive(Debug, Default)]
-pub enum IOType {
+pub enum IOType<'a> {
     #[default]
     Stdout,
     File(LineWriter<File>),
     Test(Vec<String>),
-    Phantom,
+    Phantom(&'a Config<'a>),
 }
 
 pub trait IO {
     fn write(&mut self, config: &Config, result: DBsResults);
     fn echo(&mut self, msg: &str);
     fn close(&mut self);
-    // fn new(config: &Args) -> Self;
     fn new_from_path(file_path: String) -> Self;
     fn is_stdout(&self) -> bool;
     fn start_block(&mut self, msg: &str);
@@ -28,12 +27,12 @@ pub trait IO {
     fn read(&self) -> String;
 }
 
-impl IO for IOType {
+impl<'a> IO for IOType<'a> {
     fn new_from_path(file_path: String) -> Self {
         Self::File(new_file(&file_path))
     }
     fn write(&mut self, config: &Config, result: DBsResults) {
-        if matches!(self, Self::Phantom) {
+        if matches!(self, Self::Phantom(_)) {
             config.diff_io.borrow_mut().write(config, result);
             return;
         }
@@ -64,6 +63,10 @@ impl IO for IOType {
     }
 
     fn start_block(&mut self, msg: &str) {
+        if let Self::Phantom(config) = self {
+            config.diff_io.borrow_mut().start_block(msg);
+            return;
+        }
         if msg.is_empty() {
             return;
         }
@@ -71,6 +74,10 @@ impl IO for IOType {
         self.echo(msg);
     }
     fn end_block(&mut self, msg: &str) {
+        if let Self::Phantom(config) = self {
+            config.diff_io.borrow_mut().end_block(msg);
+            return;
+        }
         if msg.is_empty() {
             return;
         }
@@ -78,6 +85,10 @@ impl IO for IOType {
         self.echo(msg);
     }
     fn comment(&mut self, msg: &str) {
+        if let Self::Phantom(config) = self {
+            config.diff_io.borrow_mut().comment(msg);
+            return;
+        }
         if msg.is_empty() {
             return;
         }

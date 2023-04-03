@@ -133,7 +133,7 @@ mod test {
             jobs: None,
         }
     }
-    fn config() -> Config {
+    fn config<'a>() -> Config<'a> {
         Config::new(&default_args())
     }
 
