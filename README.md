@@ -4,6 +4,8 @@ Command line tool to compare two Postgres databases.
 
 Useful to verify when migrating databases.
 
+![Screenshot](/media/screenshot.png?raw=true)
+
 ## Installation
 
 ```shell
