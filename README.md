@@ -26,16 +26,12 @@ db-compare --help
 
 - **by_id_excluding_replica_updated_ats** [default if no job list is supplied]
 
-  _it tries to compare grouping by id if the table has the id column_
-
   1. Gets replica `updated_at` `id` after cutoff.
   2. Gets max number `id` from the master.
   3. Compares rows by id excluding ids in the step 1 list.
   4. Stops if `by-id-sample-size` arg is reached.
 
 - **by_id**
-
-  _it tries to compare grouping by id if the table has the id column_
 
   1. Gets max number `id` from the master.
   2. Compares rows grouped by id.
@@ -51,13 +47,13 @@ db-compare --help
 
 - **last_updated_ats:**
 
-  _it tries to compare grouping by id if the table has the id column_
+  _It tries to compare grouping by id if the table has the id column_
 
   Compares last updated ats rows until the `limit` arg is reached
 
 - **last_created_ats:**
 
-  _it tries to compare grouping by id if the table has the id column._
+  _It tries to compare grouping by id if the table has the id column._
 
   Compares last created ats rows until the `limit` arg is reached
 
@@ -95,7 +91,7 @@ jobs:
   - sequences
   - updated_ats_until
 limit: 100
-diff-file: ./diff_from_testing.diff
+output-folder: ./my_diffs
 by-id-sample-size: 10000 # If wanting to test all rows, remove this config
 ```
 

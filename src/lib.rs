@@ -32,7 +32,7 @@ pub struct Args {
     pub no_tls: bool,
     #[arg(
         long = "output-folder",
-        help = "folder to save diff files, defaults to `./diffs`"
+        help = "Destination folder for diff files, default: `./diffs`"
     )]
     pub output_folder: Option<String>,
     #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
