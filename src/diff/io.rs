@@ -19,7 +19,7 @@ pub trait IO {
     fn write(&mut self, config: &Config, result: DBsResults);
     fn echo(&mut self, msg: &str);
     fn close(&mut self);
-    fn new(config: &Args) -> Self;
+    // fn new(config: &Args) -> Self;
     fn new_from_path(file_path: String) -> Self;
     fn is_stdout(&self) -> bool;
     fn start_block(&mut self, msg: &str);
@@ -29,12 +29,12 @@ pub trait IO {
 }
 
 impl IO for IOType {
-    fn new(config: &Args) -> Self {
-        match &config.diff_file {
-            Some(file_path) => Self::File(new_file(file_path)),
-            _ => Self::Stdout,
-        }
-    }
+    // fn new(config: &Args) -> Self {
+    //     match &config.diff_file {
+    //         Some(file_path) => Self::File(new_file(file_path)),
+    //         _ => Self::Stdout,
+    //     }
+    // }
     fn new_from_path(file_path: String) -> Self {
         Self::File(new_file(&file_path))
     }

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Ok};
+use anyhow::Ok;
 use chrono::Days;
 use chrono::NaiveDateTime;
 use convert_case::{Case, Casing};
@@ -113,7 +113,6 @@ impl DB {
 
 pub struct TestRunner {
     config: Config,
-    tmp_file: String,
     fixture_folder: String,
     runned: bool,
 }
@@ -147,7 +146,6 @@ impl TestRunner {
                 output_folder: "tmp/examples_per_file".to_string(),
                 ..Config::default()
             },
-            tmp_file,
             fixture_folder,
             runned: false,
         }
@@ -161,9 +159,16 @@ impl TestRunner {
         !Path::new(&self.fixture_file(name)).exists()
     }
 
-    fn regenerate_fixture() -> bool {
-        // std::env::var("REGENERATE_FIXTURE").is_ok()
-        true
+    fn has_to_regenerate_fixture(&self, file_path: &str) -> bool {
+        if std::env::var("FIXTURE_STRICT_MODE").is_ok() {
+            return false;
+        }
+        if std::env::var("REGENERATE_FIXTURE_IF_NOT_EXIST").is_ok()
+            && self.fixture_not_exists(file_path)
+        {
+            return true;
+        }
+        false
     }
     pub fn run(mut self, name: &str) -> Self {
         // setup databases
@@ -177,7 +182,7 @@ impl TestRunner {
         db_compare::run(&self.config).unwrap();
 
         let fixture_file = self.fixture_file(name);
-        if false || self.fixture_not_exists(name) {
+        if self.has_to_regenerate_fixture(name) {
             fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
                 panic!("unable to create folder {}", &self.fixture_folder);
             });
@@ -188,15 +193,10 @@ impl TestRunner {
             let content = self.config.diff_io.borrow().read();
 
             write_fixture(&fixture_file, content);
-            // If we are creating the fixtures we copy the result to the fixture
-            // std::fs::copy(&self.tmp_file, &fixture_file).unwrap();
         }
-        // New independent files imlementation
-        // self.do_regenare_fixtures().unwrap();
         // Copy fixture and result to memory
         let tmp = self.config.diff_io.borrow().read();
         let fixture = std::fs::read_to_string(&fixture_file).unwrap();
-        // std::fs::remove_file(&self.tmp_file).unwrap();
         // Drop databases
         after_each().unwrap();
         println!("comparing: result with {}", &fixture_file);
@@ -204,39 +204,6 @@ impl TestRunner {
         assert_eq!(fixture, tmp);
         self.runned = true;
         self
-    }
-
-    fn do_regenare_fixtures(&self) -> Result<(), anyhow::Error> {
-        if Self::regenerate_fixture() {
-            // fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
-            //     panic!("unable to create folder {}", &self.fixture_folder);
-            // });
-
-            println!("[TestRunner]: generating fixtures");
-            for job in &self.config.jobs {
-                let job_folder = job.diff_folder(&self.config);
-                println!("copying files from {}", job_folder);
-                let files = fs::read_dir(&job_folder)
-                    .map_err(|e| panic!("{} at: {}", e, &job_folder))
-                    .unwrap()
-                    .map(|res| res.map(|e| e.path()))
-                    .collect::<Result<Vec<_>, std::io::Error>>()
-                    .unwrap();
-                for file in files {
-                    let file_name = Path::new(&file).file_name().unwrap();
-                    let target_file =
-                        format!("{}/{}", &self.fixture_folder, file_name.to_str().unwrap());
-                    fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
-                        panic!("unable to create folder {}", &self.fixture_folder);
-                    });
-                    println!("file name: {}", file_name.to_str().unwrap());
-                    println!("copying {} to {}", file.display(), target_file);
-                    std::fs::copy(&file, target_file)?;
-                }
-            }
-            // If we are creating the fixtures we copy the result to the fixture
-        }
-        Ok(())
     }
 }
 

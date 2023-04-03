@@ -32,6 +32,8 @@ jobs:
           # POSTGRES_DB: postgres
         ports:
           - 5432:5432
+    env:
+      FIXTURE_STRICT_MODE: 1
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1

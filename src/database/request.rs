@@ -125,7 +125,7 @@ mod test {
             limit: 1,
             no_tls: false,
             by_id_sample_size: None,
-            diff_file: None,
+            output_folder: None,
             diff_format: None,
             tables: None,
             config: None,
