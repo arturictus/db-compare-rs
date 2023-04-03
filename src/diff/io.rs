@@ -1,6 +1,6 @@
 use crate::database::DBsResults;
 use crate::diff::formatter::{self, FmtOutput};
-use crate::{Args, Config};
+use crate::Config;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::LineWriter;
@@ -11,24 +11,24 @@ pub enum IOType {
     #[default]
     Stdout,
     File(LineWriter<File>),
+    Test(Vec<String>),
+    Phantom,
 }
 
 pub trait IO {
     fn write(&mut self, config: &Config, result: DBsResults);
     fn echo(&mut self, msg: &str);
     fn close(&mut self);
-    fn new(config: &Args) -> Self;
+    // fn new(config: &Args) -> Self;
     fn new_from_path(file_path: String) -> Self;
     fn is_stdout(&self) -> bool;
+    fn start_block(&mut self, msg: &str);
+    fn end_block(&mut self, msg: &str);
+    fn comment(&mut self, msg: &str);
+    fn read(&self) -> String;
 }
 
 impl IO for IOType {
-    fn new(config: &Args) -> Self {
-        match &config.diff_file {
-            Some(file_path) => Self::File(new_file(file_path)),
-            _ => Self::Stdout,
-        }
-    }
     fn new_from_path(file_path: String) -> Self {
         Self::File(new_file(&file_path))
     }
@@ -43,6 +43,13 @@ impl IO for IOType {
                         write_to_file(file, &line);
                     }
                 }
+                Self::Test(_test) => {
+                    for line in lines {
+                        if !line.is_empty() {
+                            self.echo(&line);
+                        }
+                    }
+                }
                 _ => {
                     for line in lines {
                         println!("{line}");
@@ -51,9 +58,36 @@ impl IO for IOType {
             }
         }
     }
+
+    fn start_block(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
+        let msg = &format!("@@ #start# {msg} @@");
+        self.echo(msg);
+    }
+    fn end_block(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
+        let msg = &format!("@@ {msg} #end# @@");
+        self.echo(msg);
+    }
+    fn comment(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
+        let msg = &format!("@@ {msg} @@");
+        self.echo(msg);
+    }
+
     fn echo(&mut self, msg: &str) {
+        if msg.is_empty() {
+            return;
+        }
         match self {
             Self::File(file) => write_to_file(file, msg),
+            Self::Test(test) => test.push(msg.to_string()),
             _ => println!("{}", msg),
         }
     }
@@ -65,6 +99,14 @@ impl IO for IOType {
     }
     fn is_stdout(&self) -> bool {
         matches!(self, Self::Stdout)
+    }
+
+    fn read(&self) -> String {
+        if let Self::Test(test) = self {
+            test.join("\n")
+        } else {
+            todo!()
+        }
     }
 }
 

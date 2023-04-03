@@ -1,5 +1,6 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
+@@ #start# Job: `counters` Table: `all` @@
 @@ `messages` count @@
 - 41
 + 36
@@ -8,3 +9,4 @@
 - 41
 + 36
 
+@@ Job: `counters` Table: `all` #end# @@

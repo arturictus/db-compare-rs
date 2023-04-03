@@ -30,8 +30,11 @@ pub struct Args {
     pub by_id_sample_size: Option<u32>,
     #[arg(long = "no-tls")]
     pub no_tls: bool,
-    #[arg(long = "diff-file")]
-    pub diff_file: Option<String>,
+    #[arg(
+        long = "output-folder",
+        help = "Destination folder for diff files, default: `./diffs`"
+    )]
+    pub output_folder: Option<String>,
     #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
     pub diff_format: Option<String>,
     #[arg(long = "tables", help = "Comma separated list of tables to check")]
@@ -78,14 +81,11 @@ pub struct Config {
     pub jobs: Vec<Job>,
     pub by_id_sample_size: Option<u32>,
     pub tm_cutoff: NaiveDateTime,
+    pub output_folder: String,
+    pub test_env: bool,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
-    {
-        let mut f = config.diff_io.borrow_mut();
-        f.echo(&format!("--- {} ---", config.db1));
-        f.echo(&format!("+++ {} +++", config.db2));
-    }
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
     jobs::run(config)?;
@@ -125,16 +125,12 @@ impl Config {
             config_file.white_listed_tables
         };
 
-        let diff_io = if args.diff_file.is_some() {
-            let diff_io: diff::IOType = diff::IO::new(args);
-            RefCell::new(diff_io)
+        let output_folder = if args.output_folder.is_some() {
+            args.output_folder.clone().unwrap()
         } else {
-            match config_file.diff_file {
-                Some(file_path) => {
-                    let path = diff::IO::new_from_path(file_path);
-                    RefCell::new(path)
-                }
-                _ => RefCell::new(diff::IOType::Stdout),
+            match config_file.output_folder {
+                Some(folder) => folder,
+                _ => "./diffs".to_string(),
             }
         };
 
@@ -182,7 +178,7 @@ impl Config {
         Self {
             db1,
             db2,
-            diff_io,
+            output_folder,
             diff_format,
             white_listed_tables,
             limit,
@@ -190,6 +186,8 @@ impl Config {
             by_id_sample_size,
             tm_cutoff,
             tls: !args.no_tls,
+            test_env: false,
+            diff_io: RefCell::new(diff::IOType::default()),
         }
     }
 }
@@ -199,11 +197,11 @@ struct ConfigFile {
     db1: Option<String>,
     db2: Option<String>,
     limit: Option<u32>,
-    diff_file: Option<String>,
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<Job>>,
     by_id_sample_size: Option<u32>,
     diff_format: Option<String>,
+    output_folder: Option<String>,
 }
 
 impl ConfigFile {
@@ -233,7 +231,7 @@ impl ConfigFile {
             yaml_rust::Yaml::BadValue => None,
             data => Some(data.as_i64().unwrap().try_into().unwrap()),
         };
-        let diff_file: Option<String> = match &yaml[0]["diff-file"] {
+        let output_folder: Option<String> = match &yaml[0]["output-folder"] {
             yaml_rust::Yaml::BadValue => None,
             data => data.clone().into_string(),
         };
@@ -271,7 +269,7 @@ impl ConfigFile {
             db1,
             db2,
             limit,
-            diff_file,
+            output_folder,
             diff_format,
             white_listed_tables,
             jobs,
@@ -291,12 +289,12 @@ mod test {
             limit: 1,
             no_tls: false,
             by_id_sample_size: None,
-            diff_file: None,
             diff_format: None,
             jobs: None,
             tables: None,
             config: None,
             tm_cutoff: None,
+            output_folder: None,
         }
     }
 
@@ -325,7 +323,6 @@ mod test {
             Some(vec!["testing_tables".to_string()])
         );
         assert_eq!(config.limit, 999);
-        assert!(!config.diff_io.borrow().is_stdout());
         assert_eq!(config.jobs, Job::all());
     }
     #[test]
@@ -342,7 +339,6 @@ mod test {
             Some(vec!["table_from_args".to_string()])
         );
         assert_eq!(config.limit, 22);
-        assert!(!config.diff_io.borrow().is_stdout());
         assert_eq!(config.jobs, Job::all());
     }
 }

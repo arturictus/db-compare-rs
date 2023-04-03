@@ -1,2 +1,4 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
+@@ #start# Job: `sequences` Table: `all_tables` @@
+@@ Job: `sequences` Table: `all_tables` #end# @@

@@ -13,11 +13,11 @@ fn default_args() -> Args {
         limit: 1,
         no_tls: false,
         by_id_sample_size: None,
-        diff_file: None,
         tables: None,
         config: None,
         jobs: None,
         tm_cutoff: None,
+        output_folder: None,
     }
 }
 fn default_config(jobs: Vec<Job>) -> Config {

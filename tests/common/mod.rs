@@ -1,4 +1,4 @@
-use anyhow::{self, Ok};
+use anyhow::Ok;
 use chrono::Days;
 use chrono::NaiveDateTime;
 use convert_case::{Case, Casing};
@@ -11,8 +11,6 @@ use std::cell::RefCell;
 use std::fs;
 use std::ops::Add;
 use std::path::Path;
-
-use uuid::Uuid;
 
 pub enum DB {
     A,
@@ -113,8 +111,6 @@ impl DB {
 
 pub struct TestRunner {
     config: Config,
-    regenerate_fixture: bool,
-    tmp_file: String,
     fixture_folder: String,
     runned: bool,
 }
@@ -122,9 +118,8 @@ pub struct TestRunner {
 impl TestRunner {
     pub fn new(config: &Config) -> Self {
         fs::create_dir_all("tmp").unwrap();
-        let tmp_file = format!("tmp/{}.diff", Uuid::new_v4());
         let fixture_folder = format!(
-            "tests/fixtures/examples/{}_{}",
+            "tests/fixtures/examples/diffs/{}_{}",
             config.white_listed_tables.clone().unwrap().join("_"),
             config
                 .jobs
@@ -137,7 +132,7 @@ impl TestRunner {
 
         Self {
             config: Config {
-                diff_io: RefCell::new(IOType::new_from_path(tmp_file.clone())),
+                diff_io: RefCell::new(IOType::Test(Vec::new())),
                 db1: config.db1.clone(),
                 db2: config.db2.clone(),
                 limit: config.limit,
@@ -145,19 +140,15 @@ impl TestRunner {
                 jobs: config.jobs.clone(),
                 by_id_sample_size: config.by_id_sample_size,
                 tm_cutoff: config.tm_cutoff,
+                test_env: true,
+                output_folder: "tmp/examples_per_file".to_string(),
                 ..Config::default()
             },
-            regenerate_fixture: false,
-            tmp_file,
             fixture_folder,
             runned: false,
         }
     }
-    #[allow(dead_code)]
-    pub fn regenerate_fixture(mut self) -> Self {
-        self.regenerate_fixture = true;
-        self
-    }
+
     fn fixture_file(&self, name: &str) -> String {
         let name = name.to_case(Case::Lower).to_case(Case::Snake);
         format!("{}/{}.diff", self.fixture_folder, name)
@@ -166,6 +157,17 @@ impl TestRunner {
         !Path::new(&self.fixture_file(name)).exists()
     }
 
+    fn has_to_regenerate_fixture(&self, file_path: &str) -> bool {
+        if std::env::var("FIXTURE_STRICT_MODE").is_ok() {
+            return false;
+        }
+        if std::env::var("REGENERATE_FIXTURE_IF_NOT_EXIST").is_ok()
+            && self.fixture_not_exists(file_path)
+        {
+            return true;
+        }
+        false
+    }
     pub fn run(mut self, name: &str) -> Self {
         // setup databases
         before_each().unwrap();
@@ -174,11 +176,12 @@ impl TestRunner {
         seed_test_data(Some(&users), Some(&msgs));
 
         self.config.tm_cutoff = updated_at.add(Days::new(10));
+        self.config.test_env = true;
 
         db_compare::run(&self.config).unwrap();
 
         let fixture_file = self.fixture_file(name);
-        if self.regenerate_fixture || self.fixture_not_exists(name) {
+        if self.has_to_regenerate_fixture(name) {
             fs::create_dir_all(&self.fixture_folder).unwrap_or_else(|_| {
                 panic!("unable to create folder {}", &self.fixture_folder);
             });
@@ -186,13 +189,13 @@ impl TestRunner {
                 "[TestRunner]: generating fixture: {}",
                 self.fixture_file(name)
             );
-            // If we are creating the fixtures we copy the result to the fixture
-            std::fs::copy(&self.tmp_file, &fixture_file).unwrap();
+            let content = self.config.diff_io.borrow().read();
+
+            write_fixture(&fixture_file, content);
         }
         // Copy fixture and result to memory
-        let tmp = std::fs::read_to_string(&self.tmp_file).unwrap();
+        let tmp = self.config.diff_io.borrow().read();
         let fixture = std::fs::read_to_string(&fixture_file).unwrap();
-        std::fs::remove_file(&self.tmp_file).unwrap();
         // Drop databases
         after_each().unwrap();
         println!("comparing: result with {}", &fixture_file);
@@ -201,6 +204,14 @@ impl TestRunner {
         self.runned = true;
         self
     }
+}
+
+use std::fs::File;
+use std::io::prelude::*;
+
+fn write_fixture(path: &str, data: String) {
+    let mut file = File::create(path).unwrap();
+    file.write_all(data.as_bytes()).unwrap();
 }
 
 pub fn before_each() -> anyhow::Result<()> {

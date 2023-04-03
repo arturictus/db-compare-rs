@@ -1,24 +1,17 @@
+use crate::database::{self, DBResultType, RequestBuilder};
+use crate::Config;
 use chrono::NaiveDateTime;
 
-use crate::database::{self, DBResultType, RequestBuilder};
-use crate::diff::IO;
-use crate::Config;
-
-use super::{par_run, utils::echo};
+use super::{par_run, Job, Output};
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let query = RequestBuilder::new(config).column(column());
     let db1_tables = database::tables_with_column(query.build_master())?.to_s();
     for table in db1_tables {
-        echo(
-            config,
-            &format!("#start# Job: `updated_ats_until` Table: `{table}`"),
-        );
-        compare_table(config, &table)?;
-        echo(
-            config,
-            &format!("Job: `updated_ats_until` Table: `{table}` #end#"),
-        );
+        let mut output = Output::new(config, Job::UpdatedAtsUntil, Some(table.clone()));
+
+        compare_table(&mut output, &table)?;
+        output.end();
     }
     Ok(())
 }
@@ -27,7 +20,8 @@ fn column() -> String {
     "updated_at".to_string()
 }
 
-fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
+fn compare_table(output: &mut Output, table: &str) -> Result<(), postgres::Error> {
+    let config = output.config;
     let builder = RequestBuilder::new(config)
         .table(table)
         .column(column())
@@ -37,7 +31,6 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         let builder = builder.clone().tm_cutoff(last_date_time.unwrap());
         let (records1, records2) = par_run(builder, database::full_row_ordered_by_until)?;
 
-        let mut diff_io = config.diff_io.borrow_mut();
         let header = format!(
             "`{table}` compare rows where `{}` is < '{:?}'",
             column(),
@@ -45,7 +38,8 @@ fn compare_table(config: &Config, table: &str) -> Result<(), postgres::Error> {
         );
         last_date_time = get_last_date_time(&records1, last_date_time);
         if !records1.is_empty() && !records2.is_empty() {
-            diff_io.write(config, (header, records1, records2));
+            let result = (header, records1, records2);
+            output.write(result.clone());
         }
     }
     Ok(())
