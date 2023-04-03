@@ -61,6 +61,16 @@ impl DBResultType {
     //     }
     // }
 
+    pub fn len(&self) -> u32 {
+        match self {
+            Self::JsonMaps(e) => e.len().try_into().unwrap(),
+            Self::Strings(e) => e.len().try_into().unwrap(),
+            Self::GroupedRows(e) => e.len().try_into().unwrap(),
+            Self::Ids(e) => e.len().try_into().unwrap(),
+            Self::Empty => 0,
+        }
+    }
+
     pub fn exclude_ids(self, ids: &[u32]) -> Self {
         match self {
             Self::JsonMaps(e) => {
