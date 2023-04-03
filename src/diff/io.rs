@@ -20,6 +20,9 @@ pub trait IO {
     fn new(config: &Args) -> Self;
     fn new_from_path(file_path: String) -> Self;
     fn is_stdout(&self) -> bool;
+    fn start_block(&mut self, msg: &str);
+    fn end_block(&mut self, msg: &str);
+    fn comment(&mut self, msg: &str);
 }
 
 impl IO for IOType {
@@ -51,6 +54,20 @@ impl IO for IOType {
             }
         }
     }
+
+    fn start_block(&mut self, msg: &str) {
+        let msg = &format!("@@ #start# {msg} @@");
+        self.echo(msg);
+    }
+    fn end_block(&mut self, msg: &str) {
+        let msg = &format!("@@ {msg} #end# @@");
+        self.echo(msg);
+    }
+    fn comment(&mut self, msg: &str) {
+        let msg = &format!("@@ {msg} @@");
+        self.echo(msg);
+    }
+
     fn echo(&mut self, msg: &str) {
         match self {
             Self::File(file) => write_to_file(file, msg),

@@ -78,6 +78,7 @@ pub struct Config {
     pub jobs: Vec<Job>,
     pub by_id_sample_size: Option<u32>,
     pub tm_cutoff: NaiveDateTime,
+    pub output_folder: String,
 }
 
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
@@ -190,6 +191,7 @@ impl Config {
             by_id_sample_size,
             tm_cutoff,
             tls: !args.no_tls,
+            output_folder: "tmp/example_diffs".to_string(),
         }
     }
 }

@@ -145,6 +145,7 @@ impl TestRunner {
                 jobs: config.jobs.clone(),
                 by_id_sample_size: config.by_id_sample_size,
                 tm_cutoff: config.tm_cutoff,
+                output_folder: "tmp/examples_per_file".to_string(),
                 ..Config::default()
             },
             regenerate_fixture: false,

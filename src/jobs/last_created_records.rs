@@ -1,6 +1,7 @@
 use super::utils::echo;
 use crate::database::{self, DBResultType, RequestBuilder};
 use crate::diff::IO;
+use crate::jobs::Output;
 use crate::Config;
 
 use super::par_run;
@@ -11,36 +12,36 @@ pub fn tables(config: &Config) -> Result<(), postgres::Error> {
     println!("## List of tables without `updated_at` ##");
     println!("{db1_tables:?}");
     println!("## ----------- ##");
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(
+    let mut output = Output::new(
         config,
-        (
-            "Tables with `created_at` column but not `updated_at` difference between DBs"
-                .to_string(),
-            DBResultType::Strings(db1_tables),
-            DBResultType::Strings(db2_tables),
-        ),
+        crate::Job::CreatedAts,
+        Some("tables_with_created_at".to_string()),
     );
-    Ok(())
-}
-
-#[allow(dead_code)]
-pub fn only_created_ats(config: &Config) -> Result<(), postgres::Error> {
-    let db1_tables = non_updated_at_tables(config)?;
-    for table in db1_tables {
-        compare_table_created_ats(config, &table)?;
-    }
+    let result = (
+        "Tables with `created_at` column but not `updated_at` difference between DBs".to_string(),
+        DBResultType::Strings(db1_tables),
+        DBResultType::Strings(db2_tables),
+    );
+    output.write(result.clone());
+    output.end();
+    // TODO: remove when diff_io is removed
+    let mut diff_io = config.diff_io.borrow_mut();
+    diff_io.write(config, result);
+    // end TODO
     Ok(())
 }
 
 pub fn all_columns(config: &Config) -> Result<(), postgres::Error> {
     let db1_tables = non_updated_at_tables(config)?;
     for table in db1_tables {
+        let mut output = Output::new(config, crate::Job::CreatedAts, None);
         echo(
             config,
             &format!("#start# Job: `last_created_ats` Table: `{table}`"),
         );
-        compare_rows(config, &table)?;
+        compare_rows(&mut output, &table)?;
+
+        output.end();
         echo(
             config,
             &format!("Job: `last_created_ats` Table: `{table}` #end#"),
@@ -74,26 +75,17 @@ fn non_updated_at_tables(config: &Config) -> Result<Vec<String>, postgres::Error
     Ok(difference)
 }
 
-#[allow(dead_code)]
-fn compare_table_created_ats(config: &Config, table: &str) -> Result<(), postgres::Error> {
-    let builder = RequestBuilder::new(config).table(table).column(column());
-    let (records1, records2) = par_run(builder, database::id_and_column_value)?;
-
-    let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(
-        config,
-        (format!("`{table}` created_at values"), records1, records2),
-    );
-    Ok(())
-}
-
-fn compare_rows(config: &Config, table: &str) -> Result<(), postgres::Error> {
+fn compare_rows(output: &mut Output, table: &str) -> Result<(), postgres::Error> {
+    let config = output.config;
     let builder = RequestBuilder::new(config).table(table).column(column());
     let (records1, records2) = par_run(builder, database::full_row_ordered_by)?;
+
+    let result = (format!("`{table}` all columns"), records1, records2);
+    output.write(result.clone());
+
+    // TODO: remove when diff_io is removed
     let mut diff_io = config.diff_io.borrow_mut();
-    diff_io.write(
-        config,
-        (format!("`{table}` all columns"), records1, records2),
-    );
+    diff_io.write(config, result);
+    // end TODO
     Ok(())
 }

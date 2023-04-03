@@ -1,3 +1,4 @@
+use super::Output;
 use crate::database::{self, Request, RequestBuilder};
 use crate::diff::IO;
 use crate::Config;
@@ -12,10 +13,11 @@ pub fn par_run<T: Send>(
 }
 
 pub fn compare_table_for_all_columns(
-    config: &Config,
+    output: &mut Output,
     table: &str,
     excluding_ids: Option<Vec<u32>>,
 ) -> Result<(), postgres::Error> {
+    let config = output.config;
     let q = RequestBuilder::new(config).table(table);
     let mut upper_bound = database::get_greatest_id_from(q.build_master())?;
     let mut counter = 0u32;
@@ -43,16 +45,16 @@ pub fn compare_table_for_all_columns(
         } else {
             (records1, records2)
         };
-
-        let mut diff_io = config.diff_io.borrow_mut();
-        diff_io.write(
-            config,
-            (
-                format!("`{table}` compare rows with ids from {lower_bound} to {upper_bound}"),
-                records1,
-                records2,
-            ),
+        let diff = (
+            format!("`{table}` compare rows with ids from {lower_bound} to {upper_bound}"),
+            records1,
+            records2,
         );
+        output.write(diff.clone());
+        // TODO: remove when solved files
+        let mut diff_io = config.diff_io.borrow_mut();
+        diff_io.write(config, diff);
+        // end TODO
         upper_bound = lower_bound;
         counter += config.limit;
     }

@@ -6,13 +6,14 @@ mod last_updated_records;
 mod sequences;
 mod updated_ats_until;
 mod utils;
+use crate::{database::DBsResults, diff, IO};
 use std::{error, fmt, str::FromStr};
 pub(crate) use utils::par_run;
 
 use crate::Config;
 use anyhow::Result;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Job {
     Counters,
     UpdatedAts,
@@ -95,6 +96,81 @@ impl Job {
             Self::ByID,
             Self::Sequences,
         ]
+    }
+    pub fn diff_file(&self, config: &Config, table: Option<&String>) -> diff::IOType {
+        let folder = match self {
+            Self::Counters => "counters".to_string(),
+            Self::UpdatedAts => "updated_ats".to_string(),
+            Self::CreatedAts => "created_ats".to_string(),
+            Self::ByID => "by_id".to_string(),
+            Self::Sequences => "sequences".to_string(),
+            Self::UpdatedAtsUntil => "updated_ats_until".to_string(),
+            Self::ByIDExcludingReplicaUpdatedAts => {
+                "by_id_excluding_replica_updated_ats".to_string()
+            }
+        };
+        let path = format!(
+            "{}/diffs/{}/{}.diff",
+            config.output_folder,
+            folder,
+            table.unwrap_or(&"all".to_string())
+        );
+        diff::IO::new_from_path(path)
+    }
+}
+
+pub struct Output<'a> {
+    config: &'a Config,
+    job: Job,
+    table: Option<String>,
+    io: diff::IOType,
+}
+
+impl<'a> Output<'a> {
+    pub fn new(config: &'a Config, job: Job, table: Option<String>) -> Self {
+        let mut me = Self {
+            config,
+            job,
+            table: table.clone(),
+            io: Self::diff_file(config, job, table),
+        };
+        me.start();
+        me
+    }
+
+    pub fn write(&mut self, results: DBsResults) {
+        self.io.write(self.config, results);
+    }
+
+    fn start(&mut self) {
+        self.io.echo(&format!("--- {} ---", self.config.db1));
+        self.io.echo(&format!("+++ {} +++", self.config.db2));
+        let table = format!(
+            "Table: `{}`",
+            self.table.as_ref().unwrap_or(&"all".to_string())
+        );
+        let msg = &format!("Job: `{}` {table}", self.job);
+        self.io.start_block(msg);
+    }
+
+    pub fn end(&mut self) {
+        let table = format!(
+            "Table: `{}`",
+            self.table.as_ref().unwrap_or(&"all".to_string())
+        );
+        let msg = &format!("Job: `{}` {table}", self.job);
+        self.io.end_block(msg);
+        self.io.close();
+    }
+
+    fn diff_file(config: &Config, job: Job, table: Option<String>) -> diff::IOType {
+        let path = format!(
+            "{}/diffs/{}/{}.diff",
+            config.output_folder,
+            job,
+            table.unwrap_or("all".to_string())
+        );
+        diff::IO::new_from_path(path)
     }
 }
 

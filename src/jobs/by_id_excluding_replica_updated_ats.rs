@@ -1,6 +1,16 @@
-use super::utils::{compare_table_for_all_columns, echo};
-use crate::database::{self, DBResultType, RequestBuilder};
+use super::{
+    utils::{compare_table_for_all_columns, echo},
+    Job, Output,
+};
 use crate::Config;
+use crate::{
+    database::{self, DBResultType, RequestBuilder},
+    IO,
+};
+
+fn job() -> Job {
+    Job::ByIDExcludingReplicaUpdatedAts
+}
 
 pub fn run(config: &Config) -> Result<(), postgres::Error> {
     let id_tables =
@@ -14,6 +24,7 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
         .filter(|t| id_tables.contains(t))
         .collect::<Vec<String>>();
     for table in tables {
+        let mut output = Output::new(config, job(), Some(table.clone()));
         echo(
             config,
             &format!("#start# Job: `by_id_excluding_replica_updated_ats` Table: `{table}`"),
@@ -26,7 +37,9 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             ),
         );
         let ids = updated_ids_after_cutoff(config, &table)?;
-        compare_table_for_all_columns(config, &table, Some(ids))?;
+
+        compare_table_for_all_columns(&mut output, &table, Some(ids))?;
+        output.end();
         echo(
             config,
             &format!("Job: `by_id_excluding_replica_updated_ats` Table: `{table}` #end#"),
