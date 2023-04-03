@@ -136,7 +136,7 @@ impl<'a> Output<'a> {
             return Self {
                 config,
                 job,
-                table: table.clone(),
+                table,
                 io: diff::IOType::Phantom,
             };
         } else {
@@ -144,7 +144,7 @@ impl<'a> Output<'a> {
                 config,
                 job,
                 table: table.clone(),
-                io: Self::diff_file(config, job, table.clone()),
+                io: Self::diff_file(config, job, table),
             }
         };
         me.start();
