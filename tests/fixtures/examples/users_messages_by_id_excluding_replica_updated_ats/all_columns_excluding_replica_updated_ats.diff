@@ -1,6 +1,40 @@
 --- postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db1 ---
 +++ postgresql://postgres:postgres@127.0.0.1:5432/db_compare_test_db2 +++
 @@ #start# Job: `by_id_excluding_replica_updated_ats` Table: `users` @@
+@@ Exlcuding replica updated_ats at cutoff: 2020-05-17 22:52:24 @@
+@@ `users` compare rows with ids from 40 to 41 @@
+@@ `users` compare rows with ids from 39 to 40 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 38 to 39 @@
+@@ `users` compare rows with ids from 37 to 38 @@
+- {"created_at":"2020-05-07T16:52:24","id":38,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T16:52:24"}
+@@ `users` compare rows with ids from 36 to 37 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 35 to 36 @@
+- {"created_at":"2020-05-07T12:52:24","id":36,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T12:52:24"}
+@@ `users` compare rows with ids from 34 to 35 @@
+@@ `users` compare rows with ids from 33 to 34 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 32 to 33 @@
+@@ `users` compare rows with ids from 31 to 32 @@
+- {"created_at":"2020-05-07T04:52:24","id":32,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T04:52:24"}
+@@ `users` compare rows with ids from 30 to 31 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 29 to 30 @@
+- {"created_at":"2020-05-07T00:52:24","id":30,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-07T00:52:24"}
+@@ `users` compare rows with ids from 28 to 29 @@
+@@ `users` compare rows with ids from 27 to 28 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 26 to 27 @@
+@@ `users` compare rows with ids from 25 to 26 @@
+- {"created_at":"2020-05-06T16:52:24","id":26,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T16:52:24"}
+@@ `users` compare rows with ids from 24 to 25 @@
+@@ No diff @@
+@@ `users` compare rows with ids from 23 to 24 @@
+- {"created_at":"2020-05-06T12:52:24","id":24,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T12:52:24"}
+@@ `users` compare rows with ids from 22 to 23 @@
+@@ `users` compare rows with ids from 21 to 22 @@
+@@ No diff @@
 @@ `users` compare rows with ids from 20 to 21 @@
 @@ `users` compare rows with ids from 19 to 20 @@
 - {"created_at":"2020-05-06T04:52:24","id":20,"name":"John-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I-I","updated_at":"2020-05-06T04:52:24"}

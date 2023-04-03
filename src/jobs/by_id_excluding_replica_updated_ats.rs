@@ -18,6 +18,13 @@ pub fn run(config: &Config) -> Result<(), postgres::Error> {
             config,
             &format!("#start# Job: `by_id_excluding_replica_updated_ats` Table: `{table}`"),
         );
+        echo(
+            config,
+            &format!(
+                "Exlcuding replica updated_ats at cutoff: {}",
+                config.tm_cutoff.format("%Y-%m-%d %H:%M:%S")
+            ),
+        );
         let ids = updated_ids_after_cutoff(config, &table)?;
         compare_table_for_all_columns(config, &table, Some(ids))?;
         echo(
