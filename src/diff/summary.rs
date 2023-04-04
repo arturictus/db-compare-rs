@@ -37,14 +37,11 @@ impl Summary {
             if let Some(id) = capture_id(line) {
                 self.updated_rows.push(id);
             }
-            match capture_column_names(line) {
-                Some(column_names) => {
-                    for column_name in column_names {
-                        let count = self.updated_columns.entry(column_name).or_insert(0);
-                        *count += 1;
-                    }
+            if let Some(column_names) = capture_column_names(line) {
+                for column_name in column_names {
+                    let count = self.updated_columns.entry(column_name).or_insert(0);
+                    *count += 1;
                 }
-                None => {}
             }
         } else if line.starts_with("- ") {
             self.deleted += 1;
