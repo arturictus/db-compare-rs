@@ -7,7 +7,7 @@ mod sequences;
 mod updated_ats_until;
 mod utils;
 use crate::{database::DBsResults, diff, IO};
-use std::{error, fmt, str::FromStr};
+use std::{collections::HashMap, error, fmt, str::FromStr};
 pub(crate) use utils::par_run;
 
 use crate::Config;
