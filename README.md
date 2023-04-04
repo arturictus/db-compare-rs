@@ -13,16 +13,20 @@ cargo install --git "https://github.com/arturictus/db-compare-rs"
 ## Usage
 
 ```sh
-db-compare --db1 postgresql://postgres:postgres@127.0.0.1/my_database --db2 postgresql://postgres:postgres@[other]/my_database
+db-compare run --db1 postgresql://postgres:postgres@127.0.0.1/my_database --db2 postgresql://postgres:postgres@[other]/my_database
 ```
 
 Run `--help` for more information
 
 ```sh
 db-compare --help
+db-compare run --help
+db-compare summarize --help
 ```
 
-### Jobs
+### Run command
+
+#### Jobs
 
 - **by_id_excluding_replica_updated_ats** [default if no job list is supplied]
 
@@ -57,7 +61,7 @@ db-compare --help
 
   Compares last created ats rows until the `limit` arg is reached
 
-### Output
+#### Output
 
 Markers:
 
@@ -66,14 +70,14 @@ Markers:
 - `>`: In both but with differences.
 - `@@ ... @@`: Comments and markers. Helpful to split diff into different files or the see context of the query, table or job beeing run.
 
-### Config File
+#### Config File
 
 You can pass all the arguments in a `yaml` file for convenience.
 
 **IMPORTANT:** Command params take precedence over this configuration.
 
 ```sh
-db-compare --config ./config.yml
+db-compare run --config ./config.yml
 ```
 
 ```yaml
@@ -98,11 +102,30 @@ by-id-sample-size: 10000 # If wanting to test all rows, remove this config
 All configs can be overridden by command parameters.
 
 ```sh
-db-compare --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100
+db-compare run --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100
+```
+
+### Summarize Command
+
+Parses run command output file and prints a summary
+
+```shell
+db-compare summarize -f tests/fixtures/examples/outputs/users.diff
+=>
+Summary:
+  Table: `users`
+  Updated: 14
+  Deleted: 13
+  Created: 0
+  Updated ids:
+    - [40, 37, 34, 31, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1]
+  Updated columns:
+    name: 14
+    updated_at: 7
 ```
 
 ## Development
 
 ```sh
-cargo run -- --db1 postgresql://postgres:postgres@127.0.0.1/my_database --db2 postgresql://postgres:postgres@[other]/my_database
+cargo run -- run --db1 postgresql://postgres:postgres@127.0.0.1/my_database --db2 postgresql://postgres:postgres@[other]/my_database
 ```

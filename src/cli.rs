@@ -10,8 +10,8 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand, Clone)]
 pub enum Commands {
-    #[command(about = "Compare two databases")]
-    Compare {
+    #[command(about = "Run two databases")]
+    Run {
         #[arg(long)]
         db1: Option<String>,
         #[arg(long)]
@@ -47,22 +47,9 @@ pub enum Commands {
         )]
         tm_cutoff: Option<i64>,
     },
-    #[command(about = "Create a summary file from diff file")]
+    #[command(about = "Summarizes run result file")]
     Summarize {
         #[arg(long, short)]
         file: String,
-        #[arg(long)]
-        db1: Option<String>,
-        #[arg(long)]
-        db2: Option<String>,
-        #[arg(long = "no-tls")]
-        no_tls: bool,
-        #[arg(
-            long = "output-folder",
-            help = "Destination folder for summary file, default: `./summaries`"
-        )]
-        output_folder: Option<String>,
-        #[arg(long, short, help = "Yaml config file")]
-        config: Option<String>,
     },
 }

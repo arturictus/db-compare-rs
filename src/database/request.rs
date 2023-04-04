@@ -119,7 +119,7 @@ mod test {
     use crate::cli;
 
     fn default_args() -> cli::Commands {
-        cli::Commands::Compare {
+        cli::Commands::Run {
             db1: Some("db1".to_string()),
             db2: Some("db2".to_string()),
             limit: 1,

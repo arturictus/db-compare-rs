@@ -5,13 +5,12 @@ use std::error;
 fn main() -> Result<(), Box<dyn error::Error>> {
     let args = Cli::parse();
     match &args.command {
-        Commands::Compare { .. } => {
+        Commands::Run { .. } => {
             let config = Config::new(&args.command);
             db_compare::run(&config)?;
         }
         Commands::Summarize { file, .. } => {
-            let config = Config::new(&args.command);
-            db_compare::run_summary(&config, file)?;
+            db_compare::run_summary(file)?;
         }
     }
 

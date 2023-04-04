@@ -69,13 +69,13 @@ impl Summary {
 
     pub fn print(&self) {
         println!("Summary:");
-        println!("  Table: {}", self.table);
+        println!("  Table: `{}`", self.table);
         println!("  Updated: {}", self.updated);
         println!("  Deleted: {}", self.deleted);
         println!("  Created: {}", self.created);
-        println!("  Updated rows:");
-        for id in &self.updated_rows {
-            println!("    {id}");
+        println!("  Updated ids:");
+        for chunk in self.updated_rows.chunks(20) {
+            println!("    - {:?}", chunk);
         }
         println!("  Updated columns:");
         for (column, count) in &self.updated_columns {

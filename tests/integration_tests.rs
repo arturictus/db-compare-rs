@@ -5,7 +5,7 @@ use db_compare::{Commands, Job};
 use db_compare::*;
 
 fn default_args() -> Commands {
-    Commands::Compare {
+    Commands::Run {
         db1: Some(DB::A.url()),
         db2: Some(DB::B.url()),
         diff_format: None,

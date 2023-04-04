@@ -48,7 +48,7 @@ pub struct Config {
     pub test_env: bool,
 }
 
-pub fn run_summary(_config: &Config, file: &str) -> Result<(), Box<dyn error::Error>> {
+pub fn run_summary(file: &str) -> Result<(), Box<dyn error::Error>> {
     for sum in Summary::from_file(file) {
         sum.print();
     }
@@ -65,7 +65,7 @@ pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
 impl Config {
     pub fn new(args: &cli::Commands) -> Config {
         match args {
-            cli::Commands::Compare {
+            cli::Commands::Run {
                 db1: args_db1,
                 db2: args_db2,
                 limit: args_limit,
@@ -174,47 +174,8 @@ impl Config {
                     diff_io: RefCell::new(diff::IOType::default()),
                 }
             }
-            cli::Commands::Summarize {
-                db1: args_db1,
-                db2: args_db2,
-                no_tls: args_no_tls,
-                output_folder: args_output_folder,
-                ..
-            } => {
-                // TODO: remove dupplication
-                let config_file = ConfigFile::build(args);
-
-                let db1 = if let Some(db_url) = args_db1.clone() {
-                    db_url
-                } else {
-                    config_file.db1.unwrap_or_else(|| {
-                        panic!("Missing `db1` argument or attribute in config file")
-                    })
-                };
-                let db2 = if let Some(db_url) = args_db2.clone() {
-                    db_url
-                } else {
-                    config_file.db2.unwrap_or_else(|| {
-                        panic!("Missing `db2` argument or attribute in config file")
-                    })
-                };
-                let output_folder = if args_output_folder.is_some() {
-                    args_output_folder.clone().unwrap()
-                } else {
-                    match config_file.output_folder {
-                        Some(folder) => folder,
-                        _ => "./diffs".to_string(),
-                    }
-                };
-
-                Self {
-                    db1,
-                    db2,
-                    output_folder,
-                    tls: !args_no_tls,
-                    test_env: false,
-                    ..Default::default()
-                }
+            cli::Commands::Summarize { .. } => {
+                panic!("summarize command does not require config")
             }
         }
     }
@@ -235,11 +196,7 @@ struct ConfigFile {
 impl ConfigFile {
     fn build(args: &cli::Commands) -> Self {
         match args {
-            cli::Commands::Compare {
-                config: args_config,
-                ..
-            }
-            | cli::Commands::Summarize {
+            cli::Commands::Run {
                 config: args_config,
                 ..
             } => {
@@ -313,6 +270,9 @@ impl ConfigFile {
                     by_id_sample_size,
                 }
             }
+            cli::Commands::Summarize { .. } => {
+                panic!("summarize command does not require config file")
+            }
         }
     }
 }
@@ -323,7 +283,7 @@ mod test {
 
     #[test]
     fn test_config_new() {
-        let args_with_listed_file = cli::Commands::Compare {
+        let args_with_listed_file = cli::Commands::Run {
             tables: Some("users, collections".to_string()),
             db1: Some("postgresql://postgres:postgres@127.0.0.1/db1".to_string()),
             db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
@@ -344,7 +304,7 @@ mod test {
     }
     #[test]
     fn test_config_from_config_file() {
-        let args = cli::Commands::Compare {
+        let args = cli::Commands::Run {
             limit: DEFAULT_LIMIT,
             config: Some("./tests/fixtures/testing_config.yml".to_string()),
             db1: Some("postgresql://postgres:postgres@127.0.0.1/db1".to_string()),
@@ -367,7 +327,7 @@ mod test {
     }
     #[test]
     fn test_config_from_config_file_with_args() {
-        let args = cli::Commands::Compare {
+        let args = cli::Commands::Run {
             limit: 22,
             tables: Some("table_from_args".to_string()),
             config: Some("./tests/fixtures/testing_config.yml".to_string()),
