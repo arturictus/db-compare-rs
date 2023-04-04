@@ -94,19 +94,16 @@ fn capture_column_names(line: &str) -> Option<Vec<String>> {
     let json_regex = Regex::new(r#""([^"]+)":([^,]+)"#).unwrap();
     let mut acc = Vec::new();
     for captures in json_regex.captures_iter(line) {
-        match (captures.get(1), captures.get(2)) {
-            (Some(k), Some(v)) => {
-                let pair = (k.as_str(), v.as_str());
-                let ansi_re = Regex::new(ANSI_CHARS).unwrap();
-                if ansi_re.is_match(pair.1) {
-                    acc.push(pair.0.to_string());
-                }
+        if let (Some(k), Some(v)) = (captures.get(1), captures.get(2)) {
+            let pair = (k.as_str(), v.as_str());
+            let ansi_re = Regex::new(ANSI_CHARS).unwrap();
+            if ansi_re.is_match(pair.1) {
+                acc.push(pair.0.to_string());
             }
-            _ => (),
         }
     }
 
-    if acc.len() > 0 {
+    if !acc.is_empty() {
         Some(acc)
     } else {
         None
