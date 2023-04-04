@@ -4,9 +4,9 @@ mod diff;
 use chrono::NaiveDateTime;
 pub use cli::{Cli, Commands};
 use database::RequestBuilder;
-pub use diff::{IOType, IO};
+pub use diff::{IOType, Summary, IO};
 
-use std::{cell::RefCell, error, fs, str::FromStr};
+use std::{cell::RefCell, error, fs, iter::Sum, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
 mod jobs;
@@ -16,44 +16,6 @@ pub use jobs::Job;
 
 const DEFAULT_LIMIT: u32 = 100;
 
-// #[derive(Parser, Debug, PartialEq)]
-// #[command(author, version, about, long_about = None)]
-// pub struct Args {
-//     #[arg(long)]
-//     pub db1: Option<String>,
-//     #[arg(long)]
-//     pub db2: Option<String>,
-//     #[arg(long, default_value_t = DEFAULT_LIMIT, help = "Queries limit, default: 100")]
-//     pub limit: u32,
-//     #[arg(
-//         long = "by-id-sample-size",
-//         help = "Max rows to compare for `by_id` and `by_id_excluding_replica_updated_ats` job"
-//     )]
-//     pub by_id_sample_size: Option<u32>,
-//     #[arg(long = "no-tls")]
-//     pub no_tls: bool,
-//     #[arg(
-//         long = "output-folder",
-//         help = "Destination folder for diff files, default: `./diffs`"
-//     )]
-//     pub output_folder: Option<String>,
-//     #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
-//     pub diff_format: Option<String>,
-//     #[arg(long = "tables", help = "Comma separated list of tables to check")]
-//     pub tables: Option<String>,
-//     #[arg(
-//         long = "jobs",
-//         help = "Comma separated job list to run, default: `by_id_excluding_replica_updated_ats`, options: `counters, updated_ats, created_ats, by_id, by_id_excluding_replica_updated_ats`"
-//     )]
-//     pub jobs: Option<String>,
-//     #[arg(long, short, help = "Yaml config file")]
-//     pub config: Option<String>,
-//     #[arg(
-//         long,
-//         help = "Check rows until this timestamp: example: `--tm_cutoff $(date +%s)`, defaults to now. Affects jobs: `updated_ats`, 'created_ats' and `by_id_excluding_replica_updated_ats`"
-//     )]
-//     pub tm_cutoff: Option<i64>,
-// }
 #[derive(Debug, Default)]
 pub enum DiffFormat {
     Simple,
@@ -86,6 +48,12 @@ pub struct Config {
     pub test_env: bool,
 }
 
+pub fn run_summary(config: &Config, file: &str) -> Result<(), Box<dyn error::Error>> {
+    for sum in Summary::from_file(file) {
+        sum.print();
+    }
+    Ok(())
+}
 pub fn run(config: &Config) -> Result<(), Box<dyn error::Error>> {
     database::ping_db(RequestBuilder::new(config).build_master())?;
     database::ping_db(RequestBuilder::new(config).build_replica())?;
@@ -107,8 +75,8 @@ impl Config {
                 diff_format: args_diff_format,
                 tables: args_tables,
                 jobs: args_jobs,
-                config: args_config,
                 tm_cutoff: args_tm_cutoff,
+                ..
             } => {
                 let config_file = ConfigFile::build(args);
 
@@ -206,7 +174,48 @@ impl Config {
                     diff_io: RefCell::new(diff::IOType::default()),
                 }
             }
-            _ => panic!("Invalid command"),
+            cli::Commands::Summarize {
+                db1: args_db1,
+                db2: args_db2,
+                no_tls: args_no_tls,
+                output_folder: args_output_folder,
+                ..
+            } => {
+                // TODO: remove dupplication
+                let config_file = ConfigFile::build(args);
+
+                let db1 = if let Some(db_url) = args_db1.clone() {
+                    db_url
+                } else {
+                    config_file.db1.unwrap_or_else(|| {
+                        panic!("Missing `db1` argument or attribute in config file")
+                    })
+                };
+                let db2 = if let Some(db_url) = args_db2.clone() {
+                    db_url
+                } else {
+                    config_file.db2.unwrap_or_else(|| {
+                        panic!("Missing `db2` argument or attribute in config file")
+                    })
+                };
+                let output_folder = if args_output_folder.is_some() {
+                    args_output_folder.clone().unwrap()
+                } else {
+                    match config_file.output_folder {
+                        Some(folder) => folder,
+                        _ => "./diffs".to_string(),
+                    }
+                };
+
+                Self {
+                    db1,
+                    db2,
+                    output_folder,
+                    tls: !args_no_tls,
+                    test_env: false,
+                    ..Default::default()
+                }
+            }
         }
     }
 }
@@ -227,6 +236,10 @@ impl ConfigFile {
     fn build(args: &cli::Commands) -> Self {
         match args {
             cli::Commands::Compare {
+                config: args_config,
+                ..
+            }
+            | cli::Commands::Summarize {
                 config: args_config,
                 ..
             } => {
@@ -300,7 +313,6 @@ impl ConfigFile {
                     by_id_sample_size,
                 }
             }
-            _ => panic!("Invalid command"),
         }
     }
 }
@@ -308,22 +320,6 @@ impl ConfigFile {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    fn default_args() -> cli::Commands {
-        cli::Commands::Compare {
-            db1: Some("postgresql://postgres:postgres@127.0.0.1/db1".to_string()),
-            db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
-            limit: 1,
-            no_tls: false,
-            by_id_sample_size: None,
-            diff_format: None,
-            jobs: None,
-            tables: None,
-            config: None,
-            tm_cutoff: None,
-            output_folder: None,
-        }
-    }
 
     #[test]
     fn test_config_new() {

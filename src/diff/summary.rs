@@ -12,7 +12,7 @@ pub struct Summary {
 }
 
 impl Summary {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             table: "".to_string(),
             updated: 0,
@@ -38,7 +38,7 @@ impl Summary {
         }
     }
 
-    fn from_file(file_path: &str) -> Vec<Self> {
+    pub fn from_file(file_path: &str) -> Vec<Self> {
         let mut summaries = Vec::new();
         let mut summary = Summary::new();
         for line in read_lines(file_path).unwrap() {
@@ -54,8 +54,6 @@ impl Summary {
         }
         summaries
     }
-
-    // s
 
     pub fn print(&self) {
         println!("Summary:");

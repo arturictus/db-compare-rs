@@ -1,4 +1,5 @@
 mod formatter;
 mod io;
-pub mod summary;
+mod summary;
 pub use io::{IOType, IO};
+pub use summary::Summary;
