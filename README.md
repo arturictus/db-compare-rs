@@ -65,10 +65,10 @@ db-compare summarize --help
 
 Markers:
 
-- `-`: Deleted in Replica.
-- `+`: Deleted in Master.
-- `>`: In both but with differences.
-- `@@ ... @@`: Comments and markers. Helpful to split diff into different files or the see context of the query, table or job beeing run.
+- `+`: Not in DB1.
+- `-`: Not in DB2.
+- `>`: Different.
+- `@@ ... @@`: Comments and markers.
 
 #### Config File
 
@@ -102,7 +102,7 @@ by-id-sample-size: 10000 # If wanting to test all rows, remove this config
 All configs can be overridden by command parameters.
 
 ```sh
-db-compare run --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 100
+db-compare run --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --limit 1000 --config ./config.yml
 ```
 
 ### Summarize Command
