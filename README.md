@@ -107,7 +107,7 @@ db-compare run --db2 postgresql://postgres:postgres@127.0.0.1/another_replica --
 
 ### Summarize Command
 
-Parses run command output file and prints a summary
+Parses the `run` command's output file and prints a summary.
 
 ```shell
 db-compare summarize -f tests/fixtures/examples/outputs/users.diff
