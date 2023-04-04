@@ -1,4 +1,4 @@
-use clap::{Arg, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 const DEFAULT_LIMIT: u32 = 100;
 #[derive(Debug, Parser)]
 #[command(name = "db-compare")]

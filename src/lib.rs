@@ -6,7 +6,7 @@ pub use cli::{Cli, Commands};
 use database::RequestBuilder;
 pub use diff::{IOType, Summary, IO};
 
-use std::{cell::RefCell, error, fs, iter::Sum, str::FromStr};
+use std::{cell::RefCell, error, fs, str::FromStr};
 extern crate yaml_rust;
 use yaml_rust::YamlLoader;
 mod jobs;
@@ -48,7 +48,7 @@ pub struct Config {
     pub test_env: bool,
 }
 
-pub fn run_summary(config: &Config, file: &str) -> Result<(), Box<dyn error::Error>> {
+pub fn run_summary(_config: &Config, file: &str) -> Result<(), Box<dyn error::Error>> {
     for sum in Summary::from_file(file) {
         sum.print();
     }
@@ -136,12 +136,12 @@ impl Config {
                 };
 
                 let by_id_sample_size = if args_by_id_sample_size.is_some() {
-                    args_by_id_sample_size.clone()
+                    *args_by_id_sample_size
                 } else {
-                    config_file.by_id_sample_size.clone()
+                    config_file.by_id_sample_size
                 };
 
-                let tm_cutoff = if let Some(tm) = args_tm_cutoff.clone() {
+                let tm_cutoff = if let Some(tm) = *args_tm_cutoff {
                     NaiveDateTime::from_timestamp_opt(tm, 0).unwrap()
                 } else {
                     NaiveDateTime::from_timestamp_opt(chrono::offset::Utc::now().timestamp(), 0)
