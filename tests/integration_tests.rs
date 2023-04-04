@@ -1,12 +1,11 @@
 mod common;
-
 use common::{TestRunner, DB};
-use db_compare::Job;
+use db_compare::{Commands, Job};
 
 use db_compare::*;
 
-fn default_args() -> Args {
-    Args {
+fn default_args() -> Commands {
+    Commands::Compare {
         db1: Some(DB::A.url()),
         db2: Some(DB::B.url()),
         diff_format: None,
