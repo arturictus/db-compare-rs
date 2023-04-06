@@ -30,8 +30,6 @@ pub enum Commands {
             help = "Destination folder for diff files, default: `./diffs`"
         )]
         output_folder: Option<String>,
-        #[arg(long = "diff-format", help = "`simple` or `char`, default: `char`")]
-        diff_format: Option<String>,
         #[arg(long = "tables", help = "Comma separated list of tables to check")]
         tables: Option<String>,
         #[arg(

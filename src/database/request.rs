@@ -126,7 +126,6 @@ mod test {
             no_tls: false,
             by_id_sample_size: None,
             output_folder: None,
-            diff_format: None,
             tables: None,
             config: None,
             tm_cutoff: None,

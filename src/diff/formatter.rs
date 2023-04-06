@@ -1,4 +1,4 @@
-use crate::{Config, DiffFormat};
+use crate::Config;
 
 use crate::database::{DBResultType, DBsResults, JsonMap};
 use similar::{ChangeTag, TextDiff};
@@ -27,7 +27,7 @@ fn generate_diff(
         }
 
         _ => {
-            let st = print_diff(&produce_simple_diff(
+            let st = print_diff(produce_simple_diff(
                 &normalize_input(a).unwrap(),
                 &normalize_input(b).unwrap(),
             ));
@@ -53,7 +53,7 @@ fn normalize_map_type(
             .into_iter()
             .zip(result_b.to_h())
             .map(|(a, b)| {
-                print_diff(&produce_diff(
+                print_diff(produce_diff(
                     config,
                     &serde_json::to_string(&a).unwrap(),
                     &serde_json::to_string(&b).unwrap(),
@@ -64,7 +64,7 @@ fn normalize_map_type(
             .into_iter()
             // TODO: remove duplication
             .map(|(a, b)| {
-                print_diff(&produce_diff(
+                print_diff(produce_diff(
                     config,
                     &serde_json::to_string(&a).unwrap(),
                     &serde_json::to_string(&b).unwrap(),
@@ -170,12 +170,17 @@ fn normalize_input(list: &DBResultType) -> Result<String, serde_json::Error> {
     Ok(list)
 }
 
-fn produce_diff(config: &Config, json1: &str, json2: &str) -> String {
-    match config.diff_format {
-        DiffFormat::Char => produce_char_diff(json1, json2),
-        DiffFormat::Simple => produce_simple_diff(json1, json2),
+fn produce_diff(config: &Config, json1: &str, json2: &str) -> Option<String> {
+    if json1 == json2 {
+        return None;
     }
+    let output = produce_char_diff(json1, json2);
+    if output.is_empty() {
+        return None;
+    }
+    Some(output)
 }
+
 fn produce_char_diff(old: &str, new: &str) -> String {
     use ansi_term::{Colour, Style};
     use prettydiff::{basic::DiffOp, diff_words};
@@ -191,7 +196,10 @@ fn produce_char_diff(old: &str, new: &str) -> String {
     }
     format!("> {}", diff)
 }
-fn produce_simple_diff(json1: &str, json2: &str) -> String {
+fn produce_simple_diff(json1: &str, json2: &str) -> Option<String> {
+    if json1 == json2 {
+        return None;
+    }
     let diff = TextDiff::from_lines(json1, json2);
     let mut output = Vec::new();
 
@@ -206,7 +214,7 @@ fn produce_simple_diff(json1: &str, json2: &str) -> String {
         };
         output.push(format!("{sign}{change}"));
     }
-    output.join("")
+    Some(output.join(""))
 }
 
 // TODO: return option
@@ -217,10 +225,10 @@ fn produce_simple_diff(json1: &str, json2: &str) -> String {
 //     }
 // }
 
-fn print_diff(result: &str) -> String {
+fn print_diff(result: Option<String>) -> String {
     match result {
-        "" => "".to_string(),
-        diff => diff.to_string(),
+        None => "".to_string(),
+        Some(diff) => diff.to_string(),
     }
 }
 
