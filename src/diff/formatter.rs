@@ -228,7 +228,7 @@ fn produce_simple_diff(json1: &str, json2: &str) -> Option<String> {
 fn print_diff(result: Option<String>) -> String {
     match result {
         None => "".to_string(),
-        Some(diff) => diff.to_string(),
+        Some(diff) => diff,
     }
 }
 
