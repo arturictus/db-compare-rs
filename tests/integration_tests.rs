@@ -8,7 +8,6 @@ fn default_args() -> Commands {
     Commands::Run {
         db1: Some(DB::A.url()),
         db2: Some(DB::B.url()),
-        diff_format: None,
         limit: 1,
         no_tls: false,
         by_id_sample_size: None,

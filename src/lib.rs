@@ -17,29 +17,12 @@ pub use jobs::Job;
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Debug, Default)]
-pub enum DiffFormat {
-    Simple,
-    #[default]
-    Char,
-}
-impl DiffFormat {
-    pub fn new(format: &str) -> Self {
-        match format {
-            "simple" => Self::Simple,
-            "char" => Self::Char,
-            _ => panic!("invalid diff format: {}", format),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
 pub struct Config {
     pub db1: String,
     pub db2: String,
     pub tls: bool,
     pub limit: u32,
     pub diff_io: RefCell<diff::IOType>,
-    pub diff_format: DiffFormat,
     pub white_listed_tables: Option<Vec<String>>,
     pub jobs: Vec<Job>,
     pub by_id_sample_size: Option<u32>,
@@ -72,7 +55,6 @@ impl Config {
                 by_id_sample_size: args_by_id_sample_size,
                 no_tls: args_no_tls,
                 output_folder: args_output_folder,
-                diff_format: args_diff_format,
                 tables: args_tables,
                 jobs: args_jobs,
                 tm_cutoff: args_tm_cutoff,
@@ -117,15 +99,6 @@ impl Config {
                     }
                 };
 
-                let diff_format = if let Some(format) = &args_diff_format {
-                    DiffFormat::new(format)
-                } else {
-                    match config_file.diff_format {
-                        Some(format) => DiffFormat::new(&format),
-                        _ => DiffFormat::Char,
-                    }
-                };
-
                 let limit = if *args_limit != DEFAULT_LIMIT {
                     *args_limit
                 } else {
@@ -163,7 +136,6 @@ impl Config {
                     db1,
                     db2,
                     output_folder,
-                    diff_format,
                     white_listed_tables,
                     limit,
                     jobs,
@@ -189,7 +161,6 @@ struct ConfigFile {
     white_listed_tables: Option<Vec<String>>,
     jobs: Option<Vec<Job>>,
     by_id_sample_size: Option<u32>,
-    diff_format: Option<String>,
     output_folder: Option<String>,
 }
 
@@ -229,10 +200,6 @@ impl ConfigFile {
                     yaml_rust::Yaml::BadValue => None,
                     data => data.clone().into_string(),
                 };
-                let diff_format: Option<String> = match &yaml[0]["diff-format"] {
-                    yaml_rust::Yaml::BadValue => None,
-                    data => data.clone().into_string(),
-                };
                 let jobs: Option<Vec<Job>> = match &yaml[0]["jobs"] {
                     yaml_rust::Yaml::BadValue => None,
                     data => Some(
@@ -264,7 +231,6 @@ impl ConfigFile {
                     db2,
                     limit,
                     output_folder,
-                    diff_format,
                     white_listed_tables,
                     jobs,
                     by_id_sample_size,
@@ -290,7 +256,6 @@ mod test {
             limit: 1,
             no_tls: false,
             by_id_sample_size: None,
-            diff_format: None,
             jobs: None,
             config: None,
             tm_cutoff: None,
@@ -311,7 +276,6 @@ mod test {
             db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
             no_tls: false,
             by_id_sample_size: None,
-            diff_format: None,
             jobs: None,
             tables: None,
             tm_cutoff: None,
@@ -335,7 +299,6 @@ mod test {
             db2: Some("postgresql://postgres:postgres@127.0.0.1/db2".to_string()),
             no_tls: false,
             by_id_sample_size: None,
-            diff_format: None,
             jobs: None,
             tm_cutoff: None,
             output_folder: None,
