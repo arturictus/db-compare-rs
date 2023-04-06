@@ -170,7 +170,7 @@ fn normalize_input(list: &DBResultType) -> Result<String, serde_json::Error> {
     Ok(list)
 }
 
-fn produce_diff(config: &Config, json1: &str, json2: &str) -> Option<String> {
+fn produce_diff(_config: &Config, json1: &str, json2: &str) -> Option<String> {
     if json1 == json2 {
         return None;
     }

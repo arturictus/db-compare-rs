@@ -17,22 +17,6 @@ pub use jobs::Job;
 const DEFAULT_LIMIT: u32 = 100;
 
 #[derive(Debug, Default)]
-pub enum DiffFormat {
-    Simple,
-    #[default]
-    Char,
-}
-impl DiffFormat {
-    pub fn new(format: &str) -> Self {
-        match format {
-            "simple" => Self::Simple,
-            "char" => Self::Char,
-            _ => panic!("invalid diff format: {}", format),
-        }
-    }
-}
-
-#[derive(Debug, Default)]
 pub struct Config {
     pub db1: String,
     pub db2: String,
