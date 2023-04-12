@@ -22,9 +22,7 @@ fn generate_diff(
     b: &DBResultType,
 ) -> (FmtRows, FmtMissing, FmtExtra) {
     let (rows, missing, extra) = match (a, b) {
-        (DBResultType::JsonMaps(_a), DBResultType::JsonMaps(_b)) => {
-            normalize_map_type(config, a, b)
-        }
+        (DBResultType::JsonMaps(_a), DBResultType::JsonMaps(_b)) => compare_json_maps(config, a, b),
 
         _ => {
             let st = print_diff(produce_simple_diff(
@@ -37,7 +35,7 @@ fn generate_diff(
     (rows, missing, extra)
 }
 
-fn normalize_map_type(
+fn compare_json_maps(
     config: &Config,
     a: &DBResultType,
     b: &DBResultType,
