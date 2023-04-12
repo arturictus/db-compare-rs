@@ -3,12 +3,12 @@ use crate::Config;
 use crate::database::{DBResultType, DBsResults, JsonMap};
 use similar::{ChangeTag, TextDiff};
 use std::collections::BTreeMap;
-pub type FmtOutput = (
-    Option<String>,
-    Vec<String>,
-    Option<Vec<String>>,
-    Option<Vec<String>>,
-);
+
+type FmtHeader = Option<String>;
+type FmtRows = Vec<String>;
+type FmtMissing = Option<Vec<String>>;
+type FmtExtra = Option<Vec<String>>;
+pub type FmtOutput = (FmtHeader, FmtRows, FmtMissing, FmtExtra);
 pub fn call(config: &Config, result: DBsResults) -> Vec<FmtOutput> {
     let (header, a, b) = result;
     let (rows, missing, extra) = generate_diff(config, &a, &b);
@@ -20,7 +20,7 @@ fn generate_diff(
     config: &Config,
     a: &DBResultType,
     b: &DBResultType,
-) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
+) -> (FmtRows, FmtMissing, FmtExtra) {
     let (rows, missing, extra) = match (a, b) {
         (DBResultType::JsonMaps(_a), DBResultType::JsonMaps(_b)) => {
             normalize_map_type(config, a, b)
@@ -41,36 +41,31 @@ fn normalize_map_type(
     config: &Config,
     a: &DBResultType,
     b: &DBResultType,
-) -> (Vec<String>, Option<Vec<String>>, Option<Vec<String>>) {
+) -> (FmtRows, FmtMissing, FmtExtra) {
     let RowSelector {
         matches: (result_a, result_b),
         missing,
         extra,
     } = only_matching_ids(a, b);
 
+    fn filter_map(
+        config: &Config,
+        iter: impl IntoIterator<Item = (JsonMap, JsonMap)>,
+    ) -> Vec<String> {
+        iter.into_iter()
+            .filter_map(|(a, b)| {
+                produce_diff(
+                    config,
+                    &serde_json::to_string(&a).unwrap(),
+                    &serde_json::to_string(&b).unwrap(),
+                )
+            })
+            .collect()
+    }
+
     let rows = match result_a {
-        DBResultType::JsonMaps(a) => a
-            .into_iter()
-            .zip(result_b.to_h())
-            .map(|(a, b)| {
-                print_diff(produce_diff(
-                    config,
-                    &serde_json::to_string(&a).unwrap(),
-                    &serde_json::to_string(&b).unwrap(),
-                ))
-            })
-            .collect(),
-        DBResultType::GroupedRows(a) => a
-            .into_iter()
-            // TODO: remove duplication
-            .map(|(a, b)| {
-                print_diff(produce_diff(
-                    config,
-                    &serde_json::to_string(&a).unwrap(),
-                    &serde_json::to_string(&b).unwrap(),
-                ))
-            })
-            .collect(),
+        DBResultType::JsonMaps(a) => filter_map(config, a.into_iter().zip(result_b.to_h())),
+        DBResultType::GroupedRows(a) => filter_map(config, a),
         _ => panic!("unexpected type: {:?}", result_a),
     };
 
@@ -174,14 +169,10 @@ fn produce_diff(_config: &Config, json1: &str, json2: &str) -> Option<String> {
     if json1 == json2 {
         return None;
     }
-    let output = produce_char_diff(json1, json2);
-    if output.is_empty() {
-        return None;
-    }
-    Some(output)
+    produce_char_diff(json1, json2)
 }
 
-fn produce_char_diff(old: &str, new: &str) -> String {
+fn produce_char_diff(old: &str, new: &str) -> Option<String> {
     use ansi_term::{Colour, Style};
     use prettydiff::{basic::DiffOp, diff_words};
 
@@ -191,10 +182,10 @@ fn produce_char_diff(old: &str, new: &str) -> String {
         .set_insert_whitespace_style(style);
     if diff.diff().len() == 1 {
         if let DiffOp::Equal(_) = diff.diff()[0] {
-            return "".to_string();
+            return None;
         }
     }
-    format!("> {}", diff)
+    Some(format!("> {}", diff))
 }
 fn produce_simple_diff(json1: &str, json2: &str) -> Option<String> {
     if json1 == json2 {
@@ -236,6 +227,13 @@ fn print_diff(result: Option<String>) -> String {
 mod test {
     use super::*;
     use serde_json::{from_str, Map, Value};
+
+    #[test]
+    fn test_map() {
+        let mut v = vec![Some(1), None, Some(2)];
+        v.retain(|e| e.is_some());
+        assert_eq!(v, vec![Some(1), Some(2)]);
+    }
 
     #[test]
     fn test_only_matching_ids() {
